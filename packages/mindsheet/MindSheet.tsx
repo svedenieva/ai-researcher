@@ -1,5 +1,6 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import type { ColumnDef, MindSheetProps, Row } from './types';
 import styles from './MindSheet.module.css';
 
@@ -16,15 +17,30 @@ function distinct(records: Row[], key: string): string[] {
   return [...set].sort((a, b) => a.localeCompare(b, 'ru'));
 }
 
+// track size per column: long-text gets room to breathe, numbers stay
+// narrow, the first (name) column gets a solid min width, everything else
+// gets a sensible default
+function trackFor(column: ColumnDef, isFirst: boolean): string {
+  if (isFirst) return 'minmax(170px, 1.3fr)';
+  if (column.type === 'long-text') return 'minmax(220px, 2fr)';
+  if (column.type === 'number') return '90px';
+  if (column.type === 'url') return 'minmax(150px, 1fr)';
+  if (column.type === 'select') return 'minmax(110px, 0.8fr)';
+  return 'minmax(130px, 1.1fr)';
+}
+
 export default function MindSheet({
   columns, records, sort, filter, filterOptions, onSortChange, onFilterChange,
 }: MindSheetProps) {
   const filterables = columns.filter((c) => c.filterable);
   const firstKey = columns[0]?.key;
 
+  const grid = columns.map((c, i) => trackFor(c, i === 0)).join(' ');
+  const gridStyle = { '--grid': grid } as CSSProperties;
+
   return (
     <div className={styles.sheet}>
-      <div className={styles.toolbar}>
+      <div className={styles.tableTools}>
         {filterables.map((c) => (
           <label key={c.key} className={styles.filter}>
             {c.label}:
@@ -49,39 +65,41 @@ export default function MindSheet({
       </div>
 
       <div className={styles.tableScroll}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              {columns.map((c) => {
-                const active = sort?.key === c.key;
-                return (
-                  <th key={c.key} role="columnheader" className={styles.th}>
-                    {c.sortable ? (
-                      <button
-                        type="button"
-                        className={styles.colHead}
-                        data-active={active || undefined}
-                        onClick={() => onSortChange(c.key)}
-                      >
-                        {c.label}
-                        <span className={styles.arrow}>
-                          {active ? (sort!.dir === 'asc' ? '▲' : '▼') : ''}
-                        </span>
-                      </button>
-                    ) : (
-                      c.label
-                    )}
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {records.map((r) => (
-              <tr key={r.id}>
+        <div className={styles.table} style={gridStyle} role="table">
+          <div className={styles.tableHead} role="row">
+            {columns.map((c) => {
+              const active = sort?.key === c.key;
+              return (
+                <div key={c.key} role="columnheader" className={styles.th}>
+                  {c.sortable ? (
+                    <button
+                      type="button"
+                      className={styles.colHead}
+                      data-active={active || undefined}
+                      onClick={() => onSortChange(c.key)}
+                    >
+                      {c.label}
+                      <span className={styles.arrow}>
+                        {active ? (sort!.dir === 'asc' ? '▲' : '▼') : ''}
+                      </span>
+                    </button>
+                  ) : (
+                    c.label
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {records.length === 0 ? (
+            <div className={styles.none}>Ничего не найдено</div>
+          ) : (
+            records.map((r) => (
+              <div key={r.id} className={styles.row} role="row">
                 {columns.map((c) => (
-                  <td
+                  <div
                     key={c.key}
+                    role="cell"
                     className={cx(
                       styles.td,
                       c.key === firstKey && styles.strong,
@@ -89,12 +107,12 @@ export default function MindSheet({
                     )}
                   >
                     {renderCell(r[c.key], c)}
-                  </td>
+                  </div>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

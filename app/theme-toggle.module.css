@@ -1,0 +1,28 @@
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink-45);
+  cursor: pointer;
+  transition: border-color 0.14s ease, color 0.14s ease, background-color 0.14s ease;
+}
+
+.button:hover {
+  border-color: var(--ink-25);
+  background: var(--wash);
+  color: var(--ink-70);
+}
+
+@media (max-width: 860px) {
+  /* A comfortable tap target on touch screens. */
+  .button {
+    width: 36px;
+    height: 36px;
+  }
+}

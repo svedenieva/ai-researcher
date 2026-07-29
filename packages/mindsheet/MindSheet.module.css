@@ -1,18 +1,20 @@
-/* @aivocado/mindsheet — Fathom editorial look, driven entirely by the host's
-   design tokens (--ink, --rule, --paper-raised, --wash, --sage, --radius, …).
-   No hard-coded colors, so any site's theme flows straight through. */
+/* @aivocado/mindsheet — Fathom editorial grid-card look, driven entirely by
+   the host's design tokens (--ink, --rule, --paper-raised, --wash, --sage,
+   --radius-lg, --shadow-card, --ring, …). No hard-coded colors, so any
+   site's theme flows straight through. */
 
 .sheet {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* toolbar of filters */
-.toolbar {
+/* tools row — filters, right-aligned above the card, like Fathom's tableTools */
+.tableTools {
   display: flex;
+  justify-content: flex-end;
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .filter {
@@ -40,40 +42,52 @@
 }
 
 .count {
-  margin-left: auto;
+  margin-right: auto;
   font-family: var(--font-mono), monospace;
   font-size: 12px;
   color: var(--ink-25);
 }
 
-/* table */
+/* the card: rounded, own scroll region, hairline ring + soft shadow
+   instead of a plain border */
 .tableScroll {
-  overflow-x: auto;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
+  overflow: auto;
+  max-height: calc(100vh - 210px);
+  border-radius: var(--radius-lg);
   background: var(--paper-raised);
+  box-shadow: var(--shadow-card), var(--ring);
 }
 
 .table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
+  /* grid-template-columns is supplied per-instance via the --grid custom
+     property, computed from the column list */
+  width: max-content;
+  min-width: 100%;
+}
+
+/* table head — sticks to the top of the scroll region while rows scroll under it */
+.tableHead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: var(--grid);
+  gap: 18px;
+  padding: 11px 20px;
+  background: light-dark(#fbfaf8, #171c20);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-25);
 }
 
 .th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  padding: 10px 12px;
-  background: var(--paper-raised);
-  border-bottom: 1px solid var(--rule);
-  font-family: var(--font-mono), monospace;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  text-align: left;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--ink-45);
 }
 
 /* sortable header label — button that inherits the header look */
@@ -87,6 +101,7 @@
   cursor: pointer;
   font: inherit;
   letter-spacing: inherit;
+  text-transform: inherit;
   color: inherit;
   text-align: left;
 }
@@ -102,33 +117,42 @@
   color: var(--sage);
 }
 
+/* one row — hairline on top, not bottom; no radius (the card has it) */
+.row {
+  display: grid;
+  grid-template-columns: var(--grid);
+  gap: 18px;
+  align-items: start;
+  padding: 13px 20px;
+  border-top: 1px solid var(--rule-soft);
+  transition: background-color 0.12s ease;
+}
+
+.row:hover {
+  background: light-dark(#fbfaf8, #181d21);
+}
+
 .td {
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--rule-soft);
-  vertical-align: top;
-  line-height: 1.4;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--ink-70);
 }
 
-.table tr:hover .td {
-  background: var(--wash);
-}
-
-/* first column — the record's name, emphasized like Fathom's "shown" */
+/* first column — the record's name, emphasized */
 .strong {
   font-weight: 600;
   color: var(--ink);
-  white-space: nowrap;
 }
 
-/* long free-text columns stay secondary and capped */
+/* long free-text columns stay secondary and wrap */
 .long {
-  max-width: 320px;
   color: var(--ink-45);
 }
 
 .link {
   color: var(--sage);
+  overflow-wrap: anywhere;
 }
 
 .link:hover {
@@ -141,7 +165,7 @@
 }
 
 .none {
-  padding: 24px 12px;
+  padding: 24px 20px;
   font-size: 13px;
   text-align: center;
   color: var(--ink-45);

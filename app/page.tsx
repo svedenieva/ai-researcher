@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { MindSheet } from '@mindsheet';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
+import ThemeToggle from './theme-toggle';
+import Stats from './stats';
 import styles from './page.module.css';
 
 export default function Home() {
@@ -33,22 +35,40 @@ export default function Home() {
   }, []);
 
   return (
-    <main className={styles.page}>
-      <h1 className={styles.title}>База знаний · Продукты и конкуренты</h1>
-      <p className={styles.lede}>
-        {loading
-          ? 'Загрузка…'
-          : 'Исследования конкурентов и продуктов. Сортируйте по любой колонке, фильтруйте по региону, вертикали и грейду.'}
-      </p>
-      <MindSheet
-        columns={columns}
-        records={records}
-        sort={sort}
-        filter={filter}
-        filterOptions={facets}
-        onSortChange={onSortChange}
-        onFilterChange={setFilter}
-      />
-    </main>
+    <div className={styles.shell}>
+      <header className={styles.header}>
+        <div className={styles.brand}>
+          <span className={styles.brandName}>AI-Researcher</span>
+          <span className={styles.brandKicker}>база знаний</span>
+        </div>
+
+        <div className={styles.headerActions}>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <main className={styles.body}>
+        <div className={styles.pageHeadRow}>
+          <div className={styles.pageHead}>
+            <h1 className={styles.title}>База знаний · Продукты и конкуренты</h1>
+            <span className={styles.count}>{loading ? '…' : records.length}</span>
+          </div>
+
+          {records.length > 0 && <Stats records={records} />}
+        </div>
+
+        <div className={styles.content}>
+          <MindSheet
+            columns={columns}
+            records={records}
+            sort={sort}
+            filter={filter}
+            filterOptions={facets}
+            onSortChange={onSortChange}
+            onFilterChange={setFilter}
+          />
+        </div>
+      </main>
+    </div>
   );
 }

@@ -1,16 +1,18 @@
 /* Fathom editorial theme tokens — ported so the mind-sheet UI looks identical
    across sites. Any host that provides these variables gets the same look;
-   the portable @mindsheet package only references the variable names. */
+   the portable @mindsheet package only references the variable names.
+   No next/font here, so every font var keeps a system fallback chain. */
 
 :root {
   color-scheme: light dark;
 
-  /* fonts — system fallbacks (host may override with next/font) */
+  /* fonts — system fallbacks (host has no next/font) */
   --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+  --font-display: Georgia, 'Times New Roman', serif;
 
-  /* ink — warm neutrals */
+  /* ink — warm neutrals instead of a blue-grey */
   --ink: light-dark(#1a1a18, #e8ecee);
   --ink-70: light-dark(#56534c, #b7bec5);
   --ink-45: light-dark(#8c887f, #8b959c);
@@ -23,17 +25,67 @@
   --paper-raised: light-dark(#ffffff, #14181b);
   --wash: light-dark(#f5f3f0, #171c20);
 
-  /* accent — deep teal */
+  /* accent — deeper, less grey teal */
   --sage: light-dark(#3f6b6e, #8fc6b8);
   --sage-soft: light-dark(#e3ebe9, #1a2a26);
   --sage-hover: light-dark(#35595c, #a3d3c6);
 
+  /* type tints — kept from the reference palette; also used as the
+     breakdown-bar segment colors for the catalog's "vertical" facet */
+  --type-internal: light-dark(#6d7fa0, #86a6d3);
+  --type-internal-tint: light-dark(#eef1f6, #1a2230);
+  --type-internal-ink: light-dark(#45566f, #86a6d3);
+
+  --type-client: light-dark(#8f7aa3, #b892e8);
+  --type-client-tint: light-dark(#f4eef9, #291f36);
+  --type-client-ink: light-dark(#63478a, #b892e8);
+
+  --type-automation: light-dark(#3f6b6e, #4fb8c2);
+  --type-automation-tint: light-dark(#e6f1f2, #14282a);
+  --type-automation-ink: light-dark(#2f5457, #7fc0c7);
+
+  --type-onboarding: light-dark(#b08c4a, #d3a765);
+  --type-onboarding-tint: light-dark(#f8efe3, #2e2415);
+  --type-onboarding-ink: light-dark(#8a5c26, #d3a765);
+
+  --type-other: light-dark(#8c887f, #98a3ae);
+  --type-other-tint: light-dark(#f0ede8, #1e2529);
+  --type-other-ink: light-dark(#56534c, #98a3ae);
+
+  /* breakdown-bar segment palette, cycled by index for a dynamic facet
+     (verticals aren't a fixed enum like meeting types) */
+  --seg-1: var(--type-internal);
+  --seg-2: var(--type-client);
+  --seg-3: var(--type-automation);
+  --seg-4: var(--type-onboarding);
+  --seg-5: var(--type-other);
+  --seg-6: light-dark(#b0554a, #d98f83);
+
+  /* "needs attention" state */
+  --warn: light-dark(#8a5c26, #e0a92f);
+  --warn-tint: light-dark(#f3e6d6, #33260f);
+  --warn-row: light-dark(#fdfaf5, #191712);
+  --warn-dot: #e0a92f;
+
+  --error: light-dark(#b8332a, #f0837a);
+
+  /* one soft card shadow + a hairline ring, used instead of 1px borders */
+  --ring: inset 0 0 0 1px light-dark(#e8e5e0, #1f262a);
+  --shadow-card: 0 1px 2px light-dark(rgb(26 26 24 / 0.04), rgb(0 0 0 / 0.3));
+  --shadow-panel: 0 14px 28px -10px light-dark(rgb(26 26 24 / 0.14), rgb(0 0 0 / 0.5)),
+    0 2px 6px -2px light-dark(rgb(26 26 24 / 0.07), rgb(0 0 0 / 0.4));
+
   --radius: 7px;
   --radius-lg: 12px;
+
+  --tint: 11%;
 }
 
-:root[data-theme='light'] { color-scheme: light; }
-:root[data-theme='dark'] { color-scheme: dark; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { --tint: 18%; }
+}
+:root[data-theme='light'] { color-scheme: light; --tint: 11%; }
+:root[data-theme='dark'] { color-scheme: dark; --tint: 18%; }
 
 * { box-sizing: border-box; }
 

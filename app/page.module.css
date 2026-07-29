@@ -1,20 +1,107 @@
-.page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 24px 80px;
-}
-
-.title {
-  margin: 0 0 6px;
-  font-size: 24px;
-  font-weight: 600;
+.shell {
+  min-height: 100vh;
+  background: var(--paper);
   color: var(--ink);
 }
 
-.lede {
-  max-width: 720px;
-  margin: 0 0 20px;
-  font-size: 13px;
-  line-height: 1.5;
+/* header */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 58px;
+  padding: 0 32px;
+  /* translucent bar with blur, the way Linear / Superhuman feel */
+  background: color-mix(in srgb, var(--paper) 80%, transparent);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid var(--rule);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.brandName {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.brandKicker {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
   color: var(--ink-45);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+/* page body */
+
+.body {
+  /* full width, aligned left — no centered column */
+  padding: 26px 32px 44px;
+}
+
+/* heading on the left, stats pushed to the right, on one line */
+.pageHeadRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin-bottom: 28px;
+}
+
+.pageHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* count as a subtle pill next to the title */
+.count {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--wash);
+  border: 1px solid var(--rule);
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  color: var(--ink-45);
+}
+
+/* single-column content area — no left sidebar (no grouping in the catalog) */
+.content {
+  min-width: 0;
+}
+
+/* narrow screens */
+@media (max-width: 860px) {
+  .header {
+    padding: 0 16px;
+  }
+
+  .body {
+    padding: 20px 16px 48px;
+  }
 }
