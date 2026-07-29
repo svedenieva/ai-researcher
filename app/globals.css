@@ -1,2 +1,80 @@
+/* Fathom editorial theme tokens — ported so the mind-sheet UI looks identical
+   across sites. Any host that provides these variables gets the same look;
+   the portable @mindsheet package only references the variable names. */
+
+:root {
+  color-scheme: light dark;
+
+  /* fonts — system fallbacks (host may override with next/font) */
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+
+  /* ink — warm neutrals */
+  --ink: light-dark(#1a1a18, #e8ecee);
+  --ink-70: light-dark(#56534c, #b7bec5);
+  --ink-45: light-dark(#8c887f, #8b959c);
+  --ink-25: light-dark(#a8a49b, #5b656c);
+
+  --rule: light-dark(#e8e5e0, #232a2e);
+  --rule-soft: light-dark(#f2efeb, #1b2125);
+
+  --paper: light-dark(#faf9f7, #0e1113);
+  --paper-raised: light-dark(#ffffff, #14181b);
+  --wash: light-dark(#f5f3f0, #171c20);
+
+  /* accent — deep teal */
+  --sage: light-dark(#3f6b6e, #8fc6b8);
+  --sage-soft: light-dark(#e3ebe9, #1a2a26);
+  --sage-hover: light-dark(#35595c, #a3d3c6);
+
+  --radius: 7px;
+  --radius-lg: 12px;
+}
+
+:root[data-theme='light'] { color-scheme: light; }
+:root[data-theme='dark'] { color-scheme: dark; }
+
 * { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, sans-serif; color: #1c2030; background: #f7f8fb; }
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--sage); }
+
+:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection { background: var(--sage-soft); }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: var(--ink-25);
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-45); background-clip: content-box; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

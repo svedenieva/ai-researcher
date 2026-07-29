@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { MindSheet } from '@mindsheet';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
+import styles from './page.module.css';
 
 export default function Home() {
   const [columns, setColumns] = useState<ColumnDef[]>([]);
@@ -32,10 +33,12 @@ export default function Home() {
   }, []);
 
   return (
-    <main style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 22 }}>База знаний · Продукты и конкуренты</h1>
-      <p style={{ color: '#6b7290', fontSize: 14 }}>
-        {loading ? 'Загрузка…' : `${records.length} записей`}
+    <main className={styles.page}>
+      <h1 className={styles.title}>База знаний · Продукты и конкуренты</h1>
+      <p className={styles.lede}>
+        {loading
+          ? 'Загрузка…'
+          : 'Исследования конкурентов и продуктов. Сортируйте по любой колонке, фильтруйте по региону, вертикали и грейду.'}
       </p>
       <MindSheet
         columns={columns}

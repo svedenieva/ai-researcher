@@ -1,0 +1,148 @@
+/* @aivocado/mindsheet — Fathom editorial look, driven entirely by the host's
+   design tokens (--ink, --rule, --paper-raised, --wash, --sage, --radius, …).
+   No hard-coded colors, so any site's theme flows straight through. */
+
+.sheet {
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* toolbar of filters */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-45);
+}
+
+.select {
+  padding: 6px 10px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--sage);
+}
+
+.count {
+  margin-left: auto;
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  color: var(--ink-25);
+}
+
+/* table */
+.tableScroll {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 10px 12px;
+  background: var(--paper-raised);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--ink-45);
+}
+
+/* sortable header label — button that inherits the header look */
+.colHead {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.colHead:hover,
+.colHead[data-active='true'] {
+  color: var(--ink);
+}
+
+.arrow {
+  font-size: 9px;
+  min-width: 8px;
+  color: var(--sage);
+}
+
+.td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+  line-height: 1.4;
+  color: var(--ink-70);
+}
+
+.table tr:hover .td {
+  background: var(--wash);
+}
+
+/* first column — the record's name, emphasized like Fathom's "shown" */
+.strong {
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* long free-text columns stay secondary and capped */
+.long {
+  max-width: 320px;
+  color: var(--ink-45);
+}
+
+.link {
+  color: var(--sage);
+}
+
+.link:hover {
+  color: var(--sage-hover);
+  text-decoration: underline;
+}
+
+.empty {
+  color: var(--ink-25);
+}
+
+.none {
+  padding: 24px 12px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--ink-45);
+}
