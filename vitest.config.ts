@@ -10,6 +10,9 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
   },
   resolve: {
-    alias: { '@': resolve(__dirname, '.') },
+    alias: {
+      '@': resolve(__dirname, '.'),
+      '@mindsheet': resolve(__dirname, 'packages/mindsheet/index.ts'),
+    },
   },
 });
