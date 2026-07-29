@@ -1,0 +1,68 @@
+import { describe, it, expect } from 'vitest';
+import { JsonDataSource } from './json';
+import type { CatalogRecord, ColumnDef } from './types';
+
+const columns: ColumnDef[] = [
+  { key: 'name', label: 'Название', type: 'text', sortable: true },
+  { key: 'region', label: 'Регион', type: 'select', sortable: true, filterable: true },
+  { key: 'founded', label: 'Основана', type: 'number', sortable: true },
+];
+
+const records: CatalogRecord[] = [
+  { id: 'b', name: 'Beta', region: 'US', founded: 2020 },
+  { id: 'a', name: 'Alpha', region: 'EU', founded: 2017 },
+  { id: 'c', name: 'Gamma', region: 'EU', founded: 2019 },
+];
+
+const ds = () => new JsonDataSource(records, columns);
+
+describe('JsonDataSource', () => {
+  it('returns the provided columns', async () => {
+    expect(await ds().columns()).toEqual(columns);
+  });
+
+  it('lists all records unsorted when no params', async () => {
+    const r = await ds().list();
+    expect(r.map((x) => x.id)).toEqual(['b', 'a', 'c']);
+  });
+
+  it('sorts text ascending', async () => {
+    const r = await ds().list({ sort: { key: 'name', dir: 'asc' } });
+    expect(r.map((x) => x.name)).toEqual(['Alpha', 'Beta', 'Gamma']);
+  });
+
+  it('sorts text descending', async () => {
+    const r = await ds().list({ sort: { key: 'name', dir: 'desc' } });
+    expect(r.map((x) => x.name)).toEqual(['Gamma', 'Beta', 'Alpha']);
+  });
+
+  it('sorts numbers numerically, not lexically', async () => {
+    const r = await ds().list({ sort: { key: 'founded', dir: 'asc' } });
+    expect(r.map((x) => x.founded)).toEqual([2017, 2019, 2020]);
+  });
+
+  it('filters by exact select value', async () => {
+    const r = await ds().list({ filter: { key: 'region', value: 'EU' } });
+    expect(r.map((x) => x.id).sort()).toEqual(['a', 'c']);
+  });
+
+  it('applies filter then sort together', async () => {
+    const r = await ds().list({
+      filter: { key: 'region', value: 'EU' },
+      sort: { key: 'founded', dir: 'desc' },
+    });
+    expect(r.map((x) => x.id)).toEqual(['c', 'a']);
+  });
+
+  it('treats null cells as last when sorting ascending', async () => {
+    const withNull = new JsonDataSource(
+      [
+        { id: '1', name: 'X', region: null, founded: null },
+        { id: '2', name: 'Y', region: 'EU', founded: 2018 },
+      ],
+      columns,
+    );
+    const r = await withNull.list({ sort: { key: 'founded', dir: 'asc' } });
+    expect(r.map((x) => x.id)).toEqual(['2', '1']);
+  });
+});
