@@ -17,16 +17,16 @@ function distinct(records: Row[], key: string): string[] {
   return [...set].sort((a, b) => a.localeCompare(b, 'ru'));
 }
 
-// track size per column: long-text gets room to breathe, numbers stay
-// narrow, the first (name) column gets a solid min width, everything else
-// gets a sensible default
+// fixed track widths (no fr — fr blows up under width:max-content with many
+// columns). long-text gets a capped width and its text is clamped; the table
+// scrolls horizontally when the columns don't fit.
 function trackFor(column: ColumnDef, isFirst: boolean): string {
-  if (isFirst) return 'minmax(170px, 1.3fr)';
-  if (column.type === 'long-text') return 'minmax(220px, 2fr)';
-  if (column.type === 'number') return '90px';
-  if (column.type === 'url') return 'minmax(150px, 1fr)';
-  if (column.type === 'select') return 'minmax(110px, 0.8fr)';
-  return 'minmax(130px, 1.1fr)';
+  if (isFirst) return '150px';
+  if (column.type === 'long-text') return '240px';
+  if (column.type === 'number') return '76px';
+  if (column.type === 'url') return '160px';
+  if (column.type === 'select') return '112px';
+  return '124px';
 }
 
 export default function MindSheet({

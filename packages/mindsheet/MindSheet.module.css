@@ -137,15 +137,22 @@
   font-size: 12px;
   line-height: 1.45;
   color: var(--ink-70);
+  overflow-wrap: anywhere;
+  /* keep every cell to a few lines so rows stay a uniform, compact height */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* first column — the record's name, emphasized */
 .strong {
   font-weight: 600;
   color: var(--ink);
+  -webkit-line-clamp: 2;
 }
 
-/* long free-text columns stay secondary and wrap */
+/* long free-text columns stay secondary */
 .long {
   color: var(--ink-45);
 }
