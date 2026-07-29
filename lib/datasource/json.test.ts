@@ -65,4 +65,28 @@ describe('JsonDataSource', () => {
     const r = await withNull.list({ sort: { key: 'founded', dir: 'asc' } });
     expect(r.map((x) => x.id)).toEqual(['2', '1']);
   });
+
+  it('treats null cells as last when sorting descending too', async () => {
+    const withNull = new JsonDataSource(
+      [
+        { id: '1', name: 'X', region: null, founded: null },
+        { id: '2', name: 'Y', region: 'EU', founded: 2018 },
+      ],
+      columns,
+    );
+    const r = await withNull.list({ sort: { key: 'founded', dir: 'desc' } });
+    expect(r.map((x) => x.id)).toEqual(['2', '1']);
+  });
+
+  it('returns distinct values per filterable column over the full dataset', async () => {
+    const facets = await ds().facets();
+    expect(facets).toEqual({ region: ['EU', 'US'] });
+  });
+
+  it('facets are unaffected by list() filtering (always full-dataset)', async () => {
+    const source = ds();
+    await source.list({ filter: { key: 'region', value: 'EU' } });
+    const facets = await source.facets();
+    expect(facets.region).toEqual(['EU', 'US']);
+  });
 });

@@ -18,6 +18,10 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const ds = getDataSource();
-  const [columns, records] = await Promise.all([ds.columns(), ds.list(params)]);
-  return Response.json({ columns, records });
+  const [columns, records, facets] = await Promise.all([
+    ds.columns(),
+    ds.list(params),
+    ds.facets(),
+  ]);
+  return Response.json({ columns, records, facets });
 }

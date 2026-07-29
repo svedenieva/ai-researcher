@@ -26,6 +26,21 @@ export class JsonDataSource implements DataSource {
 
     return rows;
   }
+
+  async facets(): Promise<Record<string, string[]>> {
+    const result: Record<string, string[]> = {};
+    for (const col of this.cols) {
+      if (!col.filterable) continue;
+      const set = new Set<string>();
+      for (const record of this.records) {
+        const value = record[col.key];
+        if (value === null || value === undefined || value === '') continue;
+        set.add(String(value));
+      }
+      result[col.key] = [...set].sort((a, b) => a.localeCompare(b, 'ru'));
+    }
+    return result;
+  }
 }
 
 function compare(

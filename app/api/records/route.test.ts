@@ -31,4 +31,19 @@ describe('GET /api/records', () => {
     const body = await res.json();
     for (const r of body.records) expect(r.region).toBe('EU');
   });
+
+  it('includes facets in the response', async () => {
+    const res = await call('http://localhost/api/records');
+    const body = await res.json();
+    expect(body.facets).toBeDefined();
+    expect(typeof body.facets).toBe('object');
+  });
+
+  it('facets are full-dataset, not narrowed by the request filter', async () => {
+    const res = await call(
+      'http://localhost/api/records?filterKey=region&filterValue=EU',
+    );
+    const body = await res.json();
+    expect(body.facets.region).toEqual(expect.arrayContaining(['EU', 'US']));
+  });
 });

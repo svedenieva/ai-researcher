@@ -42,4 +42,14 @@ describe('MindSheet', () => {
     fireEvent.change(screen.getByLabelText(/Фильтр Регион/), { target: { value: 'US' } });
     expect(onFilterChange).toHaveBeenCalledWith({ key: 'region', value: 'US' });
   });
+
+  it('uses filterOptions for select options when provided, even values absent from records', () => {
+    render(
+      <MindSheet columns={columns} records={records} filterOptions={{ region: ['EU', 'US', 'APAC'] }}
+        onSortChange={() => {}} onFilterChange={() => {}} />,
+    );
+    const select = screen.getByLabelText(/Фильтр Регион/);
+    expect(screen.getByRole('option', { name: 'APAC' })).toBeInTheDocument();
+    expect(select).toBeInTheDocument();
+  });
 });

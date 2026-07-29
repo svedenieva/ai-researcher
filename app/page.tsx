@@ -7,6 +7,7 @@ import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/type
 export default function Home() {
   const [columns, setColumns] = useState<ColumnDef[]>([]);
   const [records, setRecords] = useState<CatalogRecord[]>([]);
+  const [facets, setFacets] = useState<Record<string, string[]>>({});
   const [sort, setSort] = useState<ListParams['sort']>();
   const [filter, setFilter] = useState<ListParams['filter']>();
   const [loading, setLoading] = useState(true);
@@ -18,7 +19,7 @@ export default function Home() {
     setLoading(true);
     fetch(`/api/records?${qs.toString()}`)
       .then((r) => r.json())
-      .then((body) => { setColumns(body.columns); setRecords(body.records); })
+      .then((body) => { setColumns(body.columns); setRecords(body.records); setFacets(body.facets ?? {}); })
       .finally(() => setLoading(false));
   }, [sort, filter]);
 
@@ -41,6 +42,7 @@ export default function Home() {
         records={records}
         sort={sort}
         filter={filter}
+        filterOptions={facets}
         onSortChange={onSortChange}
         onFilterChange={setFilter}
       />

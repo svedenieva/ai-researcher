@@ -12,7 +12,7 @@ function distinct(records: Row[], key: string): string[] {
 }
 
 export default function MindSheet({
-  columns, records, sort, filter, onSortChange, onFilterChange,
+  columns, records, sort, filter, filterOptions, onSortChange, onFilterChange,
 }: MindSheetProps) {
   const filterables = columns.filter((c) => c.filterable);
 
@@ -33,7 +33,7 @@ export default function MindSheet({
                 }
               >
                 <option value="">Все</option>
-                {distinct(records, c.key).map((v) => (
+                {(filterOptions?.[c.key] ?? distinct(records, c.key)).map((v) => (
                   <option key={v} value={v}>{v}</option>
                 ))}
               </select>
