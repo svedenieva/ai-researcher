@@ -30,6 +30,8 @@ export interface MindSheetProps {
   sort?: SortState;
   filter?: FilterState;
   filterOptions?: Record<string, string[]>;
+  search?: string;
   onSortChange: (key: string) => void;
   onFilterChange: (filter: FilterState | undefined) => void;
+  onSearchChange?: (query: string) => void;
 }

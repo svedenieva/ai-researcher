@@ -13,6 +13,17 @@ export class JsonDataSource implements DataSource {
   async list(params?: ListParams): Promise<CatalogRecord[]> {
     let rows = [...this.records];
 
+    const query = params?.search?.trim().toLowerCase();
+    if (query) {
+      rows = rows.filter((r) =>
+        Object.values(r)
+          .filter((v) => typeof v === 'string')
+          .join(' ')
+          .toLowerCase()
+          .includes(query),
+      );
+    }
+
     if (params?.filter) {
       const { key, value } = params.filter;
       rows = rows.filter((r) => String(r[key] ?? '') === value);

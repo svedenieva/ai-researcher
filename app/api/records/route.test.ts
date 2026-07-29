@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { GET } from './route';
+import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
 
 function call(url: string) {
   return GET(new Request(url));
@@ -11,9 +12,20 @@ describe('GET /api/records', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(Array.isArray(body.columns)).toBe(true);
-    expect(body.columns.length).toBe(16);
+    expect(body.columns.length).toBe(CATALOG_COLUMNS.length);
     expect(Array.isArray(body.records)).toBe(true);
     expect(body.records.length).toBeGreaterThan(0);
+  });
+
+  it('narrows records by the q search param', async () => {
+    const all = await (await call('http://localhost/api/records')).json();
+    const res = await call('http://localhost/api/records?q=heygen');
+    const body = await res.json();
+    expect(body.records.length).toBeGreaterThan(0);
+    expect(body.records.length).toBeLessThan(all.records.length);
+    for (const r of body.records) {
+      expect(JSON.stringify(r).toLowerCase()).toContain('heygen');
+    }
   });
 
   it('applies sort params', async () => {

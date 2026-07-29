@@ -18,6 +18,7 @@ export interface ColumnDef {
 export interface ListParams {
   sort?: { key: string; dir: 'asc' | 'desc' };
   filter?: { key: string; value: string };
+  search?: string;
 }
 
 export interface DataSource {

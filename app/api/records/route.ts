@@ -17,6 +17,11 @@ export async function GET(request: Request): Promise<Response> {
     params.filter = { key: filterKey, value: filterValue };
   }
 
+  const q = url.searchParams.get('q');
+  if (q) {
+    params.search = q;
+  }
+
   const ds = getDataSource();
   const [columns, records, facets] = await Promise.all([
     ds.columns(),

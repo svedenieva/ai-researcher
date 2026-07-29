@@ -9,48 +9,58 @@ function cx(...parts: Array<string | false | undefined>): string {
   return parts.filter(Boolean).join(' ');
 }
 
+function hasValue(v: Row[string]): boolean {
+  return v !== null && v !== undefined && v !== '';
+}
+
 function distinct(records: Row[], key: string): string[] {
   const set = new Set<string>();
   for (const r of records) {
-    const v = r[key];
-    if (v !== null && v !== undefined && v !== '') set.add(String(v));
+    if (hasValue(r[key])) set.add(String(r[key]));
   }
   return [...set].sort((a, b) => a.localeCompare(b, 'ru'));
 }
 
-// short columns live in the grid; long free-text columns move to the
+// short columns live in the grid; long-text columns move to the
 // click-to-open detail panel, so the table stays narrow and readable.
 function trackFor(column: ColumnDef, isFirst: boolean): string {
   if (isFirst) return '170px';
   if (column.type === 'number') return '80px';
-  if (column.type === 'url') return '180px';
-  if (column.type === 'select') return '112px';
+  if (column.type === 'url') return '160px';
+  if (column.type === 'select') return '132px';
   return '160px'; // text
 }
 
-// number/select columns read better centered
 function isCentered(column: ColumnDef): boolean {
   return column.type === 'number' || column.type === 'select';
 }
 
 export default function MindSheet({
-  columns, records, sort, filter, filterOptions, onSortChange, onFilterChange,
+  columns, records, sort, filter, filterOptions, search, onSortChange, onFilterChange, onSearchChange,
 }: MindSheetProps) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   const filterables = columns.filter((c) => c.filterable);
   const gridCols = columns.filter((c) => c.type !== 'long-text');
   const detailCols = columns.filter((c) => c.type === 'long-text');
-  const expandable = detailCols.length > 0;
   const firstKey = gridCols[0]?.key;
 
-  // leading 22px track for the expand caret, then one per grid column
   const grid = ['22px', ...gridCols.map((c, i) => trackFor(c, i === 0))].join(' ');
   const gridStyle = { '--grid': grid } as CSSProperties;
 
   return (
     <div className={styles.sheet}>
       <div className={styles.tableTools}>
+        {onSearchChange && (
+          <input
+            type="search"
+            className={styles.search}
+            aria-label="Поиск"
+            placeholder="Поиск…"
+            value={search ?? ''}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        )}
         {filterables.map((c) => (
           <label key={c.key} className={styles.filter}>
             {c.label}:
@@ -110,16 +120,18 @@ export default function MindSheet({
             <div className={styles.none}>Ничего не найдено</div>
           ) : (
             records.map((r) => {
+              const rowDetails = detailCols.filter((c) => hasValue(r[c.key]));
+              const canOpen = rowDetails.length > 0;
               const open = openId === r.id;
               return (
                 <div key={r.id} className={styles.rowGroup}>
                   <div
-                    className={cx(styles.row, expandable && styles.clickable)}
+                    className={cx(styles.row, canOpen && styles.clickable)}
                     role="row"
-                    onClick={expandable ? () => setOpenId(open ? null : r.id) : undefined}
+                    onClick={canOpen ? () => setOpenId(open ? null : r.id) : undefined}
                   >
                     <div className={styles.caretCell} aria-hidden="true">
-                      {expandable ? (open ? '▾' : '▸') : ''}
+                      {canOpen ? (open ? '▾' : '▸') : ''}
                     </div>
                     {gridCols.map((c) => (
                       <div
@@ -136,15 +148,13 @@ export default function MindSheet({
                     ))}
                   </div>
 
-                  {open && detailCols.length > 0 && (
+                  {open && canOpen && (
                     <div className={styles.detailRow} role="row">
                       <dl className={styles.detail}>
-                        {detailCols.map((c) => (
+                        {rowDetails.map((c) => (
                           <div key={c.key} className={styles.detailItem}>
                             <dt className={styles.detailLabel}>{c.label}</dt>
-                            <dd className={styles.detailValue}>
-                              {renderCell(r[c.key], c)}
-                            </dd>
+                            <dd className={styles.detailValue}>{renderCell(r[c.key], c)}</dd>
                           </div>
                         ))}
                       </dl>
@@ -161,7 +171,7 @@ export default function MindSheet({
 }
 
 function renderCell(value: Row[string], col: ColumnDef) {
-  if (value === null || value === undefined || value === '') {
+  if (!hasValue(value)) {
     return <span className={styles.empty}>—</span>;
   }
   if (col.type === 'url') {

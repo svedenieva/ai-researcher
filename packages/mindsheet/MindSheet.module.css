@@ -41,6 +41,24 @@
   border-color: var(--sage);
 }
 
+.search {
+  flex: 1;
+  min-width: 160px;
+  max-width: 320px;
+  padding: 7px 12px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.search:focus {
+  outline: none;
+  border-color: var(--sage);
+}
+
 .count {
   margin-right: auto;
   font-family: var(--font-mono), monospace;

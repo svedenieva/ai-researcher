@@ -13,18 +13,20 @@ export default function Home() {
   const [facets, setFacets] = useState<Record<string, string[]>>({});
   const [sort, setSort] = useState<ListParams['sort']>();
   const [filter, setFilter] = useState<ListParams['filter']>();
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const qs = new URLSearchParams();
     if (sort) { qs.set('sortKey', sort.key); qs.set('sortDir', sort.dir); }
     if (filter) { qs.set('filterKey', filter.key); qs.set('filterValue', filter.value); }
+    if (search.trim()) { qs.set('q', search.trim()); }
     setLoading(true);
     fetch(`/api/records?${qs.toString()}`)
       .then((r) => r.json())
       .then((body) => { setColumns(body.columns); setRecords(body.records); setFacets(body.facets ?? {}); })
       .finally(() => setLoading(false));
-  }, [sort, filter]);
+  }, [sort, filter, search]);
 
   const onSortChange = useCallback((key: string) => {
     setSort((prev) =>
@@ -64,8 +66,10 @@ export default function Home() {
             sort={sort}
             filter={filter}
             filterOptions={facets}
+            search={search}
             onSortChange={onSortChange}
             onFilterChange={setFilter}
+            onSearchChange={setSearch}
           />
         </div>
       </main>
