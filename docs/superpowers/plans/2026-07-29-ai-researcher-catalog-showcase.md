@@ -32,8 +32,8 @@
 - `lib/datasource/json.ts` — `JsonDataSource`
 - `lib/datasource/index.ts` — `getDataSource()`
 - `data/catalog.json` — real seed records
-- `components/MindSheet/MindSheet.tsx` — controlled table
-- Tests: `lib/datasource/json.test.ts`, `lib/datasource/seed.test.ts`, `app/api/records/route.test.ts`, `components/MindSheet/MindSheet.test.tsx`
+- `packages/mindsheet/` — **portable, self-contained UI package** (`types.ts`, `MindSheet.tsx`, `index.ts`, `package.json`, `README.md`) — any host site imports it; zero coupling to this app or its data layer
+- Tests: `lib/datasource/json.test.ts`, `lib/datasource/seed.test.ts`, `app/api/records/route.test.ts`, `packages/mindsheet/MindSheet.test.tsx`
 
 ---
 
@@ -620,41 +620,85 @@ git commit -m "feat: GET /api/records with sort and filter query params"
 
 ---
 
-### Task 5: `MindSheet` component
+### Task 5: `MindSheet` — portable UI package
+
+Per the universal-UI requirement, the mind-sheet is a **self-contained, portable package** (`packages/mindsheet`) that any host site imports. It defines its OWN types and imports NOTHING from this app or its data layer. Its `ColumnDef`/`Row` are structurally identical to the app's datasource types, so a host passes datasource output straight through.
 
 **Files:**
-- Create: `components/MindSheet/MindSheet.tsx`
-- Test: `components/MindSheet/MindSheet.test.tsx`
+- Create: `packages/mindsheet/types.ts`, `packages/mindsheet/MindSheet.tsx`, `packages/mindsheet/index.ts`, `packages/mindsheet/package.json`, `packages/mindsheet/README.md`
+- Modify: `tsconfig.json` (add `@mindsheet` path), `vitest.config.ts` (add `@mindsheet` alias)
+- Test: `packages/mindsheet/MindSheet.test.tsx`
 
 **Interfaces:**
-- Consumes: `ColumnDef`, `CatalogRecord`, `ListParams` from `@/lib/datasource/types`.
-- Produces: default export `MindSheet` — a **controlled** component:
+- Consumes: nothing (self-contained — this is the whole point).
+- Produces (Task 6 imports these from `@mindsheet`):
+  - types: `Cell`, `ColumnType`, `ColumnDef`, `Row`, `SortState`, `FilterState`, `MindSheetProps`
+  - default export `MindSheet` — a **controlled** component with props:
 ```ts
 interface MindSheetProps {
   columns: ColumnDef[];
-  records: CatalogRecord[];
-  sort?: ListParams['sort'];
-  filter?: ListParams['filter'];
+  records: Row[];
+  sort?: SortState;
+  filter?: FilterState;
   onSortChange: (key: string) => void;
-  onFilterChange: (filter: ListParams['filter']) => void;
+  onFilterChange: (filter: FilterState | undefined) => void;
 }
 ```
 Clicking a sortable header calls `onSortChange(key)`. Each `filterable` column renders a `<select>` of its distinct values (plus «Все»); selecting calls `onFilterChange({key, value})`, «Все» calls `onFilterChange(undefined)`.
 
-- [ ] **Step 1: Write the failing component test**
+- [ ] **Step 1: Create `packages/mindsheet/types.ts` (self-contained UI contract)**
 
-`components/MindSheet/MindSheet.test.tsx`:
+```ts
+export type Cell = string | number | null;
+export type ColumnType = 'text' | 'number' | 'long-text' | 'url' | 'select';
+
+export interface ColumnDef {
+  key: string;
+  label: string;
+  type: ColumnType;
+  sortable?: boolean;
+  filterable?: boolean;
+}
+
+export interface Row {
+  id: string;
+  [field: string]: Cell;
+}
+
+export interface SortState {
+  key: string;
+  dir: 'asc' | 'desc';
+}
+
+export interface FilterState {
+  key: string;
+  value: string;
+}
+
+export interface MindSheetProps {
+  columns: ColumnDef[];
+  records: Row[];
+  sort?: SortState;
+  filter?: FilterState;
+  onSortChange: (key: string) => void;
+  onFilterChange: (filter: FilterState | undefined) => void;
+}
+```
+
+- [ ] **Step 2: Write the failing component test**
+
+`packages/mindsheet/MindSheet.test.tsx`:
 ```tsx
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import MindSheet from './MindSheet';
-import type { CatalogRecord, ColumnDef } from '@/lib/datasource/types';
+import type { ColumnDef, Row } from './types';
 
 const columns: ColumnDef[] = [
   { key: 'name', label: 'Название', type: 'text', sortable: true },
   { key: 'region', label: 'Регион', type: 'select', sortable: true, filterable: true },
 ];
-const records: CatalogRecord[] = [
+const records: Row[] = [
   { id: 'a', name: 'Alpha', region: 'EU' },
   { id: 'b', name: 'Beta', region: 'US' },
 ];
@@ -692,28 +736,19 @@ describe('MindSheet', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 3: Run test to verify it fails**
 
-Run: `npx vitest run components/MindSheet/MindSheet.test.tsx`
+Run: `npx vitest run packages/mindsheet/MindSheet.test.tsx`
 Expected: FAIL — cannot find `./MindSheet`.
 
-- [ ] **Step 3: Implement `components/MindSheet/MindSheet.tsx`**
+- [ ] **Step 4: Implement `packages/mindsheet/MindSheet.tsx`**
 
 ```tsx
 'use client';
 
-import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
+import type { ColumnDef, FilterState, MindSheetProps, Row } from './types';
 
-interface MindSheetProps {
-  columns: ColumnDef[];
-  records: CatalogRecord[];
-  sort?: ListParams['sort'];
-  filter?: ListParams['filter'];
-  onSortChange: (key: string) => void;
-  onFilterChange: (filter: ListParams['filter']) => void;
-}
-
-function distinct(records: CatalogRecord[], key: string): string[] {
+function distinct(records: Row[], key: string): string[] {
   const set = new Set<string>();
   for (const r of records) {
     const v = r[key];
@@ -799,7 +834,7 @@ export default function MindSheet({
   );
 }
 
-function renderCell(value: CatalogRecord[string], col: ColumnDef) {
+function renderCell(value: Row[string], col: ColumnDef) {
   if (value === null || value === undefined || value === '') return '—';
   if (col.type === 'url') {
     return <a href={String(value)} target="_blank" rel="noreferrer">{String(value)}</a>;
@@ -808,16 +843,83 @@ function renderCell(value: CatalogRecord[string], col: ColumnDef) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 5: Create the package barrel `packages/mindsheet/index.ts`**
 
-Run: `npx vitest run components/MindSheet/MindSheet.test.tsx`
+```ts
+export { default as MindSheet } from './MindSheet';
+export type {
+  Cell, ColumnType, ColumnDef, Row, SortState, FilterState, MindSheetProps,
+} from './types';
+```
+
+- [ ] **Step 6: Create `packages/mindsheet/package.json`**
+
+```json
+{
+  "name": "@aivocado/mindsheet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portable, data-agnostic mind-sheet table. Drop into any site; drive it with columns + rows.",
+  "main": "index.ts",
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  }
+}
+```
+
+- [ ] **Step 7: Create `packages/mindsheet/README.md`**
+
+```markdown
+# @aivocado/mindsheet
+
+Portable, data-agnostic table for any AiVocado site (Fathom, Researcher, …).
+It knows nothing about data sources — you feed it `columns` + `records` and
+handle sort/filter callbacks. One component, deployed everywhere.
+
+## Use
+
+```tsx
+import { MindSheet } from '@aivocado/mindsheet';
+import type { ColumnDef, Row, SortState, FilterState } from '@aivocado/mindsheet';
+
+<MindSheet
+  columns={columns}      // ColumnDef[]
+  records={rows}         // Row[]  (each { id, ...cells })
+  sort={sort}            // SortState | undefined
+  filter={filter}        // FilterState | undefined
+  onSortChange={(key) => /* toggle/set sort */}
+  onFilterChange={(f) => /* set or clear filter */}
+/>
+```
+
+The host owns the data and the sort/filter state; the component only renders
+and emits events. Any storage (Supabase, JSON, an API) works as long as it
+produces `ColumnDef[]` + `Row[]`.
+```
+
+- [ ] **Step 8: Wire the `@mindsheet` alias**
+
+In `tsconfig.json`, add to `compilerOptions.paths` (alongside `@/*`):
+```json
+"@mindsheet": ["./packages/mindsheet/index.ts"]
+```
+
+In `vitest.config.ts`, add to `resolve.alias` (alongside `@`):
+```ts
+'@mindsheet': resolve(__dirname, 'packages/mindsheet/index.ts'),
+```
+
+- [ ] **Step 9: Run test to verify it passes**
+
+Run: `npx vitest run packages/mindsheet/MindSheet.test.tsx`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
-git add components/MindSheet
-git commit -m "feat: controlled MindSheet table with sortable headers and filters"
+git add packages/mindsheet tsconfig.json vitest.config.ts
+git commit -m "feat: portable @aivocado/mindsheet UI package (columns + rows, sort/filter)"
 ```
 
 ---
@@ -829,7 +931,7 @@ git commit -m "feat: controlled MindSheet table with sortable headers and filter
 - Test: manual browser verification (dev server)
 
 **Interfaces:**
-- Consumes: `GET /api/records`, `MindSheet`, `ColumnDef`, `CatalogRecord`, `ListParams`.
+- Consumes: `GET /api/records`; `MindSheet` from `@mindsheet` (portable package); `ColumnDef`, `CatalogRecord`, `ListParams` from `@/lib/datasource/types`. The app's datasource `ColumnDef[]`/`CatalogRecord[]`/`ListParams['sort']`/`ListParams['filter']` are structurally identical to the package's `ColumnDef[]`/`Row[]`/`SortState`/`FilterState`, so they pass straight through with no mapping.
 - Produces: the working showcase page.
 
 - [ ] **Step 1: Replace `app/page.tsx`**
@@ -838,7 +940,7 @@ git commit -m "feat: controlled MindSheet table with sortable headers and filter
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import MindSheet from '@/components/MindSheet/MindSheet';
+import { MindSheet } from '@mindsheet';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
 
 export default function Home() {
