@@ -90,6 +90,22 @@
   white-space: nowrap;
 }
 
+/* number / select columns read better centered */
+.center {
+  text-align: center;
+  justify-content: center;
+}
+
+/* narrow leading track holding the expand caret */
+.caretCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--ink-25);
+  user-select: none;
+}
+
 /* sortable header label — button that inherits the header look */
 .colHead {
   display: inline-flex;
@@ -130,6 +146,50 @@
 
 .row:hover {
   background: light-dark(#fbfaf8, #181d21);
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+/* record + its detail panel travel together */
+.rowGroup {
+  min-width: 0;
+}
+
+/* the click-to-open panel with the long free-text fields, full width */
+.detailRow {
+  padding: 4px 20px 16px 42px;
+  background: var(--wash);
+  border-top: 1px solid var(--rule-soft);
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px 28px;
+  margin: 0;
+}
+
+.detailItem {
+  min-width: 0;
+}
+
+.detailLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+  margin-bottom: 3px;
+}
+
+.detailValue {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-70);
+  overflow-wrap: anywhere;
 }
 
 .td {

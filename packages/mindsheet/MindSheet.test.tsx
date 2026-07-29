@@ -52,4 +52,23 @@ describe('MindSheet', () => {
     expect(screen.getByRole('option', { name: 'APAC' })).toBeInTheDocument();
     expect(select).toBeInTheDocument();
   });
+
+  it('moves long-text columns into a click-to-open detail panel', () => {
+    const cols: ColumnDef[] = [
+      { key: 'name', label: 'Название', type: 'text' },
+      { key: 'bio', label: 'Описание', type: 'long-text' },
+    ];
+    const rows: Row[] = [{ id: 'a', name: 'Alpha', bio: 'Длинный текст про Alpha' }];
+    render(
+      <MindSheet columns={cols} records={rows}
+        onSortChange={() => {}} onFilterChange={() => {}} />,
+    );
+    // the long-text column is not a grid header, and its value is hidden…
+    expect(screen.queryByRole('columnheader', { name: /Описание/ })).toBeNull();
+    expect(screen.queryByText('Длинный текст про Alpha')).toBeNull();
+    // …until the row is clicked
+    fireEvent.click(screen.getByText('Alpha'));
+    expect(screen.getByText('Длинный текст про Alpha')).toBeInTheDocument();
+    expect(screen.getByText('Описание')).toBeInTheDocument();
+  });
 });

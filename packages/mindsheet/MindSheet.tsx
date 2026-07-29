@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { ColumnDef, MindSheetProps, Row } from './types';
 import styles from './MindSheet.module.css';
@@ -17,25 +18,34 @@ function distinct(records: Row[], key: string): string[] {
   return [...set].sort((a, b) => a.localeCompare(b, 'ru'));
 }
 
-// fixed track widths (no fr — fr blows up under width:max-content with many
-// columns). long-text gets a capped width and its text is clamped; the table
-// scrolls horizontally when the columns don't fit.
+// short columns live in the grid; long free-text columns move to the
+// click-to-open detail panel, so the table stays narrow and readable.
 function trackFor(column: ColumnDef, isFirst: boolean): string {
-  if (isFirst) return '150px';
-  if (column.type === 'long-text') return '240px';
-  if (column.type === 'number') return '76px';
-  if (column.type === 'url') return '160px';
+  if (isFirst) return '170px';
+  if (column.type === 'number') return '80px';
+  if (column.type === 'url') return '180px';
   if (column.type === 'select') return '112px';
-  return '124px';
+  return '160px'; // text
+}
+
+// number/select columns read better centered
+function isCentered(column: ColumnDef): boolean {
+  return column.type === 'number' || column.type === 'select';
 }
 
 export default function MindSheet({
   columns, records, sort, filter, filterOptions, onSortChange, onFilterChange,
 }: MindSheetProps) {
-  const filterables = columns.filter((c) => c.filterable);
-  const firstKey = columns[0]?.key;
+  const [openId, setOpenId] = useState<string | null>(null);
 
-  const grid = columns.map((c, i) => trackFor(c, i === 0)).join(' ');
+  const filterables = columns.filter((c) => c.filterable);
+  const gridCols = columns.filter((c) => c.type !== 'long-text');
+  const detailCols = columns.filter((c) => c.type === 'long-text');
+  const expandable = detailCols.length > 0;
+  const firstKey = gridCols[0]?.key;
+
+  // leading 22px track for the expand caret, then one per grid column
+  const grid = ['22px', ...gridCols.map((c, i) => trackFor(c, i === 0))].join(' ');
   const gridStyle = { '--grid': grid } as CSSProperties;
 
   return (
@@ -67,10 +77,15 @@ export default function MindSheet({
       <div className={styles.tableScroll}>
         <div className={styles.table} style={gridStyle} role="table">
           <div className={styles.tableHead} role="row">
-            {columns.map((c) => {
+            <div className={styles.caretCell} aria-hidden="true" />
+            {gridCols.map((c) => {
               const active = sort?.key === c.key;
               return (
-                <div key={c.key} role="columnheader" className={styles.th}>
+                <div
+                  key={c.key}
+                  role="columnheader"
+                  className={cx(styles.th, isCentered(c) && styles.center)}
+                >
                   {c.sortable ? (
                     <button
                       type="button"
@@ -94,23 +109,50 @@ export default function MindSheet({
           {records.length === 0 ? (
             <div className={styles.none}>Ничего не найдено</div>
           ) : (
-            records.map((r) => (
-              <div key={r.id} className={styles.row} role="row">
-                {columns.map((c) => (
+            records.map((r) => {
+              const open = openId === r.id;
+              return (
+                <div key={r.id} className={styles.rowGroup}>
                   <div
-                    key={c.key}
-                    role="cell"
-                    className={cx(
-                      styles.td,
-                      c.key === firstKey && styles.strong,
-                      c.type === 'long-text' && styles.long,
-                    )}
+                    className={cx(styles.row, expandable && styles.clickable)}
+                    role="row"
+                    onClick={expandable ? () => setOpenId(open ? null : r.id) : undefined}
                   >
-                    {renderCell(r[c.key], c)}
+                    <div className={styles.caretCell} aria-hidden="true">
+                      {expandable ? (open ? '▾' : '▸') : ''}
+                    </div>
+                    {gridCols.map((c) => (
+                      <div
+                        key={c.key}
+                        role="cell"
+                        className={cx(
+                          styles.td,
+                          c.key === firstKey && styles.strong,
+                          isCentered(c) && styles.center,
+                        )}
+                      >
+                        {renderCell(r[c.key], c)}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ))
+
+                  {open && detailCols.length > 0 && (
+                    <div className={styles.detailRow} role="row">
+                      <dl className={styles.detail}>
+                        {detailCols.map((c) => (
+                          <div key={c.key} className={styles.detailItem}>
+                            <dt className={styles.detailLabel}>{c.label}</dt>
+                            <dd className={styles.detailValue}>
+                              {renderCell(r[c.key], c)}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       </div>
@@ -124,7 +166,13 @@ function renderCell(value: Row[string], col: ColumnDef) {
   }
   if (col.type === 'url') {
     return (
-      <a className={styles.link} href={String(value)} target="_blank" rel="noreferrer">
+      <a
+        className={styles.link}
+        href={String(value)}
+        target="_blank"
+        rel="noreferrer"
+        onClick={(e) => e.stopPropagation()}
+      >
         {String(value)}
       </a>
     );
