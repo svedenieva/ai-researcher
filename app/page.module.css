@@ -1,5 +1,8 @@
 .shell {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+  height: 100vh;
   background: var(--paper);
   color: var(--ink);
 }
@@ -51,8 +54,14 @@
 /* page body */
 
 .body {
-  /* full width, aligned left — no centered column */
-  padding: 26px 32px 44px;
+  /* full width, aligned left — no centered column.
+     A flex column so the sheet below can grow to the bottom of the viewport
+     instead of leaving dead space under a short table. */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 26px 32px 32px;
 }
 
 /* heading on the left, stats pushed to the right, on one line */
@@ -90,9 +99,14 @@
   color: var(--ink-45);
 }
 
-/* single-column content area — no left sidebar (no grouping in the catalog) */
+/* single-column content area — no left sidebar (no grouping in the catalog).
+   Grows to fill the remaining height so the table card reaches the bottom. */
 .content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   min-width: 0;
+  min-height: 0;
 }
 
 /* narrow screens */
