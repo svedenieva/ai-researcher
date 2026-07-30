@@ -10,13 +10,14 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@aivocado/mindsheet": "github:svedenieva/mindsheet",
     "next": "^15.5.20",
     "react": "19.0.0",
     "react-dom": "19.0.0"
   },
   "devDependencies": {
-    "@testing-library/react": "^16.1.0",
     "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

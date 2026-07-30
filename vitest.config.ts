@@ -12,7 +12,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, '.'),
-      '@mindsheet': resolve(__dirname, 'packages/mindsheet/index.ts'),
     },
   },
 });

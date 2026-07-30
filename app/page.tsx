@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { MindSheet } from '@mindsheet';
+import { MindSheet } from '@aivocado/mindsheet';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
 import ThemeToggle from './theme-toggle';
 import Stats from './stats';
