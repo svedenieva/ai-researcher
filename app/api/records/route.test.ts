@@ -44,6 +44,32 @@ describe('GET /api/records', () => {
     for (const r of body.records) expect(r.region).toBe('EU');
   });
 
+  it('combines multiple f= filters with AND', async () => {
+    const all = await (await call('http://localhost/api/records')).json();
+    const sample = all.records.find(
+      (r: { region?: string; vertical?: string }) => r.region && r.vertical,
+    );
+    const u = new URL('http://localhost/api/records');
+    u.searchParams.append('f', `region:${sample.region}`);
+    u.searchParams.append('f', `vertical:${sample.vertical}`);
+    const body = await (await call(u.toString())).json();
+    expect(body.records.length).toBeGreaterThan(0);
+    expect(body.records.length).toBeLessThanOrEqual(all.records.length);
+    for (const r of body.records) {
+      expect(r.region).toBe(sample.region);
+      expect(r.vertical).toBe(sample.vertical);
+    }
+  });
+
+  it('reports total as the unfiltered count when filters are applied', async () => {
+    const all = await (await call('http://localhost/api/records')).json();
+    const body = await (
+      await call('http://localhost/api/records?f=region:EU')
+    ).json();
+    expect(body.total).toBe(all.records.length);
+    expect(body.records.length).toBeLessThanOrEqual(body.total);
+  });
+
   it('includes facets in the response', async () => {
     const res = await call('http://localhost/api/records');
     const body = await res.json();

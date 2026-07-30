@@ -11,6 +11,16 @@ export async function GET(request: Request): Promise<Response> {
     params.sort = { key: sortKey, dir: sortDir === 'desc' ? 'desc' : 'asc' };
   }
 
+  // multiple filters: repeated `f=<key>:<value>` params (filterable keys have
+  // no colon, so splitting on the first ':' is safe). Legacy filterKey/Value
+  // is still accepted.
+  const filters: Record<string, string> = {};
+  for (const raw of url.searchParams.getAll('f')) {
+    const i = raw.indexOf(':');
+    if (i > 0) filters[raw.slice(0, i)] = raw.slice(i + 1);
+  }
+  if (Object.keys(filters).length) params.filters = filters;
+
   const filterKey = url.searchParams.get('filterKey');
   const filterValue = url.searchParams.get('filterValue');
   if (filterKey && filterValue) {
@@ -31,6 +41,8 @@ export async function GET(request: Request): Promise<Response> {
   // Unfiltered total for the "показано X из N" counter. When nothing is
   // filtered/searched, `records` is already the full list — no extra query.
   const total =
-    params.filter || params.search ? (await ds.list()).length : records.length;
+    params.filter || params.filters || params.search
+      ? (await ds.list()).length
+      : records.length;
   return Response.json({ columns, records, facets, total });
 }

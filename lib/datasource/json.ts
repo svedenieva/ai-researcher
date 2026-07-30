@@ -24,8 +24,12 @@ export class JsonDataSource implements DataSource {
       );
     }
 
-    if (params?.filter) {
-      const { key, value } = params.filter;
+    // Both the legacy single `filter` and the multi `filters` map apply,
+    // combined with AND (each narrows the set further).
+    const active: Array<[string, string]> = [];
+    if (params?.filter) active.push([params.filter.key, params.filter.value]);
+    if (params?.filters) active.push(...Object.entries(params.filters));
+    for (const [key, value] of active) {
       rows = rows.filter((r) => String(r[key] ?? '') === value);
     }
 

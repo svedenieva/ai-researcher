@@ -17,7 +17,10 @@ export interface ColumnDef {
 
 export interface ListParams {
   sort?: { key: string; dir: 'asc' | 'desc' };
+  /** legacy single filter — still honoured alongside `filters` */
   filter?: { key: string; value: string };
+  /** multiple simultaneous filters (column key → value), combined with AND */
+  filters?: Record<string, string>;
   search?: string;
 }
 

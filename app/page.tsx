@@ -15,14 +15,14 @@ export default function Home() {
   const [total, setTotal] = useState<number>();
   const [facets, setFacets] = useState<Record<string, string[]>>({});
   const [sort, setSort] = useState<ListParams['sort']>();
-  const [filter, setFilter] = useState<ListParams['filter']>();
+  const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const qs = new URLSearchParams();
     if (sort) { qs.set('sortKey', sort.key); qs.set('sortDir', sort.dir); }
-    if (filter) { qs.set('filterKey', filter.key); qs.set('filterValue', filter.value); }
+    for (const [key, value] of Object.entries(filters)) qs.append('f', `${key}:${value}`);
     if (search.trim()) { qs.set('q', search.trim()); }
     setLoading(true);
     fetch(`/api/records?${qs.toString()}`)
@@ -34,7 +34,7 @@ export default function Home() {
         setFacets(body.facets ?? {});
       })
       .finally(() => setLoading(false));
-  }, [sort, filter, search]);
+  }, [sort, filters, search]);
 
   const onSortChange = useCallback((key: string) => {
     setSort((prev) =>
@@ -73,11 +73,11 @@ export default function Home() {
             records={records}
             total={total}
             sort={sort}
-            filter={filter}
+            filters={filters}
             filterOptions={facets}
             search={search}
             onSortChange={onSortChange}
-            onFilterChange={setFilter}
+            onFiltersChange={setFilters}
             onSearchChange={setSearch}
             onRowOpen={(record) => router.push(`/product/${record.id}`)}
           />
