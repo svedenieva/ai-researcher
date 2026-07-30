@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { MindSheet } from '@aivocado/mindsheet';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
 import ThemeToggle from './theme-toggle';
@@ -8,6 +9,7 @@ import Stats from './stats';
 import styles from './page.module.css';
 
 export default function Home() {
+  const router = useRouter();
   const [columns, setColumns] = useState<ColumnDef[]>([]);
   const [records, setRecords] = useState<CatalogRecord[]>([]);
   const [facets, setFacets] = useState<Record<string, string[]>>({});
@@ -70,6 +72,7 @@ export default function Home() {
             onSortChange={onSortChange}
             onFilterChange={setFilter}
             onSearchChange={setSearch}
+            onRowOpen={(record) => router.push(`/product/${record.id}`)}
           />
         </div>
       </main>

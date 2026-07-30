@@ -33,6 +33,16 @@ export class SupabaseDataSource implements DataSource {
     return new JsonDataSource(rows, this.cols).list(params);
   }
 
+  async get(id: string): Promise<CatalogRecord | null> {
+    const { data, error } = await this.client
+      .from(this.table)
+      .select('data')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw new Error(`Supabase (${this.table}): ${error.message}`);
+    return data ? (data as { data: CatalogRecord }).data : null;
+  }
+
   async facets(): Promise<Record<string, string[]>> {
     const rows = await this.fetchAll();
     return new JsonDataSource(rows, this.cols).facets();

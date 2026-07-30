@@ -25,4 +25,5 @@ export interface DataSource {
   columns(): Promise<ColumnDef[]>;
   list(params?: ListParams): Promise<CatalogRecord[]>;
   facets(): Promise<Record<string, string[]>>;
+  get(id: string): Promise<CatalogRecord | null>;
 }

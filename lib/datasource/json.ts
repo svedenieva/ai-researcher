@@ -38,6 +38,10 @@ export class JsonDataSource implements DataSource {
     return rows;
   }
 
+  async get(id: string): Promise<CatalogRecord | null> {
+    return this.records.find((r) => r.id === id) ?? null;
+  }
+
   async facets(): Promise<Record<string, string[]>> {
     const result: Record<string, string[]> = {};
     for (const col of this.cols) {

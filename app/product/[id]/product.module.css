@@ -1,0 +1,176 @@
+.shell {
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 58px;
+  padding: 0 32px;
+  background: color-mix(in srgb, var(--paper) 80%, transparent);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid var(--rule);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-45);
+}
+
+.back:hover {
+  color: var(--ink);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.body {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 34px 32px 72px;
+}
+
+.head {
+  padding-bottom: 22px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.title {
+  margin: 0 0 8px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.site {
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  color: var(--sage);
+}
+
+.site:hover {
+  color: var(--sage-hover);
+  text-decoration: underline;
+}
+
+/* two columns on wide screens: sections on the left, fact sheet on the right */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 40px;
+  align-items: start;
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  min-width: 0;
+}
+
+.section {
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+
+.sectionBody {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--ink-70);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* fact sheet — a bordered card that sticks while long sections scroll */
+.facts {
+  position: sticky;
+  top: 78px;
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-card), var(--ring);
+}
+
+.factsTitle {
+  margin: 0 0 14px;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+
+.factList {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  margin: 0;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.factLabel {
+  font-size: 11px;
+  color: var(--ink-45);
+}
+
+.factValue {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .header {
+    padding: 0 16px;
+  }
+
+  .body {
+    padding: 24px 16px 56px;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  /* fact sheet moves above the long sections on narrow screens */
+  .facts {
+    position: static;
+    order: -1;
+  }
+}
