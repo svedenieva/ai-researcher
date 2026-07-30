@@ -14,7 +14,8 @@ export default function Home() {
   const [records, setRecords] = useState<CatalogRecord[]>([]);
   const [total, setTotal] = useState<number>();
   const [facets, setFacets] = useState<Record<string, string[]>>({});
-  const [sort, setSort] = useState<ListParams['sort']>();
+  // default view: most popular first (user can re-sort by any column)
+  const [sort, setSort] = useState<ListParams['sort']>({ key: 'pop', dir: 'asc' });
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -72,6 +73,7 @@ export default function Home() {
             columns={columns}
             records={records}
             total={total}
+            loading={loading}
             sort={sort}
             filters={filters}
             filterOptions={facets}

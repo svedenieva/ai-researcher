@@ -13,6 +13,8 @@ export interface ColumnDef {
   type: ColumnType;
   sortable?: boolean;
   filterable?: boolean;
+  /** explicit sort order for select values (most-important first) */
+  order?: string[];
 }
 
 export interface ListParams {

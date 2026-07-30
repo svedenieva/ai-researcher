@@ -54,6 +54,20 @@ describe('JsonDataSource', () => {
     expect(r.map((x) => x.id)).toEqual(['c', 'a']);
   });
 
+  it('sorts a select column by its explicit order, not lexically', async () => {
+    const cols: ColumnDef[] = [
+      { key: 'name', label: 'N', type: 'text' },
+      { key: 'pop', label: 'Pop', type: 'select', sortable: true, order: ['high', 'mid', 'low'] },
+    ];
+    const recs: CatalogRecord[] = [
+      { id: '1', name: 'a', pop: 'low' },
+      { id: '2', name: 'b', pop: 'high' },
+      { id: '3', name: 'c', pop: 'mid' },
+    ];
+    const r = await new JsonDataSource(recs, cols).list({ sort: { key: 'pop', dir: 'asc' } });
+    expect(r.map((x) => x.pop)).toEqual(['high', 'mid', 'low']);
+  });
+
   it('treats null cells as last when sorting ascending', async () => {
     const withNull = new JsonDataSource(
       [

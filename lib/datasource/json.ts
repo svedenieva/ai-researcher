@@ -35,8 +35,8 @@ export class JsonDataSource implements DataSource {
 
     if (params?.sort) {
       const { key, dir } = params.sort;
-      const isNumber = this.cols.find((c) => c.key === key)?.type === 'number';
-      rows.sort((a, b) => compare(a[key], b[key], isNumber, dir));
+      const col = this.cols.find((c) => c.key === key);
+      rows.sort((a, b) => compare(a[key], b[key], col, dir));
     }
 
     return rows;
@@ -65,7 +65,7 @@ export class JsonDataSource implements DataSource {
 function compare(
   a: CatalogRecord[string],
   b: CatalogRecord[string],
-  isNumber: boolean,
+  col: ColumnDef | undefined,
   dir: 'asc' | 'desc',
 ): number {
   const factor = dir === 'asc' ? 1 : -1;
@@ -76,6 +76,14 @@ function compare(
   if (a === null && b === null) return 0;
   if (a === null) return 1;
   if (b === null) return -1;
-  if (isNumber) return (Number(a) - Number(b)) * factor;
+  // explicit importance order for select columns (values not listed go last)
+  if (col?.order) {
+    const rank = (v: CatalogRecord[string]) => {
+      const i = col.order!.indexOf(String(v));
+      return i === -1 ? col.order!.length : i;
+    };
+    return (rank(a) - rank(b)) * factor;
+  }
+  if (col?.type === 'number') return (Number(a) - Number(b)) * factor;
   return String(a).localeCompare(String(b), 'ru') * factor;
 }

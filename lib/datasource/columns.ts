@@ -5,13 +5,22 @@ import type { ColumnDef } from './types';
 export const CATALOG_COLUMNS: ColumnDef[] = [
   // ── grid ──
   { key: 'name', label: 'Название', type: 'text', sortable: true },
-  { key: 'verdict', label: 'Вердикт', type: 'select', sortable: true, filterable: true },
-  { key: 'pop', label: 'Популярность', type: 'select', sortable: true, filterable: true },
+  {
+    key: 'verdict', label: 'Вердикт', type: 'select', sortable: true, filterable: true,
+    order: ['🟢 Строить своё', '🟡 Услуга / идея', '🛠 Инструмент', '⚪ Мониторить'],
+  },
+  {
+    key: 'pop', label: 'Популярность', type: 'select', sortable: true, filterable: true,
+    order: ['🔥 Высокая', '📊 Средняя', '🌱 Нишевая'],
+  },
   { key: 'vertical', label: 'Вертикаль', type: 'select', sortable: true, filterable: true },
   { key: 'region', label: 'Регион', type: 'select', sortable: true, filterable: true },
   { key: 'country', label: 'Страна', type: 'text', sortable: true },
   { key: 'founded', label: 'Основана', type: 'number', sortable: true },
-  { key: 'grade', label: 'Достоверность', type: 'select', sortable: true, filterable: true },
+  {
+    key: 'grade', label: 'Достоверность', type: 'select', sortable: true, filterable: true,
+    order: ['E1 · подтверждено', 'E2 · надёжно', 'E4 · оценка', 'E6 · проверить'],
+  },
   { key: 'url', label: 'Сайт', type: 'url' },
   { key: 'pricing', label: 'Цены', type: 'text' },
   { key: 'traction', label: 'Трекшн', type: 'text' },
