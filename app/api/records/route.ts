@@ -28,5 +28,9 @@ export async function GET(request: Request): Promise<Response> {
     ds.list(params),
     ds.facets(),
   ]);
-  return Response.json({ columns, records, facets });
+  // Unfiltered total for the "показано X из N" counter. When nothing is
+  // filtered/searched, `records` is already the full list — no extra query.
+  const total =
+    params.filter || params.search ? (await ds.list()).length : records.length;
+  return Response.json({ columns, records, facets, total });
 }

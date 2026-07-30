@@ -12,6 +12,7 @@ export default function Home() {
   const router = useRouter();
   const [columns, setColumns] = useState<ColumnDef[]>([]);
   const [records, setRecords] = useState<CatalogRecord[]>([]);
+  const [total, setTotal] = useState<number>();
   const [facets, setFacets] = useState<Record<string, string[]>>({});
   const [sort, setSort] = useState<ListParams['sort']>();
   const [filter, setFilter] = useState<ListParams['filter']>();
@@ -26,7 +27,12 @@ export default function Home() {
     setLoading(true);
     fetch(`/api/records?${qs.toString()}`)
       .then((r) => r.json())
-      .then((body) => { setColumns(body.columns); setRecords(body.records); setFacets(body.facets ?? {}); })
+      .then((body) => {
+        setColumns(body.columns);
+        setRecords(body.records);
+        setTotal(body.total ?? body.records.length);
+        setFacets(body.facets ?? {});
+      })
       .finally(() => setLoading(false));
   }, [sort, filter, search]);
 
@@ -65,6 +71,7 @@ export default function Home() {
           <MindSheet
             columns={columns}
             records={records}
+            total={total}
             sort={sort}
             filter={filter}
             filterOptions={facets}
