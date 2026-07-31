@@ -5,12 +5,21 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MindSheet } from '@aivocado/mindsheet';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
+import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
 import ThemeToggle from './theme-toggle';
 import Stats from './stats';
 import styles from './page.module.css';
 
 // default view: most popular first (user can re-sort by any column)
 const DEFAULT_SORT = { key: 'pop', dir: 'asc' as const };
+
+// only these URL params are real filters. Anything else in the query string
+// (e.g. an OAuth `code`/`state` left over from a redirect) must be ignored —
+// otherwise it becomes a phantom filter that matches nothing and empties the
+// whole catalog.
+const FILTER_KEYS = new Set(
+  CATALOG_COLUMNS.filter((c) => c.filterable).map((c) => c.key),
+);
 
 export default function Home() {
   const router = useRouter();
@@ -38,7 +47,7 @@ export default function Home() {
     }
     const f: Record<string, string> = {};
     for (const [key, value] of p.entries()) {
-      if (key !== 'q' && key !== 'sort') f[key] = value;
+      if (FILTER_KEYS.has(key)) f[key] = value;
     }
     if (Object.keys(f).length) setFilters(f);
     setReady(true);
