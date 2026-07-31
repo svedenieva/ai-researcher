@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { MindSheet } from '@aivocado/mindsheet';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
 import ThemeToggle from './theme-toggle';
@@ -91,6 +92,7 @@ export default function Home() {
         </div>
 
         <div className={styles.headerActions}>
+          <Link href="/research" className={styles.newResearch}>+ Новое исследование</Link>
           <ThemeToggle />
         </div>
       </header>

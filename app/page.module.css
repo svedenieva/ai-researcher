@@ -51,6 +51,23 @@
   margin-left: auto;
 }
 
+.newResearch {
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  background: var(--sage);
+  border: 1px solid var(--sage);
+  color: light-dark(#fff, #0e1113);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.newResearch:hover {
+  background: var(--sage-hover);
+  border-color: var(--sage-hover);
+  color: light-dark(#fff, #0e1113);
+}
+
 /* page body */
 
 .body {
