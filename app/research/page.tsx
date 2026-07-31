@@ -10,6 +10,23 @@ interface Check {
   matches: string[];
 }
 
+interface RelevantCompany {
+  id: string;
+  name: string;
+  verdict: string | null;
+  vertical: string | null;
+  url: string | null;
+}
+
+interface Finding {
+  subtopic: string;
+  summary: string;
+  findings: string[];
+  relevant: RelevantCompany[];
+  sources: Array<{ title: string; url: string }>;
+  source: 'mock';
+}
+
 export default function Research() {
   const [prompt, setPrompt] = useState('');
   const [subtopics, setSubtopics] = useState<string[] | null>(null);
@@ -21,6 +38,9 @@ export default function Research() {
   // какие подтемы берём в исследование (по индексу)
   const [selected, setSelected] = useState<boolean[]>([]);
   const [confirmed, setConfirmed] = useState(false);
+  // результат запуска исследования (Шаг 5)
+  const [report, setReport] = useState<Finding[] | null>(null);
+  const [running, setRunning] = useState(false);
 
   const decompose = async () => {
     if (!prompt.trim()) return;
@@ -66,6 +86,27 @@ export default function Research() {
       setError(e instanceof Error ? e.message : 'Ошибка');
     } finally {
       setChecking(false);
+    }
+  };
+
+  const runResearch = async () => {
+    const subs = (subtopics ?? []).filter((s, i) => s.trim() && selected[i]);
+    if (!subs.length) return;
+    setRunning(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/research/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subtopics: subs }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.error ?? 'Ошибка запуска');
+      setReport(body.report ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка');
+    } finally {
+      setRunning(false);
     }
   };
 
@@ -209,7 +250,7 @@ export default function Research() {
           </section>
         )}
 
-        {subtopics && confirmed && (
+        {subtopics && confirmed && !report && (
           <section className={styles.plan}>
             <div className={styles.planHead}>
               <h2 className={styles.planTitle}>Готово к запуску</h2>
@@ -237,16 +278,77 @@ export default function Research() {
             )}
 
             <div className={styles.planActions}>
-              <button type="button" className={styles.ghost} onClick={() => setConfirmed(false)}>
+              <button
+                type="button"
+                className={styles.ghost}
+                onClick={() => setConfirmed(false)}
+                disabled={running}
+              >
                 ← Изменить
               </button>
-              <button type="button" className={styles.primary} disabled title="Запуск — на Шаге 5">
-                Запустить исследование
+              <button
+                type="button"
+                className={styles.primary}
+                onClick={runResearch}
+                disabled={running || toResearch.length === 0}
+              >
+                {running ? 'Исследую…' : 'Запустить исследование'}
               </button>
             </div>
-            <p className={styles.note}>
-              Запуск полного исследования по выбранным подтемам — Шаг 5, в разработке.
+            {error && <p className={styles.error}>{error}</p>}
+          </section>
+        )}
+
+        {report && (
+          <section className={styles.plan}>
+            <div className={styles.planHead}>
+              <h2 className={styles.planTitle}>Результаты исследования</h2>
+              <span className={styles.count}>{report.length} подтем</span>
+            </div>
+            <p className={styles.mockBanner}>
+              ⚙️ Демо-режим: отчёт собран из каталога (412 компаний). Реальный веб-поиск
+              и синтез Claude подключаются в эту же структуру.
             </p>
+
+            <div className={styles.reportList}>
+              {report.map((f, i) => (
+                <article key={i} className={styles.finding}>
+                  <h3 className={styles.findingTitle}>{f.subtopic}</h3>
+                  <p className={styles.findingSummary}>{f.summary}</p>
+                  <ul className={styles.findingList}>
+                    {f.findings.map((line, j) => (
+                      <li key={j}>{line}</li>
+                    ))}
+                  </ul>
+                  {f.relevant.length > 0 && (
+                    <div className={styles.relevantRow}>
+                      {f.relevant.map((c) => (
+                        <Link key={c.id} href={`/product/${c.id}`} className={styles.relevantChip}>
+                          {c.name}
+                          {c.vertical ? <span className={styles.chipMeta}>{c.vertical}</span> : null}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+
+            <div className={styles.planActions}>
+              <button
+                type="button"
+                className={styles.ghost}
+                onClick={() => {
+                  setReport(null);
+                  setConfirmed(false);
+                }}
+              >
+                ← Новое исследование
+              </button>
+              <Link href="/" className={styles.primary}>
+                К каталогу →
+              </Link>
+            </div>
           </section>
         )}
       </main>
