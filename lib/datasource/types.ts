@@ -15,6 +15,10 @@ export interface ColumnDef {
   filterable?: boolean;
   /** explicit sort order for select values (most-important first) */
   order?: string[];
+  /** render select values as coloured pills */
+  badge?: boolean;
+  /** value → colour variant (green|teal|blue|amber|red|purple|grey) */
+  badgeVariant?: Record<string, string>;
 }
 
 export interface ListParams {
