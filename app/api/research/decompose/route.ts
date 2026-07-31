@@ -2,11 +2,25 @@ import Anthropic from '@anthropic-ai/sdk';
 
 // Декомпозиция запроса на подтемы.
 //
-// Шаг 2: если задан ANTHROPIC_API_KEY — раскладываем промпт реальным Claude
-// (осмысленные, привязанные к запросу подтемы). Если ключа нет или вызов упал —
-// откатываемся на структурную эвристику, чтобы UX-флоу работал всегда.
+// Шаг 2: раскладываем промпт реальной моделью. Приоритет провайдеров:
+//   1) OpenRouter (OPENROUTER_API_KEY) — один ключ, любые модели Claude и др.;
+//   2) Anthropic напрямую (ANTHROPIC_API_KEY);
+//   3) структурная эвристика — если ключей нет или вызов упал.
+// Любой сбой провайдера тихо откатывается на следующий вариант, чтобы флоу
+// работал всегда.
 
-const MODEL = process.env.RESEARCH_MODEL || 'claude-opus-5';
+// модель для прямого Anthropic-вызова
+const ANTHROPIC_MODEL = process.env.RESEARCH_MODEL || 'claude-opus-5';
+// модель для OpenRouter (slug вида "anthropic/claude-...", переопределяется env)
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.5';
+
+const SYSTEM_PROMPT =
+  'Ты — старший аналитик рынка AI-продуктов. Тебе дают исследовательский ' +
+  'запрос, ты раскладываешь его на 8–10 конкретных, взаимно не пересекающихся, ' +
+  'проверяемых подтем на русском языке. Каждая подтема — короткая формулировка ' +
+  '(до ~8 слов), пригодная для отдельного поиска. Покрой: игроков/продукты, ' +
+  'технологии, рынок и тренды, монетизацию, риски, кейсы. Не добавляй нумерацию ' +
+  'и пояснений.';
 
 function heuristicSubtopics(prompt: string): string[] {
   const topic = prompt.trim().replace(/\s+/g, ' ').slice(0, 80) || 'тема';
@@ -43,18 +57,43 @@ function parseList(text: string): string[] {
   }
 }
 
+// OpenRouter — OpenAI-совместимый эндпоинт, поэтому обычный fetch (без SDK)
+async function openrouterSubtopics(prompt: string): Promise<string[]> {
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json',
+      // атрибуция запроса в дашборде OpenRouter (необязательно)
+      'HTTP-Referer': 'https://ai-reesearcher.vercel.app',
+      'X-Title': 'AI-Researcher',
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      max_tokens: 1024,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        {
+          role: 'user',
+          content: `Запрос для исследования: "${prompt}"\n\nВерни ТОЛЬКО JSON-массив строк (подтемы), без текста вокруг.`,
+        },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`OpenRouter ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const text: string = data?.choices?.[0]?.message?.content ?? '';
+  return parseList(text);
+}
+
 async function claudeSubtopics(prompt: string): Promise<string[]> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const message = await client.messages.create({
-    model: MODEL,
+    model: ANTHROPIC_MODEL,
     max_tokens: 1024,
-    system:
-      'Ты — старший аналитик рынка AI-продуктов. Тебе дают исследовательский ' +
-      'запрос, ты раскладываешь его на 8–10 конкретных, взаимно не пересекающихся, ' +
-      'проверяемых подтем на русском языке. Каждая подтема — короткая формулировка ' +
-      '(до ~8 слов), пригодная для отдельного поиска. Покрой: игроков/продукты, ' +
-      'технологии, рынок и тренды, монетизацию, риски, кейсы. Не добавляй нумерацию ' +
-      'и пояснений.',
+    system: SYSTEM_PROMPT,
     messages: [
       {
         role: 'user',
@@ -87,15 +126,20 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'Пустой запрос' }, { status: 400 });
   }
 
-  if (process.env.ANTHROPIC_API_KEY) {
+  // провайдеры по приоритету; первый успешный — выигрывает, иначе следующий
+  const providers: Array<[string, () => Promise<string[]>]> = [];
+  if (process.env.OPENROUTER_API_KEY) providers.push(['openrouter', () => openrouterSubtopics(prompt)]);
+  if (process.env.ANTHROPIC_API_KEY) providers.push(['anthropic', () => claudeSubtopics(prompt)]);
+
+  for (const [name, run] of providers) {
     try {
-      const subtopics = await claudeSubtopics(prompt);
+      const subtopics = await run();
       if (subtopics.length >= 3) {
         return Response.json({ prompt, subtopics, source: 'claude' });
       }
     } catch (e) {
-      // любой сбой (нет сети/лимиты/ключ) — тихо откатываемся на эвристику
-      console.error('claude decompose failed, falling back:', e);
+      // любой сбой (нет сети/лимиты/ключ/модель) — пробуем следующий провайдер
+      console.error(`decompose via ${name} failed, falling back:`, e);
     }
   }
 
