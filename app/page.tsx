@@ -111,6 +111,7 @@ export default function Home() {
             records={records}
             total={total}
             loading={loading}
+            filtersPosition="left"
             sort={sort}
             filters={filters}
             filterOptions={facets}
