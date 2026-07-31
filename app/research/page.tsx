@@ -30,6 +30,8 @@ interface Finding {
 export default function Research() {
   const [prompt, setPrompt] = useState('');
   const [subtopics, setSubtopics] = useState<string[] | null>(null);
+  // откуда подтемы: 'claude' (реальная модель) или 'heuristic' (шаблон)
+  const [source, setSource] = useState<'claude' | 'heuristic' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // результаты сверки с каталогом, по индексу подтемы; null = ещё не сверяли / устарело
@@ -57,6 +59,7 @@ export default function Research() {
       if (!res.ok) throw new Error(body?.error ?? 'Ошибка декомпозиции');
       const subs: string[] = body.subtopics ?? [];
       setSubtopics(subs);
+      setSource(body.source === 'claude' ? 'claude' : 'heuristic');
       setSelected(subs.map(() => true));
       setConfirmed(false);
     } catch (e) {
@@ -172,7 +175,17 @@ export default function Research() {
         {subtopics && !confirmed && (
           <section className={styles.plan}>
             <div className={styles.planHead}>
-              <h2 className={styles.planTitle}>Подтемы исследования</h2>
+              <h2 className={styles.planTitle}>
+                Подтемы исследования
+                {source && (
+                  <span
+                    className={`${styles.srcTag} ${source === 'claude' ? styles.srcClaude : styles.srcHeur}`}
+                    title={source === 'claude' ? 'Разложено моделью Claude' : 'Шаблонная разбивка (Claude не подключён)'}
+                  >
+                    {source === 'claude' ? '✨ Claude' : 'шаблон'}
+                  </span>
+                )}
+              </h2>
               <span className={styles.count}>{kept.length} шт. · выбрано {toResearch.length}</span>
             </div>
 

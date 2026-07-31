@@ -282,6 +282,26 @@
   text-decoration: line-through;
 }
 
+/* source tag next to the plan title (Claude vs template) */
+.srcTag {
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+.srcClaude {
+  background: light-dark(#e2efe6, #16281d);
+  color: light-dark(#2c6b45, #83c99d);
+}
+.srcHeur {
+  background: var(--wash);
+  color: var(--ink-45);
+}
+
 /* research results (Step 5) */
 .mockBanner {
   margin: 0 0 16px;
