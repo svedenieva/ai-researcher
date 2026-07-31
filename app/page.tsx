@@ -87,8 +87,11 @@ export default function Home() {
     <div className={styles.shell}>
       <header className={styles.header}>
         <div className={styles.brand}>
-          <span className={styles.brandName}>AI-Researcher</span>
-          <span className={styles.brandKicker}>база знаний</span>
+          <span className={styles.mark} aria-hidden="true">AiR</span>
+          <span className={styles.brandText}>
+            <span className={styles.brandName}>AI-Researcher</span>
+            <span className={styles.brandKicker}>База знаний · AiVocado</span>
+          </span>
         </div>
 
         <div className={styles.headerActions}>
@@ -98,14 +101,15 @@ export default function Home() {
       </header>
 
       <main className={styles.body}>
-        <div className={styles.pageHeadRow}>
-          <div className={styles.pageHead}>
-            <h1 className={styles.title}>База знаний · Продукты и конкуренты</h1>
-            <span className={styles.count}>{loading ? '…' : records.length}</span>
-          </div>
-
-          {records.length > 0 && <Stats records={records} />}
+        <div className={styles.pageHead}>
+          <h1 className={styles.title}>Продукты и конкуренты</h1>
+          <p className={styles.subtitle}>
+            Живая витрина AI-рынка{loading ? '' : `: ${records.length} компаний`}. Сразу видно,
+            что строить своё, брать готовым или мониторить.
+          </p>
         </div>
+
+        {records.length > 0 && <Stats records={records} />}
 
         <div className={styles.content}>
           <MindSheet
