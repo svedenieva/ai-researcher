@@ -2,6 +2,7 @@ import catalog from '@/data/catalog.json';
 import { JsonDataSource } from './json';
 import { SupabaseDataSource } from './supabase';
 import { CATALOG_COLUMNS } from './columns';
+import { withSections } from './section';
 import type { CatalogRecord, DataSource } from './types';
 
 // Same DataSource interface, two backends. Set DATA_SOURCE=supabase (with
@@ -14,5 +15,5 @@ export function getDataSource(): DataSource {
     if (url && key) return new SupabaseDataSource(CATALOG_COLUMNS, url, key);
     throw new Error('DATA_SOURCE=supabase requires SUPABASE_URL and SUPABASE_SERVICE_KEY');
   }
-  return new JsonDataSource(catalog as CatalogRecord[], CATALOG_COLUMNS);
+  return new JsonDataSource(withSections(catalog as CatalogRecord[]), CATALOG_COLUMNS);
 }

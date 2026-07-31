@@ -6,6 +6,12 @@ export const CATALOG_COLUMNS: ColumnDef[] = [
   // ── grid ──
   { key: 'name', label: 'Название', type: 'text', sortable: true },
   {
+    key: 'section', label: 'Раздел', type: 'select', sortable: true, filterable: true,
+    order: ['IT', 'AI', 'WorkOS'],
+    badge: true,
+    badgeVariant: { IT: 'blue', AI: 'teal', WorkOS: 'amber' },
+  },
+  {
     key: 'verdict', label: 'Вердикт', type: 'select', sortable: true, filterable: true,
     order: ['🟢 Строить своё', '🟡 Услуга / идея', '🛠 Инструмент', '⚪ Мониторить'],
     badge: true,
