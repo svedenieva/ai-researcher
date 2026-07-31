@@ -5,16 +5,25 @@ import Link from 'next/link';
 import ThemeToggle from '../theme-toggle';
 import styles from './research.module.css';
 
+interface Check {
+  count: number;
+  matches: string[];
+}
+
 export default function Research() {
   const [prompt, setPrompt] = useState('');
   const [subtopics, setSubtopics] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // результаты сверки с каталогом, по индексу подтемы; null = ещё не сверяли / устарело
+  const [checks, setChecks] = useState<Check[] | null>(null);
+  const [checking, setChecking] = useState(false);
 
   const decompose = async () => {
     if (!prompt.trim()) return;
     setLoading(true);
     setError(null);
+    setChecks(null);
     try {
       const res = await fetch('/api/research/decompose', {
         method: 'POST',
@@ -31,11 +40,39 @@ export default function Research() {
     }
   };
 
-  const editSub = (i: number, value: string) =>
+  const check = async () => {
+    if (!subtopics) return;
+    setChecking(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/research/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subtopics }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.error ?? 'Ошибка сверки');
+      setChecks(body.results ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка');
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  // любая правка списка делает прошлую сверку неактуальной
+  const editSub = (i: number, value: string) => {
     setSubtopics((prev) => prev!.map((s, j) => (j === i ? value : s)));
-  const removeSub = (i: number) =>
+    setChecks(null);
+  };
+  const removeSub = (i: number) => {
     setSubtopics((prev) => prev!.filter((_, j) => j !== i));
-  const addSub = () => setSubtopics((prev) => [...(prev ?? []), '']);
+    setChecks(null);
+  };
+  const addSub = () => {
+    setSubtopics((prev) => [...(prev ?? []), '']);
+    setChecks(null);
+  };
 
   const kept = (subtopics ?? []).filter((s) => s.trim());
 
@@ -84,37 +121,63 @@ export default function Research() {
             </div>
 
             <ol className={styles.list}>
-              {subtopics.map((s, i) => (
-                <li key={i} className={styles.item}>
-                  <span className={styles.num}>{i + 1}</span>
-                  <input
-                    className={styles.subInput}
-                    value={s}
-                    onChange={(e) => editSub(i, e.target.value)}
-                    placeholder="Подтема…"
-                  />
-                  <button
-                    type="button"
-                    className={styles.remove}
-                    onClick={() => removeSub(i)}
-                    aria-label="Убрать подтему"
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
+              {subtopics.map((s, i) => {
+                const c = checks?.[i];
+                return (
+                  <li key={i} className={styles.item}>
+                    <span className={styles.num}>{i + 1}</span>
+                    <input
+                      className={styles.subInput}
+                      value={s}
+                      onChange={(e) => editSub(i, e.target.value)}
+                      placeholder="Подтема…"
+                    />
+                    {c && (
+                      c.count > 0 ? (
+                        <span
+                          className={`${styles.tag} ${styles.tagKnown}`}
+                          title={c.matches.length ? `Похоже: ${c.matches.join(', ')}` : undefined}
+                        >
+                          ✅ уже есть ({c.count})
+                        </span>
+                      ) : (
+                        <span className={`${styles.tag} ${styles.tagNew}`}>🆕 новое</span>
+                      )
+                    )}
+                    <button
+                      type="button"
+                      className={styles.remove}
+                      onClick={() => removeSub(i)}
+                      aria-label="Убрать подтему"
+                    >
+                      ×
+                    </button>
+                  </li>
+                );
+              })}
             </ol>
 
             <div className={styles.planActions}>
               <button type="button" className={styles.ghost} onClick={addSub}>
                 + Добавить подтему
               </button>
-              <button type="button" className={styles.primary} disabled title="Дальше — на следующем шаге">
-                Далее →
-              </button>
+              <div className={styles.planRight}>
+                <button
+                  type="button"
+                  className={styles.ghost}
+                  onClick={check}
+                  disabled={checking || kept.length === 0}
+                >
+                  {checking ? 'Сверяю…' : 'Сверить с каталогом'}
+                </button>
+                <button type="button" className={styles.primary} disabled title="Дальше — на следующем шаге">
+                  Далее →
+                </button>
+              </div>
             </div>
             <p className={styles.note}>
-              Дальше: сверка подтем с каталогом (что уже исследовано) и запуск. — в разработке.
+              «Сверить с каталогом» помечает подтемы, по которым уже есть данные (✅), и новые (🆕).
+              Дальше — подтверждение списка и запуск (в разработке).
             </p>
           </section>
         )}
