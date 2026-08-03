@@ -9,18 +9,23 @@ import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
 import { BASES, DEFAULT_BASE, baseById } from '@/lib/datasource/bases';
 import ThemeToggle from './theme-toggle';
 import Stats from './stats';
+import CreateBase from './create-base';
+import AddRow from './add-row';
 import styles from './page.module.css';
 
-// default view: most popular first (user can re-sort by any column)
 const DEFAULT_SORT = { key: 'pop', dir: 'asc' as const };
 
-// only these URL params are real filters. Anything else in the query string
-// (e.g. an OAuth `code`/`state` left over from a redirect) must be ignored —
-// otherwise it becomes a phantom filter that matches nothing and empties the
-// whole catalog.
-const FILTER_KEYS = new Set(
-  CATALOG_COLUMNS.filter((c) => c.filterable).map((c) => c.key),
-);
+const FILTER_KEYS = new Set(CATALOG_COLUMNS.filter((c) => c.filterable).map((c) => c.key));
+const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
+
+interface BaseTab {
+  id: string;
+  name: string;
+  tone: string;
+  builtin: boolean;
+}
+
+const BUILTIN_TABS: BaseTab[] = BASES.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: true }));
 
 export default function Home() {
   const router = useRouter();
@@ -32,16 +37,29 @@ export default function Home() {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
   const [base, setBase] = useState<string>(DEFAULT_BASE);
+  const [tabs, setTabs] = useState<BaseTab[]>(BUILTIN_TABS);
   const [loading, setLoading] = useState(true);
-  // hydrate state from the URL once, so shared links open with the same
-  // filter/search/sort. Reading in an effect (not during render) keeps SSR
-  // and client markup identical — no hydration mismatch.
   const [ready, setReady] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [creating, setCreating] = useState(false);
+  const [adding, setAdding] = useState(false);
+
+  const isCustom = !BUILTIN_IDS.has(base);
+
+  const loadBases = useCallback(async () => {
+    try {
+      const r = await fetch('/api/bases');
+      const body = await r.json();
+      if (Array.isArray(body.bases) && body.bases.length) setTabs(body.bases);
+    } catch {
+      /* оставляем встроенные табы */
+    }
+  }, []);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const b = p.get('base');
-    if (b && BASES.some((x) => x.id === b)) setBase(b);
+    if (b) setBase(b);
     const q = p.get('q');
     if (q) setSearch(q);
     const s = p.get('sort');
@@ -55,9 +73,9 @@ export default function Home() {
     }
     if (Object.keys(f).length) setFilters(f);
     setReady(true);
-  }, []);
+    loadBases();
+  }, [loadBases]);
 
-  // reflect the current state back into the URL (shareable, no history spam)
   useEffect(() => {
     if (!ready) return;
     const p = new URLSearchParams();
@@ -82,28 +100,31 @@ export default function Home() {
     fetch(`/api/records?${qs.toString()}`)
       .then((r) => r.json())
       .then((body) => {
-        setColumns(body.columns);
-        setRecords(body.records);
-        setTotal(body.total ?? body.records.length);
+        setColumns(body.columns ?? []);
+        setRecords(body.records ?? []);
+        setTotal(body.total ?? body.records?.length ?? 0);
         setFacets(body.facets ?? {});
       })
       .finally(() => setLoading(false));
-  }, [sort, filters, search, base, ready]);
+  }, [sort, filters, search, base, ready, refreshTick]);
 
-  // переключение базы: сбрасываем фильтры/поиск (у разной базы свои разрезы)
+  const onSortChange = useCallback((key: string) => {
+    setSort((prev) =>
+      prev?.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' },
+    );
+  }, []);
+
   const onBaseChange = useCallback((id: string) => {
     setBase(id);
     setFilters({});
     setSearch('');
+    setCreating(false);
+    setAdding(false);
   }, []);
 
-  const onSortChange = useCallback((key: string) => {
-    setSort((prev) =>
-      prev?.key === key
-        ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-        : { key, dir: 'asc' },
-    );
-  }, []);
+  const currentTab = tabs.find((t) => t.id === base);
+  const title = currentTab?.name ?? baseById(base).name;
+  const blurb = BASES.find((b) => b.id === base)?.blurb ?? 'Своя база знаний.';
 
   return (
     <div className={styles.shell}>
@@ -124,7 +145,7 @@ export default function Home() {
 
       <main className={styles.body}>
         <nav className={styles.baseTabs} aria-label="Базы знаний">
-          {BASES.map((b) => (
+          {tabs.map((b) => (
             <button
               key={b.id}
               type="button"
@@ -132,21 +153,54 @@ export default function Home() {
               onClick={() => onBaseChange(b.id)}
               aria-pressed={b.id === base}
             >
-              <span className={`${styles.baseDot} ${styles[`dot_${b.tone}`]}`} aria-hidden="true" />
+              <span className={`${styles.baseDot} ${styles[`dot_${b.tone}`] ?? styles.dot_sage}`} aria-hidden="true" />
               {b.name}
             </button>
           ))}
+          <button type="button" className={styles.baseCreate} onClick={() => setCreating(true)}>
+            + Создать базу
+          </button>
         </nav>
 
+        {creating && (
+          <CreateBase
+            onCancel={() => setCreating(false)}
+            onCreated={async (id) => {
+              setCreating(false);
+              await loadBases();
+              onBaseChange(id);
+            }}
+          />
+        )}
+
         <div className={styles.pageHead}>
-          <h1 className={styles.title}>{baseById(base).name}</h1>
+          <div className={styles.pageHeadRow}>
+            <h1 className={styles.title}>{title}</h1>
+            {isCustom && !loading && (
+              <button type="button" className={styles.addRowBtn} onClick={() => setAdding(true)}>
+                + Добавить строку
+              </button>
+            )}
+          </div>
           <p className={styles.subtitle}>
-            {baseById(base).blurb}
-            {loading ? '' : ` · ${records.length} компаний`}
+            {blurb}
+            {loading ? '' : ` · ${records.length} ${isCustom ? 'строк' : 'компаний'}`}
           </p>
         </div>
 
-        {records.length > 0 && <Stats records={records} />}
+        {adding && isCustom && (
+          <AddRow
+            columns={columns}
+            onCancel={() => setAdding(false)}
+            onAdded={() => {
+              setAdding(false);
+              setRefreshTick((t) => t + 1);
+            }}
+            baseId={base}
+          />
+        )}
+
+        {!isCustom && records.length > 0 && <Stats records={records} />}
 
         <div className={styles.content}>
           <MindSheet
@@ -162,7 +216,7 @@ export default function Home() {
             onSortChange={onSortChange}
             onFiltersChange={setFilters}
             onSearchChange={setSearch}
-            onRowOpen={(record) => router.push(`/product/${record.id}`)}
+            onRowOpen={isCustom ? undefined : (record) => router.push(`/product/${record.id}`)}
           />
         </div>
       </main>

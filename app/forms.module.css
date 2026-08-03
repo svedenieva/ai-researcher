@@ -1,0 +1,147 @@
+.panel {
+  margin-bottom: 20px;
+  padding: 18px 20px;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card), var(--ring);
+}
+
+.panelHead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.panelTitle {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.panelHint {
+  font-size: 12.5px;
+  color: var(--ink-45);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  color: var(--ink-45);
+}
+
+.input,
+.select {
+  width: 100%;
+  padding: 8px 11px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+.input:focus,
+.select:focus { outline: none; border-color: var(--sage); }
+
+.colsLabel {
+  font-size: 12px;
+  color: var(--ink-45);
+  margin: 4px 0 8px;
+}
+
+.colList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.colRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.colRow .input { flex: 1; min-width: 0; }
+.colRow .select { flex: none; width: 130px; }
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--ink-70);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.checkbox input { accent-color: var(--sage); }
+
+.iconBtn {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-size: 16px;
+  line-height: 1;
+  color: var(--ink-45);
+  cursor: pointer;
+}
+.iconBtn:hover:not(:disabled) { color: var(--ink); border-color: var(--sage); }
+.iconBtn:disabled { opacity: 0.4; cursor: default; }
+
+.rowFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.primary {
+  padding: 9px 16px;
+  background: var(--sage);
+  border: 1px solid var(--sage);
+  border-radius: var(--radius);
+  color: light-dark(#fff, #0e1113);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primary:hover:not(:disabled) { background: var(--sage-hover); border-color: var(--sage-hover); }
+.primary:disabled { opacity: 0.5; cursor: default; }
+
+.ghost {
+  padding: 8px 14px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink-70);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--sage); }
+.ghost:disabled { opacity: 0.5; cursor: default; }
+
+.error { margin: 10px 0 0; font-size: 13px; color: var(--error); }
