@@ -49,8 +49,26 @@ function normalizeColumns(input: unknown): ColumnDef[] {
   return cols;
 }
 
+// позиционные строки импорта (row[i] ↔ columns[i]) → объекты по ключам колонок
+function mapRows(columns: ReturnType<typeof normalizeColumns>, rows: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(rows)) return [];
+  const out: Record<string, unknown>[] = [];
+  for (const row of rows) {
+    if (!Array.isArray(row)) continue;
+    const data: Record<string, unknown> = {};
+    columns.forEach((col, i) => {
+      const raw = row[i];
+      if (raw === undefined || raw === null || String(raw).trim() === '') return;
+      const s = String(raw).trim();
+      data[col.key] = col.type === 'number' ? Number(s.replace(',', '.')) : s;
+    });
+    if (Object.keys(data).length) out.push(data);
+  }
+  return out;
+}
+
 export async function POST(request: Request): Promise<Response> {
-  let body: { name?: unknown; columns?: unknown; tone?: unknown };
+  let body: { name?: unknown; columns?: unknown; tone?: unknown; rows?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -67,8 +85,11 @@ export async function POST(request: Request): Promise<Response> {
     : undefined;
 
   try {
-    const base = await getCustomStore().createBase({ name, columns, tone });
-    return Response.json({ base });
+    const store = getCustomStore();
+    const base = await store.createBase({ name, columns, tone });
+    const rows = mapRows(columns, body?.rows);
+    const imported = rows.length ? await store.addRecords(base.id, rows) : 0;
+    return Response.json({ base, imported });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Ошибка создания базы';
     return Response.json({ error: msg }, { status: 500 });

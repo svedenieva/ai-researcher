@@ -145,3 +145,86 @@
 .ghost:disabled { opacity: 0.5; cursor: default; }
 
 .error { margin: 10px 0 0; font-size: 13px; color: var(--error); }
+
+/* manual / import mode toggle */
+.modeTabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  margin-bottom: 14px;
+  background: var(--wash);
+  border-radius: 999px;
+}
+.modeTab,
+.modeActive {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-45);
+  cursor: pointer;
+}
+.modeActive {
+  background: var(--paper-raised);
+  color: var(--ink);
+  box-shadow: var(--ring);
+}
+
+.importRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-70);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.uploadBtn:hover { border-color: var(--sage); color: var(--ink); }
+
+.importPreview {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--wash);
+  border-radius: var(--radius);
+}
+.previewLine {
+  font-size: 13px;
+  color: var(--ink-70);
+  margin-bottom: 8px;
+}
+.previewLine strong { color: var(--ink); }
+.previewCols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.previewChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--paper-raised);
+  border: 1px solid var(--rule);
+  font-size: 12px;
+  color: var(--ink);
+}
+.previewChip em {
+  font-style: normal;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  color: var(--ink-45);
+}

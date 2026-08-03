@@ -26,6 +26,7 @@ export interface CustomStore {
   createBase(def: NewBase): Promise<CustomBase>;
   listRecords(baseId: string): Promise<CatalogRecord[]>;
   addRecord(baseId: string, data: Record<string, unknown>): Promise<CatalogRecord>;
+  addRecords(baseId: string, rows: Record<string, unknown>[]): Promise<number>;
   updateRecord(baseId: string, id: string, patch: Record<string, unknown>): Promise<CatalogRecord | null>;
 }
 
@@ -76,6 +77,11 @@ class MemoryCustomStore implements CustomStore {
     const record = { id: `r${++this.seq}`, ...data } as CatalogRecord;
     (this.rows[baseId] ??= []).push(record);
     return record;
+  }
+  async addRecords(baseId: string, rows: Record<string, unknown>[]) {
+    const bucket = (this.rows[baseId] ??= []);
+    for (const data of rows) bucket.push({ id: `r${++this.seq}`, ...data } as CatalogRecord);
+    return rows.length;
   }
   async updateRecord(baseId: string, id: string, patch: Record<string, unknown>) {
     const row = (this.rows[baseId] ?? []).find((r) => r.id === id);
@@ -142,6 +148,13 @@ class SupabaseCustomStore implements CustomStore {
     if (error) throw new Error(`Supabase (base_records): ${error.message}`);
     const row = inserted as { id: string; data: Record<string, unknown> };
     return { id: row.id, ...row.data } as CatalogRecord;
+  }
+  async addRecords(baseId: string, rows: Record<string, unknown>[]): Promise<number> {
+    if (!rows.length) return 0;
+    const payload = rows.map((data) => ({ base_id: baseId, data }));
+    const { error } = await this.client.from('base_records').insert(payload);
+    if (error) throw new Error(`Supabase (base_records): ${error.message}`);
+    return rows.length;
   }
   async updateRecord(baseId: string, id: string, patch: Record<string, unknown>): Promise<CatalogRecord | null> {
     const { data: cur, error: readErr } = await this.client
