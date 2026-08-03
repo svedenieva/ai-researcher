@@ -100,3 +100,28 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: msg }, { status: 500 });
   }
 }
+
+// обновить одну ячейку строки в пользовательской базе
+export async function PATCH(request: Request): Promise<Response> {
+  let body: { base?: unknown; id?: unknown; data?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: 'Некорректный запрос' }, { status: 400 });
+  }
+  const baseId = String(body?.base ?? '');
+  const id = String(body?.id ?? '');
+  if (!baseId || BUILTIN_IDS.has(baseId) || !id) {
+    return Response.json({ error: 'Нельзя редактировать эту строку' }, { status: 400 });
+  }
+  const patch = body?.data && typeof body.data === 'object' ? (body.data as Record<string, unknown>) : {};
+
+  try {
+    const record = await getCustomStore().updateRecord(baseId, id, patch);
+    if (!record) return Response.json({ error: 'Строка не найдена' }, { status: 404 });
+    return Response.json({ record });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Ошибка обновления';
+    return Response.json({ error: msg }, { status: 500 });
+  }
+}

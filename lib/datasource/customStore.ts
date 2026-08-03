@@ -26,6 +26,7 @@ export interface CustomStore {
   createBase(def: NewBase): Promise<CustomBase>;
   listRecords(baseId: string): Promise<CatalogRecord[]>;
   addRecord(baseId: string, data: Record<string, unknown>): Promise<CatalogRecord>;
+  updateRecord(baseId: string, id: string, patch: Record<string, unknown>): Promise<CatalogRecord | null>;
 }
 
 const TONES: CustomBase['tone'][] = ['teal', 'blue', 'amber', 'sage'];
@@ -75,6 +76,12 @@ class MemoryCustomStore implements CustomStore {
     const record = { id: `r${++this.seq}`, ...data } as CatalogRecord;
     (this.rows[baseId] ??= []).push(record);
     return record;
+  }
+  async updateRecord(baseId: string, id: string, patch: Record<string, unknown>) {
+    const row = (this.rows[baseId] ?? []).find((r) => r.id === id);
+    if (!row) return null;
+    Object.assign(row, patch);
+    return row;
   }
 }
 
@@ -135,6 +142,20 @@ class SupabaseCustomStore implements CustomStore {
     if (error) throw new Error(`Supabase (base_records): ${error.message}`);
     const row = inserted as { id: string; data: Record<string, unknown> };
     return { id: row.id, ...row.data } as CatalogRecord;
+  }
+  async updateRecord(baseId: string, id: string, patch: Record<string, unknown>): Promise<CatalogRecord | null> {
+    const { data: cur, error: readErr } = await this.client
+      .from('base_records')
+      .select('data')
+      .eq('id', id)
+      .eq('base_id', baseId)
+      .maybeSingle();
+    if (readErr) throw new Error(`Supabase (base_records): ${readErr.message}`);
+    if (!cur) return null;
+    const merged = { ...((cur as { data: Record<string, unknown> }).data ?? {}), ...patch };
+    const { error } = await this.client.from('base_records').update({ data: merged }).eq('id', id);
+    if (error) throw new Error(`Supabase (base_records): ${error.message}`);
+    return { id, ...merged } as CatalogRecord;
   }
 }
 

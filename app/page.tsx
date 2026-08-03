@@ -10,7 +10,6 @@ import { BASES, DEFAULT_BASE, baseById } from '@/lib/datasource/bases';
 import ThemeToggle from './theme-toggle';
 import Stats from './stats';
 import CreateBase from './create-base';
-import AddRow from './add-row';
 import styles from './page.module.css';
 
 const DEFAULT_SORT = { key: 'pop', dir: 'asc' as const };
@@ -42,9 +41,41 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
   const [creating, setCreating] = useState(false);
-  const [adding, setAdding] = useState(false);
 
   const isCustom = !BUILTIN_IDS.has(base);
+
+  // числовые колонки приводим к числу перед сохранением
+  const coerce = useCallback(
+    (key: string, value: string): string | number => {
+      const col = columns.find((c) => c.key === key);
+      return col?.type === 'number' && value !== '' ? Number(value) : value;
+    },
+    [columns],
+  );
+
+  const onCellEdit = useCallback(
+    (record: CatalogRecord, key: string, value: string) => {
+      fetch('/api/records', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base, id: record.id, data: { [key]: coerce(key, value) } }),
+      }).then(() => setRefreshTick((t) => t + 1));
+    },
+    [base, coerce],
+  );
+
+  const onAddRow = useCallback(
+    (data: Record<string, string>) => {
+      const payload: Record<string, string | number> = {};
+      for (const [k, v] of Object.entries(data)) if (v !== '') payload[k] = coerce(k, v);
+      fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base, data: payload }),
+      }).then(() => setRefreshTick((t) => t + 1));
+    },
+    [base, coerce],
+  );
 
   const loadBases = useCallback(async () => {
     try {
@@ -119,7 +150,6 @@ export default function Home() {
     setFilters({});
     setSearch('');
     setCreating(false);
-    setAdding(false);
   }, []);
 
   const currentTab = tabs.find((t) => t.id === base);
@@ -174,31 +204,13 @@ export default function Home() {
         )}
 
         <div className={styles.pageHead}>
-          <div className={styles.pageHeadRow}>
-            <h1 className={styles.title}>{title}</h1>
-            {isCustom && !loading && (
-              <button type="button" className={styles.addRowBtn} onClick={() => setAdding(true)}>
-                + Добавить строку
-              </button>
-            )}
-          </div>
+          <h1 className={styles.title}>{title}</h1>
           <p className={styles.subtitle}>
             {blurb}
             {loading ? '' : ` · ${records.length} ${isCustom ? 'строк' : 'компаний'}`}
+            {isCustom && !loading && <span className={styles.editHint}> · правь ячейки кликом, добавляй строку снизу</span>}
           </p>
         </div>
-
-        {adding && isCustom && (
-          <AddRow
-            columns={columns}
-            onCancel={() => setAdding(false)}
-            onAdded={() => {
-              setAdding(false);
-              setRefreshTick((t) => t + 1);
-            }}
-            baseId={base}
-          />
-        )}
 
         {!isCustom && records.length > 0 && <Stats records={records} />}
 
@@ -217,6 +229,9 @@ export default function Home() {
             onFiltersChange={setFilters}
             onSearchChange={setSearch}
             onRowOpen={isCustom ? undefined : (record) => router.push(`/product/${record.id}`)}
+            editable={isCustom}
+            onCellEdit={onCellEdit}
+            onAddRow={onAddRow}
           />
         </div>
       </main>
