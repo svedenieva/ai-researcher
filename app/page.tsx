@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { MindSheet } from '@aivocado/mindsheet';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
 import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
+import { BASES, DEFAULT_BASE, baseById } from '@/lib/datasource/bases';
 import ThemeToggle from './theme-toggle';
 import Stats from './stats';
 import styles from './page.module.css';
@@ -30,6 +31,7 @@ export default function Home() {
   const [sort, setSort] = useState<ListParams['sort']>(DEFAULT_SORT);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
+  const [base, setBase] = useState<string>(DEFAULT_BASE);
   const [loading, setLoading] = useState(true);
   // hydrate state from the URL once, so shared links open with the same
   // filter/search/sort. Reading in an effect (not during render) keeps SSR
@@ -38,6 +40,8 @@ export default function Home() {
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
+    const b = p.get('base');
+    if (b && BASES.some((x) => x.id === b)) setBase(b);
     const q = p.get('q');
     if (q) setSearch(q);
     const s = p.get('sort');
@@ -57,6 +61,7 @@ export default function Home() {
   useEffect(() => {
     if (!ready) return;
     const p = new URLSearchParams();
+    if (base !== DEFAULT_BASE) p.set('base', base);
     if (search.trim()) p.set('q', search.trim());
     for (const [key, value] of Object.entries(filters)) p.set(key, value);
     if (sort && !(sort.key === DEFAULT_SORT.key && sort.dir === DEFAULT_SORT.dir)) {
@@ -64,11 +69,12 @@ export default function Home() {
     }
     const qs = p.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [filters, search, sort, ready]);
+  }, [filters, search, sort, base, ready]);
 
   useEffect(() => {
     if (!ready) return;
     const qs = new URLSearchParams();
+    if (base !== DEFAULT_BASE) qs.set('base', base);
     if (sort) { qs.set('sortKey', sort.key); qs.set('sortDir', sort.dir); }
     for (const [key, value] of Object.entries(filters)) qs.append('f', `${key}:${value}`);
     if (search.trim()) { qs.set('q', search.trim()); }
@@ -82,7 +88,14 @@ export default function Home() {
         setFacets(body.facets ?? {});
       })
       .finally(() => setLoading(false));
-  }, [sort, filters, search, ready]);
+  }, [sort, filters, search, base, ready]);
+
+  // переключение базы: сбрасываем фильтры/поиск (у разной базы свои разрезы)
+  const onBaseChange = useCallback((id: string) => {
+    setBase(id);
+    setFilters({});
+    setSearch('');
+  }, []);
 
   const onSortChange = useCallback((key: string) => {
     setSort((prev) =>
@@ -110,11 +123,26 @@ export default function Home() {
       </header>
 
       <main className={styles.body}>
+        <nav className={styles.baseTabs} aria-label="Базы знаний">
+          {BASES.map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              className={`${styles.baseTab} ${b.id === base ? styles.baseTabActive : ''}`}
+              onClick={() => onBaseChange(b.id)}
+              aria-pressed={b.id === base}
+            >
+              <span className={`${styles.baseDot} ${styles[`dot_${b.tone}`]}`} aria-hidden="true" />
+              {b.name}
+            </button>
+          ))}
+        </nav>
+
         <div className={styles.pageHead}>
-          <h1 className={styles.title}>Продукты и конкуренты</h1>
+          <h1 className={styles.title}>{baseById(base).name}</h1>
           <p className={styles.subtitle}>
-            Живая витрина AI-рынка{loading ? '' : `: ${records.length} компаний`}. Сразу видно,
-            что строить своё, брать готовым или мониторить.
+            {baseById(base).blurb}
+            {loading ? '' : ` · ${records.length} компаний`}
           </p>
         </div>
 

@@ -1,9 +1,13 @@
 import { getDataSource } from '@/lib/datasource';
+import { baseById } from '@/lib/datasource/bases';
 import type { ListParams } from '@/lib/datasource/types';
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const params: ListParams = {};
+
+  // выбранная база фиксирует раздел каталога (section); «Рынок AI» = весь каталог
+  const base = baseById(url.searchParams.get('base'));
 
   const sortKey = url.searchParams.get('sortKey');
   const sortDir = url.searchParams.get('sortDir');
@@ -32,17 +36,33 @@ export async function GET(request: Request): Promise<Response> {
     params.search = q;
   }
 
+  // база фиксирует section — добавляем его к фильтрам как AND-условие
+  if (base.section) {
+    params.filters = { ...(params.filters ?? {}), section: base.section };
+  }
+
   const ds = getDataSource();
-  const [columns, records, facets] = await Promise.all([
+  const [allColumns, records, allFacets] = await Promise.all([
     ds.columns(),
     ds.list(params),
     ds.facets(),
   ]);
-  // Unfiltered total for the "показано X из N" counter. When nothing is
-  // filtered/searched, `records` is already the full list — no extra query.
-  const total =
-    params.filter || params.filters || params.search
-      ? (await ds.list()).length
-      : records.length;
-  return Response.json({ columns, records, facets, total });
+
+  // внутри зафиксированной базы колонка/фильтр «Раздел» постоянны — прячем их
+  let columns = allColumns;
+  let facets = allFacets;
+  if (base.section) {
+    columns = allColumns.filter((c) => c.key !== 'section');
+    const { section: _section, ...rest } = allFacets;
+    facets = rest;
+  }
+
+  // «показано X из N»: N — размер этой базы (без пользовательских фильтров/поиска)
+  const baseParams: ListParams | undefined = base.section
+    ? { filters: { section: base.section } }
+    : undefined;
+  const userNarrowed = Boolean(params.filter || q || (params.filters && Object.keys(params.filters).some((k) => k !== 'section')));
+  const total = userNarrowed ? (await ds.list(baseParams)).length : records.length;
+
+  return Response.json({ columns, records, facets, total, base: base.id });
 }
