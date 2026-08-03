@@ -22,30 +22,30 @@ MCP-сервер для витрины **AI-Researcher**. Даёт агенту 
 cd mcp && npm install
 ```
 
-## Подключение (Claude Code / Claude Desktop)
+## Подключение (Claude Code)
 
-Добавь в конфиг MCP. Пример для Claude Code (`.mcp.json` в проекте или
-`~/.claude.json`):
+Уже настроено: в корне проекта лежит **`.mcp.json`** — Claude Code подхватит
+сервер `ai-researcher` автоматически (при первом запуске попросит подтвердить).
+Секрет в конфиг вписывать не нужно: сервер сам читает `SUPABASE_URL` и
+`SUPABASE_SERVICE_KEY` из `../.env.local` витрины.
 
 ```json
 {
   "mcpServers": {
     "ai-researcher": {
       "command": "node",
-      "args": ["C:/Users/nehoc/ai-researcher/mcp/server.mjs"],
-      "env": {
-        "SUPABASE_URL": "https://<твой-проект>.supabase.co",
-        "SUPABASE_SERVICE_KEY": "<sb_secret_…>",
-        "OPENROUTER_API_KEY": "<опционально, для умной декомпозиции>"
-      }
+      "args": ["C:/Users/nehoc/ai-researcher/mcp/server.mjs"]
     }
   }
 }
 ```
 
-`SUPABASE_URL` и `SUPABASE_SERVICE_KEY` — те же, что в `.env.local` витрины
-(ключ формата `sb_secret_…`). `OPENROUTER_API_KEY` необязателен: без него
-`research_decompose` использует эвристику.
+Приоритет кредов: сначала переменные окружения (если заданы в конфиге), иначе
+`../.env.local`. Для «умной» декомпозиции добавь `OPENROUTER_API_KEY` (в env
+конфига или в `.env.local`) — иначе `research_decompose` идёт по эвристике.
+
+Для **Claude Desktop** (другой конфиг, `claude_desktop_config.json`) — тот же
+блок `mcpServers`, только можно указать env явно, если `.env.local` недоступен.
 
 ## Проверка
 

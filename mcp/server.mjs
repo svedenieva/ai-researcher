@@ -9,10 +9,32 @@
 // Опционально: OPENROUTER_API_KEY (+ OPENROUTER_MODEL) или ANTHROPIC_API_KEY —
 // для «умной» декомпозиции; без них используется эвристика.
 
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+
+// Креды берём из окружения; если не заданы — подхватываем из ../.env.local
+// витрины (тот же файл, что использует веб-приложение). Так секрет не нужно
+// дублировать в конфиг MCP.
+function loadEnvFallback() {
+  try {
+    const p = join(dirname(fileURLToPath(import.meta.url)), '..', '.env.local');
+    for (const line of readFileSync(p, 'utf8').split(/\r?\n/)) {
+      if (!line || line.startsWith('#')) continue;
+      const i = line.indexOf('=');
+      if (i === -1) continue;
+      const k = line.slice(0, i).trim();
+      if (!process.env[k]) process.env[k] = line.slice(i + 1).trim();
+    }
+  } catch {
+    /* нет файла — полагаемся на process.env */
+  }
+}
+loadEnvFallback();
 
 const URL = process.env.SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_KEY;
