@@ -29,17 +29,50 @@ export async function GET(request: Request): Promise<Response> {
   const baseId = url.searchParams.get('base');
   const { params, q } = readParams(url);
 
+  // Раздел показывает свои записи И всё, что лежит ниже по дереву —
+  // выбор уровня работает как слайс: чем выше уровень, тем шире срез.
+  const SOURCE_COL = {
+    key: '__source',
+    label: 'Из базы',
+    type: 'select' as const,
+    sortable: true,
+    filterable: true,
+  };
+
   // ── пользовательская база (создана из UI) ─────────────────────
   if (baseId && !BUILTIN_IDS.has(baseId)) {
     try {
       const store = getCustomStore();
       const custom = await store.getBase(baseId);
       if (custom) {
-        const rows = await store.listRecords(baseId);
-        const ds = new JsonDataSource(rows, custom.columns);
+        const all = await store.listBases();
+        // все потомки выбранной базы
+        const kids = new Map<string, string[]>();
+        for (const b of all) {
+          if (!b.parent) continue;
+          kids.set(b.parent, [...(kids.get(b.parent) ?? []), b.id]);
+        }
+        const descendants: string[] = [];
+        const walk = (id: string) => {
+          for (const child of kids.get(id) ?? []) {
+            descendants.push(child);
+            walk(child);
+          }
+        };
+        walk(baseId);
+
+        const nameById = new Map(all.map((b) => [b.id, b.name]));
+        let rows = (await store.listRecords(baseId)).map((r) => ({ ...r, __source: custom.name }));
+        for (const id of descendants) {
+          const sub = await store.listRecords(id);
+          rows = rows.concat(sub.map((r) => ({ ...r, __source: nameById.get(id) ?? id })));
+        }
+
+        const cols = descendants.length ? [...custom.columns, SOURCE_COL] : custom.columns;
+        const ds = new JsonDataSource(rows, cols);
         const [records, facets] = await Promise.all([ds.list(params), ds.facets()]);
         const total = q || params.filters ? (await ds.list()).length : records.length;
-        return Response.json({ columns: custom.columns, records, facets, total, base: baseId, custom: true });
+        return Response.json({ columns: cols, records, facets, total, base: baseId, custom: true });
       }
     } catch (e) {
       console.error('custom base read failed:', e);
@@ -70,9 +103,43 @@ export async function GET(request: Request): Promise<Response> {
   const userNarrowed = Boolean(
     params.filter || q || (params.filters && Object.keys(params.filters).some((k) => k !== 'section')),
   );
-  const total = userNarrowed ? (await ds.list(baseParams)).length : records.length;
+  let total = userNarrowed ? (await ds.list(baseParams)).length : records.length;
 
-  return Response.json({ columns, records, facets, total, base: base.id, custom: false });
+  // подмешиваем записи пользовательских баз, вложенных в этот раздел
+  let merged = records;
+  try {
+    const store = getCustomStore();
+    const all = await store.listBases();
+    const kids = new Map<string, string[]>();
+    for (const b of all) {
+      if (!b.parent) continue;
+      kids.set(b.parent, [...(kids.get(b.parent) ?? []), b.id]);
+    }
+    const descendants: string[] = [];
+    const walk = (id: string) => {
+      for (const child of kids.get(id) ?? []) {
+        descendants.push(child);
+        walk(child);
+      }
+    };
+    walk(base.id);
+
+    if (descendants.length) {
+      const nameById = new Map(all.map((b) => [b.id, b.name]));
+      merged = records.map((r) => ({ ...r, __source: base.name }));
+      for (const id of descendants) {
+        const sub = await store.listRecords(id);
+        merged = merged.concat(sub.map((r) => ({ ...r, __source: nameById.get(id) ?? id })));
+      }
+      columns = [...columns, SOURCE_COL];
+      facets = { ...facets, __source: [...new Set(merged.map((r) => String(r.__source ?? '')))].filter(Boolean) };
+      total = merged.length;
+    }
+  } catch (e) {
+    console.error('nested bases merge failed:', e);
+  }
+
+  return Response.json({ columns, records: merged, facets, total, base: base.id, custom: false });
 }
 
 // добавить строку в пользовательскую базу

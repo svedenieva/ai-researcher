@@ -213,8 +213,6 @@ export default function Home() {
     setFavoritesOnly(false);
   }, []);
 
-  // что входит в текущий раздел — показываем слой ниже, чтобы по нему пройти
-  const children = tabs.filter((t) => t.parent === base);
 
   // «только избранные» фильтрует уже загруженные записи
   const shownRecords = favoritesOnly
@@ -237,6 +235,11 @@ export default function Home() {
         />
 
         <div className={styles.headerActions}>
+          {/* название выбранной базы — справа */}
+          <span className={styles.currentBase}>
+            {tabs.find((t) => t.id === base)?.name ?? ''}
+            {!loading && <span className={styles.currentCount}>{records.length}</span>}
+          </span>
           <Link href="/research" className={styles.newResearch}>+ Новое исследование</Link>
           <ThemeToggle />
         </div>
@@ -253,22 +256,6 @@ export default function Home() {
               onBaseChange(id);
             }}
           />
-        )}
-
-        {children.length > 0 && (
-          <div className={styles.insideStrip}>
-            <span className={styles.insideLabel}>Внутри:</span>
-            {children.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className={styles.insideChip}
-                onClick={() => onBaseChange(c.id)}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
         )}
 
         <div className={styles.content}>
