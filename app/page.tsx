@@ -155,7 +155,6 @@ export default function Home() {
     setCreating(false);
   }, []);
 
-  const blurb = BASES.find((b) => b.id === base)?.blurb ?? '';
 
   return (
     <div className={styles.shell}>
@@ -198,13 +197,6 @@ export default function Home() {
           />
         )}
 
-        <div className={styles.metaLine}>
-          {loading ? '' : `${records.length} ${isCustom ? 'строк' : 'компаний'}`}
-          {!isCustom && blurb ? ` · ${blurb}` : ''}
-          {isCustom && !loading ? ' · правь ячейки кликом, добавляй строку снизу' : ''}
-        </div>
-
-
         <div className={styles.content}>
           <MindSheet
             columns={columns}
@@ -223,6 +215,7 @@ export default function Home() {
             editable={isCustom}
             onCellEdit={onCellEdit}
             onAddRow={onAddRow}
+            autoGroup
           />
         </div>
       </main>

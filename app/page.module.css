@@ -110,7 +110,8 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  padding: 26px 32px 32px;
+  /* таблица идёт сразу под верхней строкой — без промежуточных блоков */
+  padding: 14px 32px 20px;
 }
 
 /* base switcher — tabs for the 4 knowledge bases */
@@ -198,17 +199,6 @@
   white-space: nowrap;
 }
 .addRowBtn:hover { background: var(--sage-hover); border-color: var(--sage-hover); }
-
-.editHint {
-  color: var(--ink-45);
-}
-
-/* compact meta line under the breadcrumb picker */
-.metaLine {
-  margin-bottom: 16px;
-  font-size: 13px;
-  color: var(--ink-45);
-}
 
 /* hero heading — title + value-prop subtitle */
 .pageHead {
