@@ -15,7 +15,7 @@
   z-index: 30;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 14px;
   height: 58px;
   padding: 0 32px;
   /* translucent bar with blur, the way Linear / Superhuman feel */
@@ -56,10 +56,18 @@
 }
 
 .brandName {
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.01em;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
 }
+.brandName:hover { color: var(--sage); }
 
 .brandKicker {
   font-family: var(--font-mono), monospace;

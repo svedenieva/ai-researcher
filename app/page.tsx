@@ -160,10 +160,14 @@ export default function Home() {
         <div className={styles.brand}>
           <span className={styles.mark} aria-hidden="true">AiR</span>
           <span className={styles.brandText}>
-            <span className={styles.brandName}>AI-Researcher</span>
+            <button type="button" className={styles.brandName} onClick={() => onBaseChange('market')}>
+              AI-Researcher
+            </button>
             <span className={styles.brandKicker}>База знаний · AiVocado</span>
           </span>
         </div>
+
+        <BasePicker tabs={tabs} base={base} onChange={onBaseChange} onCreate={() => setCreating(true)} />
 
         <div className={styles.headerActions}>
           <Link href="/research" className={styles.newResearch}>+ Новое исследование</Link>
@@ -172,8 +176,6 @@ export default function Home() {
       </header>
 
       <main className={styles.body}>
-        <BasePicker tabs={tabs} base={base} onChange={onBaseChange} onCreate={() => setCreating(true)} />
-
         {creating && (
           <CreateBase
             onCancel={() => setCreating(false)}

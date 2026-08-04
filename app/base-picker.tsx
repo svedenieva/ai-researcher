@@ -62,10 +62,7 @@ export default function BasePicker({
 
   return (
     <nav className={styles.crumbs} aria-label="Выбор базы" ref={ref}>
-      {/* корневая крошка — возврат к «Рынок AI» (весь каталог) */}
-      <button type="button" className={styles.root} onClick={() => pick('market')}>
-        AI-Researcher
-      </button>
+      {/* корневая крошка — сам бренд «AI-Researcher» в шапке (кликается домой) */}
       <span className={styles.sep} aria-hidden="true">›</span>
 
       <div className={styles.pickerWrap}>
