@@ -22,9 +22,10 @@ interface BaseTab {
   name: string;
   tone: string;
   builtin: boolean;
+  parent: string | null;
 }
 
-const BUILTIN_TABS: BaseTab[] = BASES.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: true }));
+const BUILTIN_TABS: BaseTab[] = BASES.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: true, parent: null }));
 
 export default function Home() {
   const router = useRouter();
@@ -178,6 +179,7 @@ export default function Home() {
       <main className={styles.body}>
         {creating && (
           <CreateBase
+            parents={tabs.map((t) => ({ id: t.id, name: t.name }))}
             onCancel={() => setCreating(false)}
             onCreated={async (id) => {
               setCreating(false);

@@ -12,12 +12,15 @@ export interface CustomBase {
   name: string;
   tone: 'sage' | 'teal' | 'blue' | 'amber';
   columns: ColumnDef[];
+  /** родитель в дереве баз (id базы) или null для верхнего уровня */
+  parent: string | null;
 }
 
 export interface NewBase {
   name: string;
   tone?: CustomBase['tone'];
   columns: ColumnDef[];
+  parent?: string | null;
 }
 
 export interface CustomStore {
@@ -65,6 +68,7 @@ class MemoryCustomStore implements CustomStore {
       name: def.name,
       tone: def.tone ?? TONES[this.bases.length % TONES.length],
       columns: def.columns,
+      parent: def.parent ?? null,
     };
     this.bases.push(base);
     this.rows[id] = [];
@@ -97,35 +101,45 @@ class SupabaseCustomStore implements CustomStore {
   constructor(url: string, key: string) {
     this.client = createClient(url, key, { auth: { persistSession: false } });
   }
+  // select('*') терпимо к отсутствию колонки parent (до миграции) —
+  // читаем parent опционально
+  private norm(row: Record<string, unknown>): CustomBase {
+    return {
+      id: String(row.id),
+      name: String(row.name),
+      tone: (row.tone as CustomBase['tone']) ?? 'sage',
+      columns: (row.columns as ColumnDef[]) ?? [],
+      parent: (row.parent as string) ?? null,
+    };
+  }
   async listBases(): Promise<CustomBase[]> {
     const { data, error } = await this.client
       .from('bases')
-      .select('id, name, tone, columns')
+      .select('*')
       .order('created_at', { ascending: true });
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
-    return (data ?? []) as CustomBase[];
+    return (data ?? []).map((r) => this.norm(r as Record<string, unknown>));
   }
   async getBase(id: string): Promise<CustomBase | null> {
     const { data, error } = await this.client
       .from('bases')
-      .select('id, name, tone, columns')
+      .select('*')
       .eq('id', id)
       .maybeSingle();
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
-    return (data as CustomBase) ?? null;
+    return data ? this.norm(data as Record<string, unknown>) : null;
   }
   async createBase(def: NewBase): Promise<CustomBase> {
     const existing = await this.listBases();
     const id = slugId(def.name, new Set(existing.map((b) => b.id)));
-    const row = {
-      id,
-      name: def.name,
-      tone: def.tone ?? TONES[existing.length % TONES.length],
-      columns: def.columns,
-    };
+    const tone = def.tone ?? TONES[existing.length % TONES.length];
+    // parent включаем в insert только если задан — так создание базы на
+    // верхнем уровне работает даже до миграции колонки parent
+    const row: Record<string, unknown> = { id, name: def.name, tone, columns: def.columns };
+    if (def.parent) row.parent = def.parent;
     const { error } = await this.client.from('bases').insert(row);
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
-    return row as CustomBase;
+    return { id, name: def.name, tone, columns: def.columns, parent: def.parent ?? null };
   }
   async listRecords(baseId: string): Promise<CatalogRecord[]> {
     const { data, error } = await this.client

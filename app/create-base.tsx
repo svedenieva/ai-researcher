@@ -22,12 +22,15 @@ const TYPE_LABELS: Record<ColumnType, string> = {
 export default function CreateBase({
   onCancel,
   onCreated,
+  parents = [],
 }: {
   onCancel: () => void;
   onCreated: (id: string) => void;
+  parents?: { id: string; name: string }[];
 }) {
   const [mode, setMode] = useState<'manual' | 'import'>('manual');
   const [name, setName] = useState('');
+  const [parent, setParent] = useState('');
   const [cols, setCols] = useState<ColDraft[]>([{ label: 'Название', type: 'text', filterable: false }]);
   const [raw, setRaw] = useState('');
   const [busy, setBusy] = useState(false);
@@ -68,6 +71,7 @@ export default function CreateBase({
         body: JSON.stringify({
           name: name.trim(),
           columns,
+          parent: parent || undefined,
           rows: mode === 'import' ? parsed.rows : undefined,
         }),
       });
@@ -118,6 +122,16 @@ export default function CreateBase({
           placeholder="Напр.: Инструменты для дизайна"
           autoFocus
         />
+      </label>
+
+      <label className={styles.field}>
+        <span className={styles.fieldLabel}>Внутри базы (необязательно)</span>
+        <select className={styles.input} value={parent} onChange={(e) => setParent(e.target.value)}>
+          <option value="">— верхний уровень —</option>
+          {parents.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
       </label>
 
       {mode === 'manual' ? (

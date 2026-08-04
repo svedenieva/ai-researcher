@@ -7,16 +7,17 @@ interface BaseDTO {
   name: string;
   tone: string;
   builtin: boolean;
+  parent: string | null;
 }
 
 // список всех баз для переключателя: сначала встроенные (срезы каталога),
-// потом пользовательские (из БД)
+// потом пользовательские (из БД). parent → дерево в пикере.
 export async function GET(): Promise<Response> {
-  const builtin: BaseDTO[] = BASES.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: true }));
+  const builtin: BaseDTO[] = BASES.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: true, parent: null }));
   let custom: BaseDTO[] = [];
   try {
     const rows = await getCustomStore().listBases();
-    custom = rows.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: false }));
+    custom = rows.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: false, parent: b.parent ?? null }));
   } catch (e) {
     // если пользовательские базы недоступны (нет таблиц) — показываем хотя бы встроенные
     console.error('listBases failed:', e);
@@ -68,7 +69,7 @@ function mapRows(columns: ReturnType<typeof normalizeColumns>, rows: unknown): R
 }
 
 export async function POST(request: Request): Promise<Response> {
-  let body: { name?: unknown; columns?: unknown; tone?: unknown; rows?: unknown };
+  let body: { name?: unknown; columns?: unknown; tone?: unknown; rows?: unknown; parent?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -83,10 +84,11 @@ export async function POST(request: Request): Promise<Response> {
   const tone = body?.tone === 'teal' || body?.tone === 'blue' || body?.tone === 'amber' || body?.tone === 'sage'
     ? (body.tone as CustomBase['tone'])
     : undefined;
+  const parent = typeof body?.parent === 'string' && body.parent ? body.parent : null;
 
   try {
     const store = getCustomStore();
-    const base = await store.createBase({ name, columns, tone });
+    const base = await store.createBase({ name, columns, tone, parent });
     const rows = mapRows(columns, body?.rows);
     const imported = rows.length ? await store.addRecords(base.id, rows) : 0;
     return Response.json({ base, imported });
