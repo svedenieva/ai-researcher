@@ -46,6 +46,9 @@ export default function Home() {
   const [refreshTick, setRefreshTick] = useState(0);
   const [creating, setCreating] = useState(false);
   const [treeOpen, setTreeOpen] = useState(false);
+  // избранные источники текущей базы
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   const isCustom = !BUILTIN_IDS.has(base);
 
@@ -173,12 +176,49 @@ export default function Home() {
     [onSortChange, sort],
   );
 
+  // избранное живёт на базу: перезагружаем при смене базы
+  useEffect(() => {
+    if (!ready) return;
+    fetch(`/api/favorites?base=${encodeURIComponent(base)}`)
+      .then((r) => r.json())
+      .then((b) => setFavorites(Array.isArray(b.favorites) ? b.favorites : []))
+      .catch(() => setFavorites([]));
+  }, [base, ready]);
+
+  const onToggleFavorite = useCallback(
+    (record: CatalogRecord) => {
+      const id = String(record.id);
+      // оптимистично — звезда откликается сразу
+      setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+      fetch('/api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base, record: id }),
+      }).catch(() => {
+        // не вышло — откатываем
+        setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+      });
+    },
+    [base],
+  );
+
+  const onSortReset = useCallback(() => {
+    setSort(undefined);
+    setExtraLevels([]);
+  }, []);
+
   const onBaseChange = useCallback((id: string) => {
     setBase(id);
     setFilters({});
     setSearch('');
     setCreating(false);
+    setFavoritesOnly(false);
   }, []);
+
+  // «только избранные» фильтрует уже загруженные записи
+  const shownRecords = favoritesOnly
+    ? records.filter((r) => favorites.includes(String(r.id)))
+    : records;
 
 
   return (
@@ -225,7 +265,7 @@ export default function Home() {
         <div className={styles.content}>
           <MindSheet
             columns={columns}
-            records={records}
+            records={shownRecords}
             total={total}
             loading={loading}
             filtersPosition="left"
@@ -236,6 +276,11 @@ export default function Home() {
             sorts={sort ? [sort, ...extraLevels] : extraLevels}
             onSortChange={onSortChange}
             onSortsChange={onSortsChange}
+            onSortReset={onSortReset}
+            favorites={favorites}
+            onToggleFavorite={onToggleFavorite}
+            favoritesOnly={favoritesOnly}
+            onFavoritesOnlyChange={setFavoritesOnly}
             onFiltersChange={setFilters}
             onSearchChange={setSearch}
             onRowOpen={isCustom ? undefined : (record) => router.push(`/product/${record.id}`)}
