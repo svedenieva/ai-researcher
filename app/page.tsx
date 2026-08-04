@@ -35,6 +35,8 @@ export default function Home() {
   const [total, setTotal] = useState<number>();
   const [facets, setFacets] = useState<Record<string, string[]>>({});
   const [sort, setSort] = useState<ListParams['sort']>(DEFAULT_SORT);
+  // дополнительные уровни группировки (Shift + клик), максимум 2 сверх первого
+  const [extraLevels, setExtraLevels] = useState<NonNullable<ListParams['sort']>[]>([]);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
   const [base, setBase] = useState<string>(DEFAULT_BASE);
@@ -146,7 +148,30 @@ export default function Home() {
     setSort((prev) =>
       prev?.key === key ? { key, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' },
     );
+    setExtraLevels([]);
   }, []);
+
+  // Клик по заголовку — обычная сортировка (первый уровень группировки).
+  // Shift + клик — добавить/переключить дополнительный уровень (всего до 3).
+  const onSortsChange = useCallback(
+    (key: string, additive: boolean) => {
+      if (!additive) {
+        onSortChange(key);
+        return;
+      }
+      setExtraLevels((prev) => {
+        if (sort?.key === key) return prev; // это уже первый уровень
+        const i = prev.findIndex((l) => l.key === key);
+        if (i >= 0) {
+          const next = [...prev];
+          next[i] = { key, dir: next[i].dir === 'asc' ? 'desc' : 'asc' };
+          return next;
+        }
+        return prev.length >= 2 ? prev : [...prev, { key, dir: 'asc' as const }];
+      });
+    },
+    [onSortChange, sort],
+  );
 
   const onBaseChange = useCallback((id: string) => {
     setBase(id);
@@ -208,7 +233,9 @@ export default function Home() {
             filters={filters}
             filterOptions={facets}
             search={search}
+            sorts={sort ? [sort, ...extraLevels] : extraLevels}
             onSortChange={onSortChange}
+            onSortsChange={onSortsChange}
             onFiltersChange={setFilters}
             onSearchChange={setSearch}
             onRowOpen={isCustom ? undefined : (record) => router.push(`/product/${record.id}`)}
