@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { BaseTab } from './base-picker';
-import styles from './base-tree-modal.module.css';
+import styles from './base-tree.module.css';
 
 interface TreeNode extends BaseTab {
   children: TreeNode[];
@@ -27,7 +27,7 @@ function buildTree(tabs: BaseTab[]) {
   return { roots, byId };
 }
 
-export default function BaseTreeModal({
+export default function BaseTree({
   tabs,
   base,
   onPick,
@@ -125,46 +125,33 @@ export default function BaseTreeModal({
     );
   };
 
+  // панель выпадает прямо из строки с названием базы (позиционирует родитель)
   return (
-    <div className={styles.overlay} onClick={onClose} role="presentation">
-      <div
-        className={styles.modal}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Выбор базы данных"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className={styles.head}>
-          <h2 className={styles.title}>Базы данных</h2>
-          <button type="button" className={styles.close} onClick={onClose} aria-label="Закрыть">×</button>
-        </div>
+    <div className={styles.panel} role="dialog" aria-label="Выбор базы данных">
+      <input
+        className={styles.search}
+        placeholder="Поиск базы…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        autoFocus
+      />
 
-        <input
-          className={styles.search}
-          placeholder="Поиск базы…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          autoFocus
-        />
+      <div className={styles.tree}>
+        {roots.map((n) => renderNode(n, 0))}
+        {matches && matches.size === 0 && <div className={styles.empty}>Ничего не найдено</div>}
+      </div>
 
-        <div className={styles.tree}>
-          {roots.map((n) => renderNode(n, 0))}
-          {matches && matches.size === 0 && <div className={styles.empty}>Ничего не найдено</div>}
-        </div>
-
-        <div className={styles.foot}>
-          <button
-            type="button"
-            className={styles.create}
-            onClick={() => {
-              onClose();
-              onCreate();
-            }}
-          >
-            + Создать базу
-          </button>
-          <span className={styles.hint}>Выбери таблицу — она откроется на главном экране</span>
-        </div>
+      <div className={styles.foot}>
+        <button
+          type="button"
+          className={styles.create}
+          onClick={() => {
+            onClose();
+            onCreate();
+          }}
+        >
+          + Создать базу
+        </button>
       </div>
     </div>
   );
