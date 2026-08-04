@@ -10,6 +10,7 @@ import { BASES, DEFAULT_BASE } from '@/lib/datasource/bases';
 import ThemeToggle from './theme-toggle';
 import CreateBase from './create-base';
 import BasePicker from './base-picker';
+import BaseTreeModal from './base-tree-modal';
 import styles from './page.module.css';
 
 const DEFAULT_SORT = { key: 'pop', dir: 'asc' as const };
@@ -42,6 +43,7 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
   const [creating, setCreating] = useState(false);
+  const [treeOpen, setTreeOpen] = useState(false);
 
   const isCustom = !BUILTIN_IDS.has(base);
 
@@ -162,13 +164,26 @@ export default function Home() {
           <span className={styles.mark} aria-hidden="true">AiR</span>
         </div>
 
-        <BasePicker tabs={tabs} base={base} onChange={onBaseChange} onCreate={() => setCreating(true)} />
+        <BasePicker tabs={tabs} base={base} onChange={onBaseChange} onOpenTree={() => setTreeOpen(true)} />
 
         <div className={styles.headerActions}>
           <Link href="/research" className={styles.newResearch}>+ Новое исследование</Link>
           <ThemeToggle />
         </div>
       </header>
+
+      {treeOpen && (
+        <BaseTreeModal
+          tabs={tabs}
+          base={base}
+          onPick={(id) => {
+            onBaseChange(id);
+            setTreeOpen(false);
+          }}
+          onClose={() => setTreeOpen(false)}
+          onCreate={() => setCreating(true)}
+        />
+      )}
 
       <main className={styles.body}>
         {creating && (
