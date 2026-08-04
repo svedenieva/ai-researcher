@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { MindSheet } from '@aivocado/mindsheet';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
 import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
-import { BASES, DEFAULT_BASE, baseById } from '@/lib/datasource/bases';
+import { BASES, DEFAULT_BASE } from '@/lib/datasource/bases';
 import ThemeToggle from './theme-toggle';
 import CreateBase from './create-base';
+import BasePicker from './base-picker';
 import styles from './page.module.css';
 
 const DEFAULT_SORT = { key: 'pop', dir: 'asc' as const };
@@ -151,9 +152,7 @@ export default function Home() {
     setCreating(false);
   }, []);
 
-  const currentTab = tabs.find((t) => t.id === base);
-  const title = currentTab?.name ?? baseById(base).name;
-  const blurb = BASES.find((b) => b.id === base)?.blurb ?? 'Своя база знаний.';
+  const blurb = BASES.find((b) => b.id === base)?.blurb ?? '';
 
   return (
     <div className={styles.shell}>
@@ -173,23 +172,7 @@ export default function Home() {
       </header>
 
       <main className={styles.body}>
-        <nav className={styles.baseTabs} aria-label="Базы знаний">
-          {tabs.map((b) => (
-            <button
-              key={b.id}
-              type="button"
-              className={`${styles.baseTab} ${b.id === base ? styles.baseTabActive : ''}`}
-              onClick={() => onBaseChange(b.id)}
-              aria-pressed={b.id === base}
-            >
-              <span className={`${styles.baseDot} ${styles[`dot_${b.tone}`] ?? styles.dot_sage}`} aria-hidden="true" />
-              {b.name}
-            </button>
-          ))}
-          <button type="button" className={styles.baseCreate} onClick={() => setCreating(true)}>
-            + Создать базу
-          </button>
-        </nav>
+        <BasePicker tabs={tabs} base={base} onChange={onBaseChange} onCreate={() => setCreating(true)} />
 
         {creating && (
           <CreateBase
@@ -202,13 +185,10 @@ export default function Home() {
           />
         )}
 
-        <div className={styles.pageHead}>
-          <h1 className={styles.title}>{title}</h1>
-          <p className={styles.subtitle}>
-            {blurb}
-            {loading ? '' : ` · ${records.length} ${isCustom ? 'строк' : 'компаний'}`}
-            {isCustom && !loading && <span className={styles.editHint}> · правь ячейки кликом, добавляй строку снизу</span>}
-          </p>
+        <div className={styles.metaLine}>
+          {loading ? '' : `${records.length} ${isCustom ? 'строк' : 'компаний'}`}
+          {!isCustom && blurb ? ` · ${blurb}` : ''}
+          {isCustom && !loading ? ' · правь ячейки кликом, добавляй строку снизу' : ''}
         </div>
 
 

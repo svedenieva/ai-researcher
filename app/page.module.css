@@ -195,6 +195,13 @@
   color: var(--ink-45);
 }
 
+/* compact meta line under the breadcrumb picker */
+.metaLine {
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--ink-45);
+}
+
 /* hero heading — title + value-prop subtitle */
 .pageHead {
   margin-bottom: 18px;
