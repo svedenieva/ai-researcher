@@ -2,6 +2,11 @@ import { BASES } from '@/lib/datasource/bases';
 import { getCustomStore, type CustomBase } from '@/lib/datasource/customStore';
 import type { ColumnDef } from '@/lib/datasource/types';
 
+// GET не принимает request, поэтому Next по умолчанию отдал бы снимок,
+// снятый на сборке — список баз «замерзал» бы до следующего деплоя.
+// Базы меняются в рантайме (создаются из UI), поэтому роут динамический.
+export const dynamic = 'force-dynamic';
+
 interface BaseDTO {
   id: string;
   name: string;
