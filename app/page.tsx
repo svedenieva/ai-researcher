@@ -213,6 +213,9 @@ export default function Home() {
     setFavoritesOnly(false);
   }, []);
 
+  // что входит в текущий раздел — показываем слой ниже, чтобы по нему пройти
+  const children = tabs.filter((t) => t.parent === base);
+
   // «только избранные» фильтрует уже загруженные записи
   const shownRecords = favoritesOnly
     ? records.filter((r) => favorites.includes(String(r.id)))
@@ -250,6 +253,22 @@ export default function Home() {
               onBaseChange(id);
             }}
           />
+        )}
+
+        {children.length > 0 && (
+          <div className={styles.insideStrip}>
+            <span className={styles.insideLabel}>Внутри:</span>
+            {children.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={styles.insideChip}
+                onClick={() => onBaseChange(c.id)}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
         )}
 
         <div className={styles.content}>

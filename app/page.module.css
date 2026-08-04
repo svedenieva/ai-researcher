@@ -253,3 +253,33 @@
     padding: 20px 16px 48px;
   }
 }
+
+/* «Внутри: …» — слой ниже текущего раздела, чтобы пройти вглубь одним кликом */
+.insideStrip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.insideLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-25);
+  margin-right: 2px;
+}
+
+.insideChip {
+  padding: 4px 11px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper-raised);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 12.5px;
+  color: var(--ink-70);
+  cursor: pointer;
+}
+.insideChip:hover { color: var(--sage); border-color: var(--sage); }
