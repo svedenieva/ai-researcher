@@ -160,12 +160,6 @@ export default function Home() {
       <header className={styles.header}>
         <div className={styles.brand}>
           <span className={styles.mark} aria-hidden="true">AiR</span>
-          <span className={styles.brandText}>
-            <button type="button" className={styles.brandName} onClick={() => onBaseChange('market')}>
-              AI-Researcher
-            </button>
-            <span className={styles.brandKicker}>База знаний · AiVocado</span>
-          </span>
         </div>
 
         <BasePicker tabs={tabs} base={base} onChange={onBaseChange} onCreate={() => setCreating(true)} />
