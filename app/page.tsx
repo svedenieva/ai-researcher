@@ -8,7 +8,6 @@ import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/type
 import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
 import { BASES, DEFAULT_BASE, baseById } from '@/lib/datasource/bases';
 import ThemeToggle from './theme-toggle';
-import Stats from './stats';
 import CreateBase from './create-base';
 import styles from './page.module.css';
 
@@ -212,7 +211,6 @@ export default function Home() {
           </p>
         </div>
 
-        {!isCustom && records.length > 0 && <Stats records={records} />}
 
         <div className={styles.content}>
           <MindSheet
