@@ -70,3 +70,8 @@
   margin-left: 5px;
   color: var(--ink-45);
 }
+
+.rootOpen {
+  border-color: var(--sage);
+  background: var(--wash);
+}

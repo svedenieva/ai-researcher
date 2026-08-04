@@ -43,18 +43,8 @@ export default function BaseTree({
   const { roots, byId } = useMemo(() => buildTree(tabs), [tabs]);
   const [query, setQuery] = useState('');
 
-  // путь до текущей базы — эти узлы раскрыты по умолчанию
-  const openByDefault = useMemo(() => {
-    const ids = new Set<string>();
-    let cur = byId.get(base);
-    while (cur) {
-      ids.add(cur.id);
-      cur = cur.parent ? byId.get(cur.parent) : undefined;
-    }
-    return ids;
-  }, [base, byId]);
-
-  const [expanded, setExpanded] = useState<Set<string>>(openByDefault);
+  // дерево по умолчанию свёрнуто — раскрываешь ветки сам, как в проводнике
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   // Esc закрывает
   useEffect(() => {
@@ -113,7 +103,12 @@ export default function BaseTree({
           <button
             type="button"
             className={`${styles.node} ${node.id === base ? styles.nodeActive : ''}`}
-            onClick={() => onPick(node.id)}
+            // как в проводнике: клик по ветке и загружает её таблицу, и раскрывает
+            // её вглубь; окно при этом остаётся открытым
+            onClick={() => {
+              onPick(node.id);
+              if (hasKids && !expanded.has(node.id)) toggle(node.id);
+            }}
           >
             <span className={styles.icon} aria-hidden="true">{hasKids ? '📁' : '📄'}</span>
             <span className={styles.name}>{node.name}</span>
@@ -125,9 +120,18 @@ export default function BaseTree({
     );
   };
 
-  // панель выпадает прямо из строки с названием базы (позиционирует родитель)
+  // Окно выбора базы: выпадает из строки с названием (позиционирует родитель),
+  // но ведёт себя как окно — навигация по дереву его не закрывает, закрыть
+  // можно крестиком, кликом мимо или Esc.
   return (
     <div className={styles.panel} role="dialog" aria-label="Выбор базы данных">
+      <div className={styles.head}>
+        <span className={styles.title}>Базы данных</span>
+        <button type="button" className={styles.close} onClick={onClose} aria-label="Закрыть">
+          ×
+        </button>
+      </div>
+
       <input
         className={styles.search}
         placeholder="Поиск базы…"

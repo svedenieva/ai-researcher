@@ -130,3 +130,35 @@
 }
 .create:hover { background: var(--sage-hover); border-color: var(--sage-hover); }
 
+
+/* заголовок окна дерева */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.title {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+
+.close {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: none;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--ink-45);
+  cursor: pointer;
+}
+.close:hover { color: var(--ink); border-color: var(--sage); }

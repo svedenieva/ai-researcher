@@ -59,28 +59,30 @@ export default function BasePicker({
 
   return (
     <nav className={styles.crumbs} aria-label="Путь к базе" ref={ref}>
+      {/* единственная точка входа в дерево баз */}
       <button
         type="button"
-        className={styles.root}
+        className={`${styles.root} ${open ? styles.rootOpen : ''}`}
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
+        title="Выбрать базу данных"
       >
         <span className={styles.rootIcon} aria-hidden="true">🗂</span>
         {rootLabel}
+        <span className={styles.caret} aria-hidden="true">▾</span>
       </button>
 
       {path.map((node, i) => (
         <span key={node.id} className={styles.crumbItem}>
           <span className={styles.sep} aria-hidden="true">›</span>
+          {/* крошка — просто переход в этот раздел, без выпадающего списка */}
           <button
             type="button"
             className={`${styles.crumb} ${i === path.length - 1 ? styles.crumbCurrent : ''}`}
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            title="Открыть дерево баз"
+            onClick={() => onChange(node.id)}
+            title={`Перейти: ${node.name}`}
           >
             {node.name}
-            {i === path.length - 1 && <span className={styles.caret} aria-hidden="true">▾</span>}
           </button>
         </span>
       ))}
@@ -89,10 +91,8 @@ export default function BasePicker({
         <BaseTree
           tabs={tabs}
           base={base}
-          onPick={(id) => {
-            onChange(id);
-            setOpen(false);
-          }}
+          // окно остаётся открытым — по дереву можно ходить сколько нужно
+          onPick={onChange}
           onClose={() => setOpen(false)}
           onCreate={onCreate}
         />
