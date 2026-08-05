@@ -14,6 +14,8 @@ export interface CustomBase {
   columns: ColumnDef[];
   /** родитель в дереве баз (id базы) или null для верхнего уровня */
   parent: string | null;
+  /** кто завёл базу; null — общая база, видна всем */
+  owner: string | null;
 }
 
 export interface NewBase {
@@ -21,6 +23,7 @@ export interface NewBase {
   tone?: CustomBase['tone'];
   columns: ColumnDef[];
   parent?: string | null;
+  owner?: string | null;
 }
 
 export interface CustomStore {
@@ -69,6 +72,7 @@ class MemoryCustomStore implements CustomStore {
       tone: def.tone ?? TONES[this.bases.length % TONES.length],
       columns: def.columns,
       parent: def.parent ?? null,
+      owner: def.owner ?? null,
     };
     this.bases.push(base);
     this.rows[id] = [];
@@ -110,6 +114,7 @@ class SupabaseCustomStore implements CustomStore {
       tone: (row.tone as CustomBase['tone']) ?? 'sage',
       columns: (row.columns as ColumnDef[]) ?? [],
       parent: (row.parent as string) ?? null,
+      owner: (row.owner_email as string) ?? null,
     };
   }
   async listBases(): Promise<CustomBase[]> {
@@ -137,9 +142,16 @@ class SupabaseCustomStore implements CustomStore {
     // верхнем уровне работает даже до миграции колонки parent
     const row: Record<string, unknown> = { id, name: def.name, tone, columns: def.columns };
     if (def.parent) row.parent = def.parent;
-    const { error } = await this.client.from('bases').insert(row);
+    if (def.owner) row.owner_email = def.owner;
+    let { error } = await this.client.from('bases').insert(row);
+    // колонки owner_email может ещё не быть (миграция не накатана) — тогда
+    // заводим базу как общую, вместо того чтобы падать
+    if (error && /owner_email/.test(error.message)) {
+      delete row.owner_email;
+      ({ error } = await this.client.from('bases').insert(row));
+    }
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
-    return { id, name: def.name, tone, columns: def.columns, parent: def.parent ?? null };
+    return { id, name: def.name, tone, columns: def.columns, parent: def.parent ?? null, owner: def.owner ?? null };
   }
   async listRecords(baseId: string): Promise<CatalogRecord[]> {
     const { data, error } = await this.client

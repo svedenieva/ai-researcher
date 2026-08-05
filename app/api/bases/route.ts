@@ -1,4 +1,5 @@
 import { BASES } from '@/lib/datasource/bases';
+import { currentEmail } from '@/lib/current-user';
 import { getCustomStore, type CustomBase } from '@/lib/datasource/customStore';
 import type { ColumnDef } from '@/lib/datasource/types';
 
@@ -21,8 +22,23 @@ export async function GET(): Promise<Response> {
   const builtin: BaseDTO[] = BASES.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: true, parent: null }));
   let custom: BaseDTO[] = [];
   try {
+    const me = await currentEmail();
     const rows = await getCustomStore().listBases();
-    custom = rows.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: false, parent: b.parent ?? null }));
+    // человек видит свои базы и общие (owner не проставлен — заведены до
+    // разделения по владельцам)
+    const mine = rows.filter((b) => !b.owner || b.owner === me);
+    // родителем может быть и встроенная база (AI-сфера и т.п.) — её видно всем
+    const visible = new Set([...mine.map((b) => b.id), ...BASES.map((b) => b.id)]);
+    custom = mine
+      // база без видимого родителя всплывает на верхний уровень, иначе
+      // потеряется в дереве вместе с чужой веткой
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        tone: b.tone,
+        builtin: false,
+        parent: b.parent && visible.has(b.parent) ? b.parent : null,
+      }));
   } catch (e) {
     // если пользовательские базы недоступны (нет таблиц) — показываем хотя бы встроенные
     console.error('listBases failed:', e);
@@ -93,7 +109,8 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const store = getCustomStore();
-    const base = await store.createBase({ name, columns, tone, parent });
+    const owner = await currentEmail();
+    const base = await store.createBase({ name, columns, tone, parent, owner });
     const rows = mapRows(columns, body?.rows);
     const imported = rows.length ? await store.addRecords(base.id, rows) : 0;
     return Response.json({ base, imported });
