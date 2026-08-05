@@ -7,7 +7,9 @@ import { isAllowed } from '@/lib/supabase-auth';
 //     whose email passes isAllowed().
 //   - Not configured on a deployment (VERCEL): fail closed (no open data).
 //   - Not configured locally: open, for development.
-const PUBLIC_PATHS = ['/login', '/auth/callback'];
+// /api/mcp проверяет личный токен сам, поэтому сессия ему не нужна — иначе
+// внешний клиент вместо ответа получал бы редирект на страницу входа
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/api/mcp'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
