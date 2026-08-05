@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { JsonDataSource } from './json';
 import { withSections } from './section';
+import { dedupeCompanies } from './dedupe';
 import type { CatalogRecord, ColumnDef, DataSource, ListParams } from './types';
 
 // Reads the catalog from a Supabase table. Rows are stored as { id, data },
@@ -22,7 +23,7 @@ export class SupabaseDataSource implements DataSource {
   private async fetchAll(): Promise<CatalogRecord[]> {
     const { data, error } = await this.client.from(this.table).select('data');
     if (error) throw new Error(`Supabase (${this.table}): ${error.message}`);
-    return withSections((data ?? []).map((row) => (row as { data: CatalogRecord }).data));
+    return dedupeCompanies(withSections((data ?? []).map((row) => (row as { data: CatalogRecord }).data)));
   }
 
   async columns(): Promise<ColumnDef[]> {
