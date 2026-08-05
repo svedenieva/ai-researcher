@@ -1,0 +1,329 @@
+/* Раздел «Сайты». Тот же язык, что у страницы исследования: липкая шапка,
+   колонка по центру, карточки на приподнятой бумаге. */
+
+.shell {
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 58px;
+  padding: 0 32px;
+  background: color-mix(in srgb, var(--paper) 80%, transparent);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid var(--rule);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-45);
+}
+.back:hover { color: var(--ink); }
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.body {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 34px 32px 72px;
+}
+
+.title {
+  margin: 0 0 8px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.lead {
+  margin: 0 0 22px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-70);
+}
+.lead code {
+  font-family: var(--font-mono), monospace;
+  font-size: 13px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--wash);
+}
+
+/* ── загрузка ─────────────────────────────────────────────── */
+.uploader {
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  background: var(--paper-raised);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card), var(--ring);
+}
+
+.pickRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pickInfo {
+  font-size: 12.5px;
+  color: var(--ink-45);
+}
+.pickInfo code {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fieldLabel {
+  font-size: 11px;
+  color: var(--ink-45);
+}
+
+.input {
+  width: 100%;
+  padding: 7px 11px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.input:focus { outline: none; border-color: var(--sage); }
+
+.uploadActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.bar {
+  flex: 1 1 auto;
+  height: 5px;
+  min-width: 80px;
+  border-radius: 999px;
+  background: var(--wash);
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  background: var(--sage);
+  transition: width 0.2s ease;
+}
+
+/* ── кнопки ───────────────────────────────────────────────── */
+.primary {
+  padding: 9px 16px;
+  background: var(--sage);
+  border: 1px solid var(--sage);
+  border-radius: var(--radius);
+  color: light-dark(#fff, #0e1113);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primary:hover:not(:disabled) { background: var(--sage-hover); border-color: var(--sage-hover); }
+.primary:disabled { opacity: 0.5; cursor: default; }
+
+.ghost {
+  padding: 8px 14px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink-70);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--sage); }
+.ghost:disabled { opacity: 0.5; cursor: default; }
+
+.error {
+  font-size: 13px;
+  color: var(--error);
+}
+
+/* ── поиск и разбор ───────────────────────────────────────── */
+.tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.search {
+  flex: 0 1 300px;
+  min-width: 180px;
+  padding: 7px 12px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+.search:focus { outline: none; border-color: var(--sage); }
+
+.select {
+  padding: 6px 10px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.select:focus { outline: none; border-color: var(--sage); }
+
+.count {
+  margin-left: auto;
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  color: var(--ink-25);
+}
+
+/* ── таблица ──────────────────────────────────────────────── */
+.tableWrap {
+  border-radius: var(--radius-lg);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-card), var(--ring);
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 11px 16px;
+  text-align: left;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--ink-25);
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--ink-70);
+  border-top: 1px solid var(--rule-soft);
+  vertical-align: top;
+}
+
+.table tbody tr:hover {
+  background: light-dark(#fbfaf8, #181d21);
+}
+
+.siteLink {
+  font-weight: 600;
+  color: var(--ink);
+}
+.siteLink:hover { color: var(--sage); }
+
+.note {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-45);
+  max-width: 320px;
+}
+
+.mono {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.dim { color: var(--ink-25); }
+
+.tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tagChip {
+  padding: 2px 8px;
+  border: none;
+  border-radius: 999px;
+  background: var(--wash);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--ink-45);
+  cursor: pointer;
+}
+.tagChip:hover { color: var(--ink); }
+
+.rowActions {
+  display: flex;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.action {
+  font-size: 12.5px;
+  color: var(--sage);
+}
+.action:hover { text-decoration: underline; }
+
+.danger {
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 12.5px;
+  color: var(--ink-25);
+  cursor: pointer;
+}
+.danger:hover { color: var(--error); }
+
+.empty {
+  padding: 26px 0;
+  font-size: 13.5px;
+  text-align: center;
+  color: var(--ink-45);
+}

@@ -240,6 +240,7 @@ export default function Home() {
             {tabs.find((t) => t.id === base)?.name ?? ''}
             {!loading && <span className={styles.currentCount}>{records.length}</span>}
           </span>
+          <Link href="/sites" className={styles.navLink}>Сайты</Link>
           <Link href="/research" className={styles.newResearch}>+ Новое исследование</Link>
           <ThemeToggle />
         </div>
