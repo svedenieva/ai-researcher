@@ -284,6 +284,7 @@ export default function Home() {
             onCellEdit={onCellEdit}
             onAddRow={onAddRow}
             autoGroup
+            viewKey={base}
           />
         </div>
       </main>
