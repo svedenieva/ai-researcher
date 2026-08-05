@@ -155,6 +155,24 @@ td strong{color:var(--text-primary)}
         <div class="step-d">Полностью закрыть и открыть заново — иначе новый сервер не подхватится.</div>
       </div>
 
+      <div class="step lead-warn">
+        <div class="step-t">Если клиент не принял блок выше</div>
+        <div class="step-d">Некоторые версии (чаще Claude Desktop) не понимают <code>"type": "http"</code>. Тогда тот же сервер подключается через мостик — ставить ничего не надо, <code>npx</code> скачает сам:</div>
+        <pre><code>{
+  "mcpServers": {
+    "ai-researcher": {
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote",
+        "https://ai-reesearcher.vercel.app/api/mcp",
+        "--header", "Authorization: Bearer <span class="hl">ВАШ_ТОКЕН</span>"
+      ]
+    }
+  }
+}</code></pre>
+        <div class="step-d">Нужен установленный Node.js. Всё остальное так же: сервер и ключи остаются на нашей стороне.</div>
+      </div>
+
       <div class="note"><span class="dot"></span><p><strong>Токен личный.</strong> По нему определяется, чьи базы вы видите. Не пересылайте его в общие чаты и не публикуйте.</p></div>
     </div>
   </details>
