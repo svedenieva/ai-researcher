@@ -382,3 +382,55 @@
   .header { padding: 0 16px; }
   .body { padding: 24px 16px 56px; }
 }
+
+/* откуда взят блок отчёта */
+.srcWeb, .srcCat {
+  margin-left: 9px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: var(--font-mono), monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.srcWeb {
+  background: light-dark(#e2efe6, #16281d);
+  color: light-dark(#2c6b45, #83c99d);
+}
+.srcCat {
+  background: var(--wash);
+  color: var(--ink-45);
+}
+
+/* компания, которой ещё нет в каталоге */
+.chipNew {
+  border-style: dashed;
+}
+.chipNew .chipMeta { color: var(--sage); }
+
+/* ссылки-источники под блоком */
+.sourceList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--rule);
+}
+
+.sourceLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-25);
+}
+
+.sourceLink {
+  font-size: 12px;
+  color: var(--ink-45);
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+}
+.sourceLink:hover { color: var(--sage); }

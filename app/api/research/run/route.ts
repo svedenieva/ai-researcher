@@ -1,3 +1,6 @@
+export const maxDuration = 120;
+export const dynamic = 'force-dynamic';
+
 import { getDataSource } from '@/lib/datasource';
 import type { CatalogRecord } from '@/lib/datasource/types';
 
@@ -46,7 +49,98 @@ interface Finding {
   findings: string[];
   relevant: RelevantCompany[];
   sources: Array<{ title: string; url: string }>;
-  source: 'mock';
+  source: 'mock' | 'web';
+}
+
+// ── живой движок: веб-поиск + синтез через OpenRouter ────────────
+// Плагин web у OpenRouter ищет сам и возвращает ссылки в annotations,
+// поэтому отдельный ключ поисковика не нужен.
+const MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.5';
+
+const SYSTEM = `Ты — аналитик рынка AI-продуктов. По подтеме исследования найди в вебе
+актуальные факты и компании. Отвечай СТРОГО одним JSON-объектом, без текста вокруг:
+{"summary": "1-2 предложения сути", "findings": ["конкретный факт", "…"],
+"companies": [{"name": "…", "what": "чем занимается", "url": "…"}]}
+Правила: только то, что подтверждается найденными источниками; 3-5 фактов;
+до 6 компаний; никаких выдуманных названий; пиши по-русски.`;
+
+function parseJson(text: string): Record<string, unknown> | null {
+  const s = text.indexOf('{');
+  const e = text.lastIndexOf('}');
+  if (s === -1 || e === -1 || e < s) return null;
+  try {
+    return JSON.parse(text.slice(s, e + 1)) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+async function webReport(
+  subtopic: string,
+  docs: Array<{ record: CatalogRecord; tokens: Set<string> }>,
+): Promise<Finding | null> {
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://ai-reesearcher.vercel.app',
+      'X-Title': 'AI-Researcher',
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      plugins: [{ id: 'web', max_results: 5 }],
+      max_tokens: 1100,
+      messages: [
+        { role: 'system', content: SYSTEM },
+        { role: 'user', content: `Подтема исследования: "${subtopic}"` },
+      ],
+    }),
+  });
+  if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${(await res.text()).slice(0, 200)}`);
+
+  const body = await res.json();
+  const msg = body?.choices?.[0]?.message;
+  const parsed = parseJson(String(msg?.content ?? ''));
+  if (!parsed) return null;
+
+  const findings = Array.isArray(parsed.findings)
+    ? parsed.findings.filter((x): x is string => typeof x === 'string')
+    : [];
+  const companies = Array.isArray(parsed.companies) ? parsed.companies : [];
+
+  // ссылки, которыми модель реально пользовалась
+  const annotations = Array.isArray(msg?.annotations) ? msg.annotations : [];
+  const sources: Array<{ title: string; url: string }> = [];
+  for (const a of annotations) {
+    const c = (a as { url_citation?: { title?: string; url?: string } })?.url_citation;
+    if (c?.url) sources.push({ title: c.title || c.url, url: c.url });
+  }
+
+  // найденные компании сверяем с каталогом: что уже есть — даём ссылкой на карточку
+  const relevant: RelevantCompany[] = [];
+  for (const raw of companies.slice(0, 6)) {
+    const c = raw as { name?: unknown; what?: unknown; url?: unknown };
+    const name = String(c?.name ?? '').trim();
+    if (!name) continue;
+    const known = docs.find((d) => String(d.record.name ?? '').toLowerCase() === name.toLowerCase());
+    relevant.push({
+      id: known ? String(known.record.id) : `web:${name}`,
+      name,
+      verdict: known ? str(known.record.verdict) : null,
+      vertical: known ? str(known.record.vertical) : (typeof c.what === 'string' ? c.what : null),
+      url: typeof c.url === 'string' ? c.url : known ? str(known.record.url) : null,
+    });
+  }
+
+  const inBase = relevant.filter((r) => !r.id.startsWith('web:')).length;
+  const summary =
+    (typeof parsed.summary === 'string' ? parsed.summary : `«${subtopic}»`) +
+    (relevant.length
+      ? ` В каталоге уже есть ${inBase} из ${relevant.length} найденных.`
+      : '');
+
+  return { subtopic, summary, findings, relevant, sources, source: 'web' };
 }
 
 function str(v: CatalogRecord[string]): string | null {
@@ -146,9 +240,39 @@ export async function POST(request: Request): Promise<Response> {
     ),
   }));
 
-  // TODO(реальный движок): если доступен Claude (подписка/DeepLinks) + веб-поиск —
-  // по каждой подтеме гнать поиск (Tavily) и синтез (Claude) вместо mockReport.
-  const report = subtopics.map((sub) => mockReport(sub, docs));
+  // Живой движок, если задан ключ: по каждой подтеме веб-поиск + синтез.
+  // Подтемы идут параллельно — иначе десяток последовательных запросов
+  // упирается в таймаут функции. На сбое конкретной подтемы падаем на разбор
+  // из каталога, чтобы отчёт не оставался пустым.
+  if (process.env.OPENROUTER_API_KEY) {
+    // причина отказа веб-движка, чтобы показать её в интерфейсе, а не гадать
+    let reason: string | null = null;
+    const report = await Promise.all(
+      subtopics.map(async (sub) => {
+        try {
+          const live = await webReport(sub, docs);
+          if (live) return live;
+          reason ??= 'Модель вернула ответ, который не удалось разобрать.';
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error('web report failed:', sub, msg);
+          if (msg.includes('402')) {
+            reason ??= 'На балансе OpenRouter закончились кредиты — пополните на openrouter.ai/settings/credits.';
+          } else if (msg.includes('401') || msg.includes('403')) {
+            reason ??= 'Ключ OpenRouter отклонён — проверьте OPENROUTER_API_KEY.';
+          } else if (msg.includes('429')) {
+            reason ??= 'OpenRouter ограничил частоту запросов — попробуйте через минуту.';
+          } else {
+            reason ??= `Веб-поиск не отработал: ${msg.slice(0, 120)}`;
+          }
+        }
+        return mockReport(sub, docs);
+      }),
+    );
+    const mode = report.every((r) => r.source === 'web') ? 'web' : 'mixed';
+    return Response.json({ report, mode, reason });
+  }
 
+  const report = subtopics.map((sub) => mockReport(sub, docs));
   return Response.json({ report, mode: 'mock' });
 }

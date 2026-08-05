@@ -24,7 +24,7 @@ interface Finding {
   findings: string[];
   relevant: RelevantCompany[];
   sources: Array<{ title: string; url: string }>;
-  source: 'mock';
+  source: 'mock' | 'web';
 }
 
 export default function Research() {
@@ -42,6 +42,10 @@ export default function Research() {
   const [confirmed, setConfirmed] = useState(false);
   // результат запуска исследования (Шаг 5)
   const [report, setReport] = useState<Finding[] | null>(null);
+  // web — всё найдено в вебе, mixed — часть подтем упала на каталог, mock — ключа нет
+  const [mode, setMode] = useState<string>("mock");
+  // почему веб-движок не отработал (кредиты, ключ, лимит) — показываем как есть
+  const [reason, setReason] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
 
   const decompose = async () => {
@@ -106,6 +110,8 @@ export default function Research() {
       const body = await res.json();
       if (!res.ok) throw new Error(body?.error ?? 'Ошибка запуска');
       setReport(body.report ?? []);
+      setMode(body.mode ?? "mock");
+      setReason(body.reason ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка');
     } finally {
@@ -318,15 +324,25 @@ export default function Research() {
               <h2 className={styles.planTitle}>Результаты исследования</h2>
               <span className={styles.count}>{report.length} подтем</span>
             </div>
-            <p className={styles.mockBanner}>
-              ⚙️ Демо-режим: отчёт собран из каталога (412 компаний). Реальный веб-поиск
-              и синтез Claude подключаются в эту же структуру.
-            </p>
+            {mode !== 'web' && (
+              <p className={styles.mockBanner}>
+                {reason
+                  ? `⚠️ ${reason} Отчёт собран из каталога.`
+                  : mode === 'mixed'
+                    ? '⚙️ Часть подтем не удалось прогнать по вебу — они собраны из каталога.'
+                    : '⚙️ Демо-режим: отчёт собран из каталога. Живой веб-поиск включается ключом OPENROUTER_API_KEY.'}
+              </p>
+            )}
 
             <div className={styles.reportList}>
               {report.map((f, i) => (
                 <article key={i} className={styles.finding}>
-                  <h3 className={styles.findingTitle}>{f.subtopic}</h3>
+                  <h3 className={styles.findingTitle}>
+                    {f.subtopic}
+                    <span className={f.source === 'web' ? styles.srcWeb : styles.srcCat}>
+                      {f.source === 'web' ? '🌐 веб' : '📁 каталог'}
+                    </span>
+                  </h3>
                   <p className={styles.findingSummary}>{f.summary}</p>
                   <ul className={styles.findingList}>
                     {f.findings.map((line, j) => (
@@ -335,11 +351,36 @@ export default function Research() {
                   </ul>
                   {f.relevant.length > 0 && (
                     <div className={styles.relevantRow}>
-                      {f.relevant.map((c) => (
-                        <Link key={c.id} href={`/product/${c.id}`} className={styles.relevantChip}>
-                          {c.name}
-                          {c.vertical ? <span className={styles.chipMeta}>{c.vertical}</span> : null}
-                        </Link>
+                      {f.relevant.map((c) =>
+                        c.id.startsWith('web:') ? (
+                          // компании ещё нет в каталоге — ведём на её сайт
+                          <a
+                            key={c.id}
+                            href={c.url ?? '#'}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`${styles.relevantChip} ${styles.chipNew}`}
+                            title={c.vertical ?? undefined}
+                          >
+                            {c.name}
+                            <span className={styles.chipMeta}>новое</span>
+                          </a>
+                        ) : (
+                          <Link key={c.id} href={`/product/${c.id}`} className={styles.relevantChip}>
+                            {c.name}
+                            {c.vertical ? <span className={styles.chipMeta}>{c.vertical}</span> : null}
+                          </Link>
+                        ),
+                      )}
+                    </div>
+                  )}
+                  {f.sources.length > 0 && f.source === 'web' && (
+                    <div className={styles.sourceList}>
+                      <span className={styles.sourceLabel}>Источники:</span>
+                      {f.sources.slice(0, 5).map((s, j) => (
+                        <a key={j} href={s.url} target="_blank" rel="noreferrer" className={styles.sourceLink}>
+                          {new URL(s.url).hostname.replace(/^www\./, '')}
+                        </a>
                       ))}
                     </div>
                   )}
