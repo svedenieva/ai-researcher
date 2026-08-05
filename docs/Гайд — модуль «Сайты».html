@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Сайты — хранилище готовых страниц</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#eef2f9;
+  --glass-bg:rgba(255,255,255,0.72);
+  --glass-border:rgba(255,255,255,0.85);
+  --glass-shadow:rgba(100,120,180,0.08);
+  --text-primary:#1a2138;
+  --text-secondary:#4a5578;
+  --text-muted:#8892ab;
+  --accent:#4f7cff;--accent-light:#e8eeff;
+  --warn:#f5944e;--warn-light:#fff3e8;
+  --success:#2dba8e;--success-light:#e5f8f2;
+  --idea:#a87bff;--idea-light:#f2ecff;
+  --danger:#e85d9c;--danger-light:#fdeaf3;
+  --radius:16px;--radius-sm:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'DM Sans',-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;line-height:1.6;color:var(--text-primary);
+  background:var(--bg);
+  background-image:
+    radial-gradient(circle at 0% 0%,rgba(79,124,255,0.12) 0%,transparent 45%),
+    radial-gradient(circle at 100% 100%,rgba(168,123,255,0.10) 0%,transparent 45%);
+  background-attachment:fixed;min-height:100vh;
+}
+.wrap{max-width:780px;margin:0 auto;padding:16px 12px 48px}
+@media(min-width:640px){.wrap{padding:32px 20px 80px}}
+@media(min-width:1024px){.wrap{padding:48px 32px 100px}}
+.card{
+  background:var(--glass-bg);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--glass-border);border-radius:var(--radius);
+  box-shadow:0 2px 24px var(--glass-shadow),0 0 0 1px rgba(255,255,255,0.5) inset;
+}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+.header{position:relative;overflow:hidden;padding:22px 22px 20px;margin-bottom:10px;animation:fadeSlideIn .5s ease both}
+.header::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#4f7cff,#a87bff,#e85d9c)}
+.brand{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(145deg,#3fae6e,#2d8a55);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:12px;box-shadow:0 2px 8px rgba(45,138,85,.35)}
+.brand-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent)}
+h1{font-size:19px;font-weight:700;letter-spacing:-.3px;line-height:1.25;margin-bottom:10px}
+@media(min-width:640px){h1{font-size:23px}}
+@media(min-width:1024px){h1{font-size:26px}}
+.summary{font-size:13.5px;color:var(--text-secondary);max-width:640px}
+.pill{display:inline-block;margin-top:14px;padding:5px 12px;border-radius:999px;background:var(--success-light);color:var(--success);font-size:12px;font-weight:600}
+
+.section{margin-bottom:10px;overflow:hidden;animation:fadeSlideIn .5s ease both}
+.section:nth-child(1){animation-delay:.06s}.section:nth-child(2){animation-delay:.12s}
+.section:nth-child(3){animation-delay:.18s}.section:nth-child(4){animation-delay:.24s}
+.section:nth-child(5){animation-delay:.30s}.section:nth-child(6){animation-delay:.36s}
+.section-header{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 18px}
+.section-header::-webkit-details-marker{display:none}
+.section-icon{flex:none;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.section-icon svg{width:16px;height:16px}
+@media(min-width:1024px){.section-icon{width:38px;height:38px}}
+.section-num{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.2px;color:var(--text-muted)}
+.section-title{font-size:14.5px;font-weight:700;flex-shrink:0}
+@media(min-width:1024px){.section-title{font-size:16px}}
+.section-brief{font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chevron{flex:none;margin-left:auto;color:var(--text-muted);transition:transform .3s ease}
+.chevron svg{width:18px;height:18px;display:block}
+.section[open] .section-header .chevron{transform:rotate(180deg)}
+.section-body{padding:2px 18px 18px;animation:fadeSlideIn .35s ease both}
+
+.icon-blue{background:var(--accent-light);color:var(--accent)}
+.icon-green{background:var(--success-light);color:var(--success)}
+.icon-warn{background:var(--warn-light);color:var(--warn)}
+.icon-idea{background:var(--idea-light);color:var(--idea)}
+.icon-danger{background:var(--danger-light);color:var(--danger)}
+
+.step{border-left:2px solid rgba(120,140,180,.18);padding:2px 0 2px 14px;margin:14px 0}
+.step-t{font-size:13.5px;font-weight:600;margin-bottom:4px}
+.step-d{font-size:13px;color:var(--text-secondary)}
+.step-d strong{color:var(--text-primary);font-weight:600}
+.lead-green{border-left-color:var(--success)}
+.lead-blue{border-left-color:var(--accent)}
+.lead-warn{border-left-color:var(--warn)}
+
+pre{background:#1a2138;color:#e6ebf5;border-radius:var(--radius-sm);padding:12px 14px;overflow-x:auto;margin:9px 0;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.55}
+code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(120,140,180,.12);padding:1px 5px;border-radius:4px}
+pre code{background:none;padding:0;font-size:inherit;color:inherit}
+.hl{color:#ffd479}
+.cmt{color:#8892ab}
+
+.note{display:flex;gap:10px;padding:11px 13px;margin:10px 0;border-radius:var(--radius-sm);background:var(--warn-light)}
+.note .dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-top:6px}
+.note p{font-size:12.5px;color:var(--text-secondary)}
+.note strong{color:var(--text-primary)}
+.note-danger{background:var(--danger-light)}
+.note-danger .dot{background:var(--danger)}
+
+ul.plain{list-style:none;margin:8px 0}
+ul.plain li{display:flex;gap:9px;font-size:13px;color:var(--text-secondary);margin-bottom:6px}
+ul.plain li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:7px}
+
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12.5px}
+th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);padding:6px 8px;border-bottom:1px solid rgba(120,140,180,.2)}
+td{padding:8px;border-bottom:1px solid rgba(120,140,180,.12);color:var(--text-secondary);vertical-align:top}
+td strong{color:var(--text-primary)}
+.scroll{overflow-x:auto}
+
+.footer{text-align:center;margin-top:22px;font-size:11.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;letter-spacing:.4px}
+.footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="header card">
+    <div class="brand">
+      <div class="logo">AiR</div>
+      <span class="brand-label">AiVocado Soft · Инструкция</span>
+    </div>
+    <h1>Сайты — хранилище готовых страниц</h1>
+    <p class="summary">Раздел, куда складываются статические сайты, собранные с ИИ: залить папкой или архивом, открыть живым по ссылке, скачать обратно и найти по названию, клиенту или тегу.</p>
+    <span class="pill">Раздел /sites — ссылка в шапке каталога</span>
+  </header>
+
+  <details class="section card" open>
+    <summary class="section-header">
+      <div class="section-icon icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+      <span class="section-num">01</span>
+      <span class="section-title">Разовая настройка</span>
+      <span class="section-brief">бакет + SQL, один раз</span>
+      <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </summary>
+    <div class="section-body">
+
+      <div class="step lead-blue">
+        <div class="step-t">Шаг 1. Завести бакет</div>
+        <div class="step-d">
+          Supabase → <strong>Storage</strong> → <strong>New bucket</strong>. Имя — <code>sites</code>, ровно так, строчными.
+          <br /><strong>Public bucket — выключить.</strong> Бакет приватный: файлы отдаёт сервер приложения, а он уже проверил, что человек вошёл и есть в списке доступа. Публичный бакет открыл бы все сайты всему интернету по прямой ссылке.
+        </div>
+      </div>
+
+      <div class="step lead-blue">
+        <div class="step-t">Шаг 2. Прогнать SQL</div>
+        <div class="step-d">Supabase → <strong>SQL Editor</strong> → вставить и <strong>Run</strong>. Тот же запрос лежит в репозитории, в <code>supabase/schema.sql</code>.</div>
+      </div>
+
+<pre><code>create table if not exists sites (
+  id          text primary key,          <span class="cmt">-- слаг из названия, при совпадении суффикс -2</span>
+  name        text not null,
+  client      text,
+  tags        text[] not null default '{}',
+  note        text,
+  entry       text not null default 'index.html',
+  file_count  int  not null default 0,
+  size_bytes  bigint not null default 0,
+  owner       text,                      <span class="cmt">-- почта того, кто залил</span>
+  created_at  timestamptz not null default now()
+);</code></pre>
+
+      <div class="step lead-blue">
+        <div class="step-t">Шаг 3. Проверить переменные</div>
+        <div class="step-d">В <code>.env.local</code> и в переменных проекта на Vercel уже должны быть:</div>
+      </div>
+
+      <div class="scroll">
+        <table>
+          <tr><th>Переменная</th><th>Значение</th></tr>
+          <tr><td><strong>DATA_SOURCE</strong></td><td><code>supabase</code></td></tr>
+          <tr><td><strong>SUPABASE_URL</strong></td><td>адрес проекта</td></tr>
+          <tr><td><strong>SUPABASE_SERVICE_KEY</strong></td><td>ключ вида <code>sb_secret_…</code></td></tr>
+        </table>
+      </div>
+
+      <div class="note">
+        <span class="dot"></span>
+        <p><strong>Ключ — именно <code>sb_secret_…</code>,</strong> а не длинный <code>eyJ…</code>. Старый JWT даёт ошибки «Invalid API key» и «JWT issued at future».</p>
+      </div>
+
+    </div>
+  </details>
+
+  <details class="section card">
+    <summary class="section-header">
+      <div class="section-icon icon-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      <span class="section-num">02</span>
+      <span class="section-title">Как залить сайт</span>
+      <span class="section-brief">папкой или архивом</span>
+      <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </summary>
+    <div class="section-body">
+
+      <ul class="plain">
+        <li><strong>Папкой целиком</strong> — выбрать директорию с сайтом, структура вложенных папок сохраняется как есть.</li>
+        <li><strong>Архивом <code>.zip</code></strong> — распаковывается прямо в браузере.</li>
+      </ul>
+
+      <div class="step lead-green">
+        <div class="step-t">Лишняя обёртка срезается сама</div>
+        <div class="step-d">Если внутри архива всё лежит в одной общей папке (<code>мой-сайт/index.html</code>), эта папка срезается: в хранилище попадёт <code>index.html</code>. Так ссылки внутри сайта не ломаются.</div>
+      </div>
+
+      <div class="scroll">
+        <table>
+          <tr><th>Что не примет</th><th>Почему</th></tr>
+          <tr><td><strong>файл больше 10 МБ</strong></td><td>это витрина статики, а не файлопомойка</td></tr>
+          <tr><td><strong>больше 200 файлов</strong></td><td>столько же</td></tr>
+          <tr><td><strong>нет <code>index.html</code> в корне</strong></td><td>нечего показывать. Если HTML-файл ровно один и лежит глубже — он станет стартовой страницей</td></tr>
+        </table>
+      </div>
+
+      <div class="step lead-green">
+        <div class="step-t">Почему грузится по одному файлу</div>
+        <div class="step-d">Это не медлительность, а обход ограничения: serverless-запрос на Vercel не принимает тело больше ~4,5 МБ, поэтому одной пачкой сайт не отправить. Прогресс виден на экране.</div>
+      </div>
+
+      <div class="step lead-green">
+        <div class="step-t">Что заполнить</div>
+        <div class="step-d"><strong>Название</strong> — обязательно. <strong>Клиент</strong>, <strong>теги</strong> и <strong>заметка</strong> — по желанию, по ним потом ищется.</div>
+      </div>
+
+    </div>
+  </details>
+
+  <details class="section card">
+    <summary class="section-header">
+      <div class="section-icon icon-idea"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+      <span class="section-num">03</span>
+      <span class="section-title">Что дальше можно делать</span>
+      <span class="section-brief">открыть, скачать, найти, удалить</span>
+      <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </summary>
+    <div class="section-body">
+
+      <div class="scroll">
+        <table>
+          <tr><th>Действие</th><th>Как</th></tr>
+          <tr><td><strong>Открыть</strong></td><td>кнопка в строке — сайт открывается живым, со своими стилями и картинками</td></tr>
+          <tr><td><strong>Скачать</strong></td><td>кнопка в строке — собирает <code>.zip</code> со всеми файлами обратно</td></tr>
+          <tr><td><strong>Найти</strong></td><td>поиск сверху ищет по названию, клиенту и заметке; рядом фильтр по тегу</td></tr>
+          <tr><td><strong>Отсортировать</strong></td><td>по дате или по названию</td></tr>
+          <tr><td><strong>Удалить</strong></td><td>кнопка в строке, с подтверждением</td></tr>
+        </table>
+      </div>
+
+      <div class="note note-danger">
+        <span class="dot"></span>
+        <p><strong>Удаление необратимо.</strong> Сносит и файлы, и запись. Версий и корзины нет — восстановить будет неоткуда.</p>
+      </div>
+
+    </div>
+  </details>
+
+  <details class="section card">
+    <summary class="section-header">
+      <div class="section-icon icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg></div>
+      <span class="section-num">04</span>
+      <span class="section-title">Кто что видит</span>
+      <span class="section-brief">общий реестр, не личное пространство</span>
+      <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </summary>
+    <div class="section-body">
+
+      <div class="step lead-blue">
+        <div class="step-t">Все сайты видны всем, кто вошёл</div>
+        <div class="step-d">Это общий реестр компании. У баз знаний доступ разделён по владельцам, у сайтов — <strong>нет</strong>, так задумано. Поле «залил» показывает автора, но ничего не ограничивает.</div>
+      </div>
+
+      <div class="step lead-warn">
+        <div class="step-t">Ссылка на сайт не публичная</div>
+        <div class="step-d">Человек без входа увидит страницу логина. Показать сайт клиенту такой ссылкой не получится — для этого нужен обычный хостинг.</div>
+      </div>
+
+    </div>
+  </details>
+
+  <details class="section card">
+    <summary class="section-header">
+      <div class="section-icon icon-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <span class="section-num">05</span>
+      <span class="section-title">Ограничения</span>
+      <span class="section-brief">пути только относительные</span>
+      <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </summary>
+    <div class="section-body">
+
+      <div class="step lead-warn">
+        <div class="step-t">Пути к файлам — только относительные</div>
+        <div class="step-d">
+          Сайт, который тянет стили как <code>/style.css</code> (со слэша в начале), не отрисуется: слэш ведёт в корень домена, а сайт лежит по своему адресу.
+          <br />Работает: <code>style.css</code>, <code>./style.css</code>, <code>assets/style.css</code>.
+        </div>
+      </div>
+
+      <div class="note">
+        <span class="dot"></span>
+        <p>Если сайт собирает ИИ — так и просите: <strong>пути относительные, без ведущего слэша</strong>. Это единственное требование к вёрстке.</p>
+      </div>
+
+      <div class="step lead-warn">
+        <div class="step-t">Чего в разделе нет и не планируется</div>
+        <div class="step-d">Истории версий — новая заливка не хранит предыдущую. Редактирования файлов в браузере. Публичных ссылок и своих доменов.</div>
+      </div>
+
+    </div>
+  </details>
+
+  <details class="section card">
+    <summary class="section-header">
+      <div class="section-icon icon-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <span class="section-num">06</span>
+      <span class="section-title">Если не работает</span>
+      <span class="section-brief">частые случаи</span>
+      <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </summary>
+    <div class="section-body">
+      <div class="scroll">
+        <table>
+          <tr><th>Симптом</th><th>Что делать</th></tr>
+          <tr><td><strong>«Хранилище не настроено»</strong></td><td>не создан бакет <code>sites</code> — шаг 1</td></tr>
+          <tr><td><strong>Ошибка про таблицу <code>sites</code></strong></td><td>не прогнан SQL — шаг 2</td></tr>
+          <tr><td><strong>Сайт открылся без стилей и картинок</strong></td><td>в HTML корневые пути <code>/style.css</code> — заменить на относительные</td></tr>
+          <tr><td><strong>«Нет index.html в корне»</strong></td><td>стартовая страница названа иначе или лежит глубже — переименовать в <code>index.html</code></td></tr>
+          <tr><td><strong>Загрузка встала на середине</strong></td><td>сеть отвалилась; удалить запись и залить заново</td></tr>
+          <tr><td><strong>Файл не принят</strong></td><td>больше 10 МБ — сжать картинку или видео</td></tr>
+        </table>
+      </div>
+    </div>
+  </details>
+
+  <div class="footer">AiVocado Soft · AI-Researcher · раздел «Сайты»</div>
+
+</div>
+</body>
+</html>

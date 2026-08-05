@@ -20,6 +20,13 @@ function readParams(url: URL): { params: ListParams; q: string | null } {
   }
   if (Object.keys(filters).length) params.filters = filters;
 
+  // одиночный фильтр из первой версии API: фронтенд давно шлёт f=ключ:значение,
+  // но параметр остался в документации и во внешних ссылках — без разбора он
+  // молча отдавал бы нефильтрованный список
+  const filterKey = url.searchParams.get('filterKey');
+  const filterValue = url.searchParams.get('filterValue');
+  if (filterKey && filterValue) params.filter = { key: filterKey, value: filterValue };
+
   const q = url.searchParams.get('q');
   if (q) params.search = q;
   return { params, q };
