@@ -275,22 +275,48 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
   }
 }
 
+// Часть клиентов ждёт ответ потоком (text/event-stream), часть — обычным JSON.
+// Отвечаем в том формате, который клиент запросил, иначе он молча не подключится.
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Mcp-Session-Id, Mcp-Protocol-Version',
+};
+
+function envelope(payload: unknown, wantsStream: boolean): Response {
+  if (!wantsStream) return Response.json(payload, { headers: CORS });
+  return new Response(`event: message\ndata: ${JSON.stringify(payload)}\n\n`, {
+    headers: {
+      ...CORS,
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+    },
+  });
+}
+
+export async function OPTIONS(): Promise<Response> {
+  return new Response(null, { status: 204, headers: CORS });
+}
+
 export async function POST(request: Request): Promise<Response> {
   const me = emailForToken(tokenFrom(request));
+  const wantsStream = (request.headers.get('accept') ?? '').includes('text/event-stream');
+
   let body: { jsonrpc?: string; id?: unknown; method?: string; params?: Record<string, unknown> };
   try {
     body = await request.json();
   } catch {
-    return Response.json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } });
+    return envelope({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } }, wantsStream);
   }
 
   const { id, method, params = {} } = body;
-  const reply = (result: unknown) => Response.json({ jsonrpc: '2.0', id, result });
+  const reply = (result: unknown) => envelope({ jsonrpc: '2.0', id, result }, wantsStream);
   const errorReply = (code: number, message: string) =>
-    Response.json({ jsonrpc: '2.0', id, error: { code, message } });
+    envelope({ jsonrpc: '2.0', id, error: { code, message } }, wantsStream);
 
   // уведомления (без id) ответа не требуют
-  if (id === undefined || id === null) return new Response(null, { status: 202 });
+  if (id === undefined || id === null) return new Response(null, { status: 202, headers: CORS });
 
   if (method === 'initialize') {
     return reply({
@@ -340,14 +366,23 @@ export async function POST(request: Request): Promise<Response> {
   return errorReply(-32601, `Метод не поддерживается: ${method}`);
 }
 
-// быстрая проверка «жив ли эндпоинт» из браузера
 export async function GET(request: Request): Promise<Response> {
+  // Клиент, открывающий поток событий, должен получить явный отказ: сервер
+  // отвечает на каждый запрос сразу и отдельный канал не держит. Молчаливый
+  // JSON вместо этого подвешивает подключение.
+  if ((request.headers.get('accept') ?? '').includes('text/event-stream')) {
+    return new Response('SSE stream not offered', { status: 405, headers: CORS });
+  }
+  // обычное открытие в браузере — страничка самопроверки
   const me = emailForToken(tokenFrom(request));
-  return Response.json({
-    server: 'ai-researcher',
-    transport: 'http/json-rpc',
-    authorized: Boolean(me),
-    user: me,
-    tools: TOOLS.map((t) => t.name),
-  });
+  return Response.json(
+    {
+      server: 'ai-researcher',
+      transport: 'http/json-rpc',
+      authorized: Boolean(me),
+      user: me,
+      tools: TOOLS.map((t) => t.name),
+    },
+    { headers: CORS },
+  );
 }
