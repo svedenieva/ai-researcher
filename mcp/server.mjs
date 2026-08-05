@@ -132,15 +132,20 @@ server.registerTool(
         filterable: z.boolean().optional(),
       })).describe('колонки базы'),
       rows: z.array(z.record(z.string(), z.any())).optional().describe('строки: объекты по label или key колонки'),
+      parent: z.string().optional().describe('id раздела, внутрь которого вложить базу (например it, ai, market, workforce)'),
     },
   },
-  async ({ name, columns, rows }) => {
+  async ({ name, columns, rows, parent }) => {
     const cols = normalizeColumns(columns);
     if (!name?.trim()) return fail('нужно название');
     if (!cols.length) return fail('нужна хотя бы одна колонка');
     const { data: existing } = await supa.from('bases').select('id');
-    const id = slugId(name, new Set([...(existing ?? []).map((b) => b.id), ...BUILTIN_IDS]));
-    const { error } = await supa.from('bases').insert({ id, name: name.trim(), tone: 'sage', columns: cols });
+    const known = new Set([...(existing ?? []).map((b) => b.id), ...BUILTIN_IDS]);
+    if (parent && !known.has(parent)) return fail(`нет базы с id ${parent}`);
+    const id = slugId(name, known);
+    const row = { id, name: name.trim(), tone: 'sage', columns: cols };
+    if (parent) row.parent = parent;
+    const { error } = await supa.from('bases').insert(row);
     if (error) return fail(error.message);
     let imported = 0;
     if (rows?.length) {
@@ -151,7 +156,7 @@ server.registerTool(
         imported = payload.length;
       }
     }
-    return ok({ id, name: name.trim(), columns: cols.map((c) => c.key), imported });
+    return ok({ id, name: name.trim(), parent: parent ?? null, columns: cols.map((c) => c.key), imported });
   },
 );
 
