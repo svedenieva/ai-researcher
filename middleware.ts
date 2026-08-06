@@ -8,8 +8,16 @@ import { isAllowed } from '@/lib/supabase-auth';
 //   - Not configured on a deployment (VERCEL): fail closed (no open data).
 //   - Not configured locally: open, for development.
 // /api/mcp проверяет личный токен сам, поэтому сессия ему не нужна — иначе
-// внешний клиент вместо ответа получал бы редирект на страницу входа
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/api/mcp'];
+// внешний клиент вместо ответа получал бы редирект на страницу входа.
+//
+// /.well-known/ здесь по той же причине, но с другим следствием. Клиент MCP
+// перед подключением ищет описание авторизации (oauth-protected-resource и
+// подобные). Своего OAuth у нас нет — авторизация по личному токену, и
+// правильный ответ на эти адреса «нет такого», то есть 404. Под защитой
+// middleware они отдавали 307 на /login, а редирект клиент читает как «сервер
+// всё-таки просит OAuth» и уходит выполнять несуществующий обмен вместо того,
+// чтобы просто использовать токен. Ничего секретного по этим адресам не лежит.
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/api/mcp', '/.well-known/'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
