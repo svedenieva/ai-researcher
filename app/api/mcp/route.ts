@@ -319,8 +319,14 @@ export async function POST(request: Request): Promise<Response> {
   if (id === undefined || id === null) return new Response(null, { status: 202, headers: CORS });
 
   if (method === 'initialize') {
+    // Отвечаем той версией протокола, которую попросил клиент, если она нам
+    // знакома. Раньше здесь стояла жёстко 2024-11-05: клиент просил новую,
+    // получал старую и вправе был на этом оборваться — «not connected» без
+    // единой внятной ошибки. Наш обмен по сути одинаков во всех трёх версиях.
+    const asked = typeof params.protocolVersion === 'string' ? params.protocolVersion : '';
+    const KNOWN = ['2025-06-18', '2025-03-26', '2024-11-05'];
     return reply({
-      protocolVersion: '2024-11-05',
+      protocolVersion: KNOWN.includes(asked) ? asked : KNOWN[0],
       capabilities: { tools: {}, prompts: {} },
       serverInfo: { name: 'ai-researcher', version: '0.3.0' },
       instructions: INSTRUCTIONS,
