@@ -303,6 +303,7 @@ export default function Home() {
             onCellEdit={onCellEdit}
             onAddRow={onAddRow}
             autoGroup
+            recordCard
             viewKey={base}
           />
         </div>
