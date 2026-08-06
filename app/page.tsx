@@ -219,6 +219,17 @@ export default function Home() {
     ? records.filter((r) => favorites.includes(String(r.id)))
     : records;
 
+  // Ссылка на выгрузку повторяет запрос за данными — что на экране, то и в файле
+  const exportHref = (() => {
+    const qs = new URLSearchParams();
+    if (base !== DEFAULT_BASE) qs.set('base', base);
+    if (sort) { qs.set('sortKey', sort.key); qs.set('sortDir', sort.dir); }
+    for (const [key, value] of Object.entries(filters)) qs.append('f', `${key}:${value}`);
+    if (search.trim()) qs.set('q', search.trim());
+    const s = qs.toString();
+    return `/api/records/export${s ? `?${s}` : ''}`;
+  })();
+
 
   return (
     <div className={styles.shell}>
@@ -240,6 +251,13 @@ export default function Home() {
             {tabs.find((t) => t.id === base)?.name ?? ''}
             {!loading && <span className={styles.currentCount}>{records.length}</span>}
           </span>
+          <a
+            href={exportHref}
+            className={styles.navLink}
+            title="Выгрузить то, что сейчас на экране, в CSV (RFC 4180)"
+          >
+            ↓ CSV
+          </a>
           <Link href="/sites" className={styles.navLink}>Сайты</Link>
           <Link href="/research" className={styles.newResearch}>+ Новое исследование</Link>
           <ThemeToggle />
