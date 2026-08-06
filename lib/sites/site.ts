@@ -24,15 +24,26 @@ export interface SiteMeta {
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_FILES = 200;
 
-// url-безопасный слаг из названия. Тот же приём, что у баз знаний
-// (lib/datasource/customStore.ts): при совпадении — суффикс -2, -3, …
+const RU_LAT: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', ґ: 'g', д: 'd', е: 'e', ё: 'e', є: 'ye',
+  ж: 'zh', з: 'z', и: 'i', і: 'i', ї: 'yi', й: 'y', к: 'k', л: 'l', м: 'm',
+  н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h',
+  ц: 'c', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+};
+
+// url-безопасный слаг из названия. В отличие от баз знаний, где id остаётся
+// кириллическим, здесь он ещё и ключ объекта в Storage — а тот принимает
+// только латиницу, цифры и немного пунктуации и на «демо-сайт/index.html»
+// отвечает «Invalid key». Поэтому русские названия транслитерируем.
 export function slugId(name: string, taken: Set<string>): string {
   const base =
     name
       .toLowerCase()
-      .replace(/[^a-zа-яё0-9]+/gi, '-')
+      .replace(/[а-яёіїєґ]/g, (ch) => RU_LAT[ch] ?? '')
+      .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '')
-      .slice(0, 24) || 'site';
+      .slice(0, 32)
+      .replace(/-$/, '') || 'site';
   let id = base;
   let n = 1;
   while (taken.has(id)) id = `${base}-${++n}`;

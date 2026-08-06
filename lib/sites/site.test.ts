@@ -13,15 +13,25 @@ const f = (path: string, size = 100) => ({ path, size });
 
 describe('slugId', () => {
   it('makes a url-safe slug from the name', () => {
-    expect(slugId('Лендинг для Ромашки', new Set())).toBe('лендинг-для-ромашки');
     expect(slugId('  Spaces  &  Symbols!  ', new Set())).toBe('spaces-symbols');
   });
 
+  it('transliterates cyrillic, because a storage key may not hold it', () => {
+    expect(slugId('Лендинг для Ромашки', new Set())).toBe('lending-dlya-romashki');
+    expect(slugId('Щёлочь и Ёж', new Set())).toBe('scheloch-i-ezh');
+  });
+
+  it('never produces a key Supabase Storage would reject', () => {
+    for (const name of ['Демо-сайт проверки', 'Ёжик & Ко!', 'Сайт «Ромашка» №1', '日本語']) {
+      expect(slugId(name, new Set())).toMatch(/^[a-z0-9][a-z0-9-]*$/);
+    }
+  });
+
   it('suffixes on collision instead of overwriting', () => {
-    const taken = new Set(['лендинг']);
-    expect(slugId('Лендинг', taken)).toBe('лендинг-2');
-    taken.add('лендинг-2');
-    expect(slugId('Лендинг', taken)).toBe('лендинг-3');
+    const taken = new Set(['lending']);
+    expect(slugId('Лендинг', taken)).toBe('lending-2');
+    taken.add('lending-2');
+    expect(slugId('Лендинг', taken)).toBe('lending-3');
   });
 
   it('falls back to a default when the name has nothing slug-able', () => {
