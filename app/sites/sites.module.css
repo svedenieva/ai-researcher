@@ -327,3 +327,36 @@
   text-align: center;
   color: var(--ink-45);
 }
+
+/* ── телефон ───────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header {
+    padding: 0 14px;
+  }
+
+  .body {
+    padding: 20px 14px 48px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  /* семь колонок на 375 пикселях не живут — таблица получает свою ширину
+     и прокручивается вбок внутри карточки */
+  .table {
+    min-width: 720px;
+  }
+
+  .tableWrap {
+    overscroll-behavior-x: contain;
+  }
+
+  .count {
+    margin-left: 0;
+  }
+
+  .uploader {
+    padding: 14px;
+  }
+}

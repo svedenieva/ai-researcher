@@ -162,3 +162,10 @@
   cursor: pointer;
 }
 .close:hover { color: var(--ink); border-color: var(--sage); }
+
+/* окно дерева не должно быть шире экрана телефона */
+@media (max-width: 400px) {
+  .panel {
+    width: min(340px, calc(100vw - 20px));
+  }
+}

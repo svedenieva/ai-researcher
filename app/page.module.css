@@ -289,3 +289,37 @@
 @media (max-width: 900px) {
   .currentBase { display: none; }
 }
+
+/* ── телефон ─────────────────────────────────────────────────
+   Шапка перестаёт быть одной строкой фиксированной высоты: ссылок в ней
+   уже четыре, и на 375 пикселях они либо режутся, либо выдавливают
+   переключатель баз. Пусть переносится. */
+@media (max-width: 640px) {
+  .header {
+    height: auto;
+    min-height: 58px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    padding: 9px 12px;
+  }
+
+  .headerActions {
+    gap: 12px;
+  }
+
+  .body {
+    padding: 14px 12px 40px;
+  }
+
+  .newResearch {
+    padding: 6px 11px;
+    font-size: 12.5px;
+  }
+
+  /* высота экрана телефона занята адресной строкой — жёсткие 100vh
+     обрезали бы таблицу снизу */
+  .shell {
+    height: auto;
+    min-height: 100dvh;
+  }
+}
