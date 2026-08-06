@@ -54,7 +54,7 @@ h1{font-size:19px;font-weight:700;letter-spacing:-.3px;line-height:1.25;margin-b
 .section{margin-bottom:10px;overflow:hidden;animation:fadeSlideIn .5s ease both}
 .section:nth-child(1){animation-delay:.06s}.section:nth-child(2){animation-delay:.12s}
 .section:nth-child(3){animation-delay:.18s}.section:nth-child(4){animation-delay:.24s}
-.section:nth-child(5){animation-delay:.30s}
+.section:nth-child(5){animation-delay:.30s}.section:nth-child(6){animation-delay:.36s}
 .section-header{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 18px}
 .section-header::-webkit-details-marker{display:none}
 .section-icon{flex:none;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center}
@@ -116,27 +116,69 @@ td strong{color:var(--text-primary)}
     </div>
     <h1>Базы знаний в своём Claude — подключение за 2 минуты</h1>
     <p class="summary">После подключения в любом чате можно сказать «заведи базу под такую-то тему» или «исследуй тему и сохрани» — Claude сам разложит на подтемы, сверится с каталогом, найдёт информацию и запишет результат в витрину.</p>
-    <span class="pill">Ничего устанавливать не нужно — только одна ссылка и личный токен</span>
+    <span class="pill">Ставить ничего не нужно — только адрес и личный токен</span>
   </header>
 
   <details class="section card" open>
     <summary class="section-header">
       <div class="section-icon icon-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
       <span class="section-num">01</span>
-      <span class="section-title">Подключить</span>
-      <span class="section-brief">вставить блок в конфиг и перезапустить</span>
+      <span class="section-title">Обычный способ</span>
+      <span class="section-brief">в приложении Claude, без файлов и кода</span>
       <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></span>
     </summary>
     <div class="section-body">
+
+      <p class="step-d" style="margin-bottom:4px">Подходит и для сайта claude.ai, и для настольного приложения. Правки файлов не нужны.</p>
+
       <div class="step lead-green">
-        <div class="step-t">Шаг 1. Открыть конфиг Claude</div>
-        <div class="step-d">Файл <code>~/.claude.json</code> — на Windows это <code>C:\Users\ИМЯ\.claude.json</code>, на Mac <code>/Users/ИМЯ/.claude.json</code>. Открывается любым текстовым редактором.</div>
+        <div class="step-t">Шаг 1. Открыть настройки коннекторов</div>
+        <div class="step-d">В Claude: <strong>Настройки</strong> → <strong>Коннекторы</strong> (в англоязычном интерфейсе — Settings → Connectors). Внизу списка — <strong>Добавить свой коннектор</strong> / «Add custom connector».</div>
       </div>
 
       <div class="step lead-green">
+        <div class="step-t">Шаг 2. Заполнить два поля</div>
+        <div class="step-d"><strong>Название</strong> — <code>AI-Researcher</code>.<br /><strong>Адрес сервера</strong> — вставить строку целиком, подставив свой токен:</div>
+      </div>
+
+<pre><code>https://ai-reesearcher.vercel.app/api/mcp?token=<span class="hl">ВАШ_ТОКЕН</span></code></pre>
+
+      <div class="step lead-green">
+        <div class="step-t">Шаг 3. Сохранить и начать новый чат</div>
+        <div class="step-d">Коннектор появится в списке доступных. В уже открытом чате он не подхватится — нужен новый.</div>
+      </div>
+
+      <div class="note">
+        <span class="dot"></span>
+        <p><strong>Токен личный и лежит прямо в адресе.</strong> По нему определяется, чьи базы вы видите. Не показывайте этот адрес на демонстрации экрана и не пересылайте в общие чаты — попросите свой токен лично.</p>
+      </div>
+
+      <p class="step-d">Названия пунктов меню у разных версий Claude чуть отличаются, но смысл один: добавить свой (custom) коннектор по адресу удалённого MCP-сервера.</p>
+
+    </div>
+  </details>
+
+  <details class="section card">
+    <summary class="section-header">
+      <div class="section-icon icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+      <span class="section-num">02</span>
+      <span class="section-title">Если вы в Claude Code</span>
+      <span class="section-brief">блок в ~/.claude.json</span>
+      <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+    </summary>
+    <div class="section-body">
+
+      <div class="step lead-blue">
+        <div class="step-t">Шаг 1. Открыть конфиг</div>
+        <div class="step-d">Файл <code>~/.claude.json</code>: на Windows — <code>C:\Users\ИМЯ\.claude.json</code>, на Mac — <code>/Users/ИМЯ/.claude.json</code>. Открывается любым текстовым редактором.</div>
+      </div>
+
+      <div class="step lead-blue">
         <div class="step-t">Шаг 2. Добавить сервер</div>
-        <div class="step-d">Внутри раздела <code>mcpServers</code> добавить блок. Если раздела нет — создать его на верхнем уровне:</div>
-        <pre><code>{
+        <div class="step-d">Внутрь раздела <code>mcpServers</code>. Если раздела нет — создать его на верхнем уровне.</div>
+      </div>
+
+<pre><code>{
   "mcpServers": {
     "ai-researcher": {
       "type": "http",
@@ -147,18 +189,18 @@ td strong{color:var(--text-primary)}
     }
   }
 }</code></pre>
-        <div class="step-d">Вместо <code>ВАШ_ТОКЕН</code> подставьте токен, который вам прислали лично. Он выглядит как <code>mcp_XXXXXXXXXXXX</code>.</div>
-      </div>
 
-      <div class="step lead-green">
+      <div class="step lead-blue">
         <div class="step-t">Шаг 3. Перезапустить Claude</div>
         <div class="step-d">Полностью закрыть и открыть заново — иначе новый сервер не подхватится.</div>
       </div>
 
       <div class="step lead-warn">
-        <div class="step-t">Если клиент не принял блок выше</div>
-        <div class="step-d">Некоторые версии (чаще Claude Desktop) не понимают <code>"type": "http"</code>. Тогда тот же сервер подключается через мостик — ставить ничего не надо, <code>npx</code> скачает сам:</div>
-        <pre><code>{
+        <div class="step-t">Если клиент не понял <code>"type": "http"</code></div>
+        <div class="step-d">Некоторые версии подключаются через мостик. Ставить ничего не надо — <code>npx</code> скачает сам; нужен установленный Node.js.</div>
+      </div>
+
+<pre><code>{
   "mcpServers": {
     "ai-researcher": {
       "command": "npx",
@@ -170,93 +212,106 @@ td strong{color:var(--text-primary)}
     }
   }
 }</code></pre>
-        <div class="step-d">Нужен установленный Node.js. Всё остальное так же: сервер и ключи остаются на нашей стороне.</div>
-      </div>
 
-      <div class="note"><span class="dot"></span><p><strong>Токен личный.</strong> По нему определяется, чьи базы вы видите. Не пересылайте его в общие чаты и не публикуйте.</p></div>
     </div>
   </details>
 
   <details class="section card">
     <summary class="section-header">
-      <div class="section-icon icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
-      <span class="section-num">02</span>
+      <div class="section-icon icon-idea"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+      <span class="section-num">03</span>
       <span class="section-title">Как пользоваться</span>
-      <span class="section-brief">что писать в чате</span>
+      <span class="section-brief">обычными словами, без команд</span>
       <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></span>
     </summary>
     <div class="section-body">
-      <div class="step-d">Просто пишите обычными словами — правила работы Claude получает автоматически при подключении, скилл ставить не нужно.</div>
+
+      <p class="step-d">Правила работы Claude получает автоматически при подключении — скилл ставить не нужно.</p>
+
       <ul class="plain">
         <li>«Заведи базу под AI-инструменты для видеомонтажа»</li>
         <li>«Исследуй тему агентов для продаж и сохрани в базу»</li>
         <li>«Что у нас уже есть в каталоге по маркетингу?»</li>
-        <li>«Добавь эти компании в мою базу» (можно вставить список)</li>
+        <li>«Добавь эти компании в мою базу» — список можно просто вставить</li>
       </ul>
 
-      <div class="step lead-blue">
+      <div class="step lead-green">
         <div class="step-t">Как идёт исследование</div>
-        <div class="step-d">Тема разбивается на подтемы → Claude сверяется с каталогом, что уже известно → ищет в интернете то, чего нет → показывает отчёт с источниками → и только после вашего согласия записывает в базу. Компании помечаются «уже в базе» или «новое».</div>
+        <div class="step-d">Тема разбивается на подтемы → Claude сверяется с каталогом, что уже известно → ищет в интернете то, чего нет → показывает отчёт с источниками → и <strong>только после вашего согласия</strong> записывает в базу. Компании помечаются «уже в базе» или «новое».</div>
       </div>
 
-      <div class="step lead-blue">
-        <div class="step-t">Где смотреть результат</div>
-        <div class="step-d">Всё, что записано, появляется на витрине <a href="https://ai-reesearcher.vercel.app">ai-reesearcher.vercel.app</a> — вход через Google тем же адресом, что привязан к вашему токену.</div>
+      <div class="scroll">
+        <table>
+          <tr><th>Что умеет коннектор</th><th>Зачем</th></tr>
+          <tr><td><strong>list_bases</strong></td><td>показать дерево баз</td></tr>
+          <tr><td><strong>create_base</strong></td><td>завести базу под тему, можно сразу внутрь раздела</td></tr>
+          <tr><td><strong>add_rows</strong></td><td>дописать строки</td></tr>
+          <tr><td><strong>query_records</strong></td><td>прочитать записи базы</td></tr>
+          <tr><td><strong>update_record</strong></td><td>поправить отдельные поля</td></tr>
+          <tr><td><strong>catalog_search</strong></td><td>найти компании в общем каталоге</td></tr>
+          <tr><td><strong>research_decompose</strong></td><td>разложить тему на подтемы</td></tr>
+        </table>
       </div>
+
+      <p class="step-d">Результат появляется на витрине <a href="https://ai-reesearcher.vercel.app">ai-reesearcher.vercel.app</a> — вход через Google тем же адресом, что привязан к вашему токену.</p>
+
     </div>
   </details>
 
   <details class="section card">
     <summary class="section-header">
-      <div class="section-icon icon-idea"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
-      <span class="section-num">03</span>
+      <div class="section-icon icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg></div>
+      <span class="section-num">04</span>
       <span class="section-title">Кто что видит</span>
-      <span class="section-brief">свои базы, общие и каталог</span>
+      <span class="section-brief">свои базы, общие и чужие</span>
       <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></span>
     </summary>
     <div class="section-body">
       <div class="scroll">
         <table>
           <tr><th>Что</th><th>Кому видно</th></tr>
-          <tr><td><strong>Каталог продуктов</strong> (Рынок AI, AI-сфера, IT-сфера, Workforce)</td><td>всем — это общая база компаний</td></tr>
+          <tr><td><strong>Каталог продуктов</strong> — Рынок AI, AI-сфера, IT-сфера, Workforce</td><td>всем — это общая база компаний</td></tr>
           <tr><td><strong>Базы, которые вы завели</strong></td><td>только вам</td></tr>
-          <tr><td><strong>Общие базы</strong> (заведены без владельца)</td><td>всем</td></tr>
+          <tr><td><strong>Общие базы</strong> — заведены без владельца</td><td>всем</td></tr>
           <tr><td><strong>Чужие личные базы</strong></td><td>никому, кроме владельца — даже по прямой ссылке</td></tr>
         </table>
       </div>
-      <div class="step-d">Базы можно вкладывать друг в друга: например, свой раздел внутри AI-сферы. Раздел показывает и то, что лежит внутри него.</div>
+      <p class="step-d">Базы вкладываются друг в друга: например, свой раздел внутри AI-сферы. Раздел показывает и то, что лежит внутри него.</p>
     </div>
   </details>
 
   <details class="section card">
     <summary class="section-header">
-      <div class="section-icon icon-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-      <span class="section-num">04</span>
+      <div class="section-icon icon-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <span class="section-num">05</span>
       <span class="section-title">Если не работает</span>
-      <span class="section-brief">симптом → что делать</span>
+      <span class="section-brief">проверка за 10 секунд</span>
       <span class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></span>
     </summary>
     <div class="section-body">
+
       <div class="step lead-warn">
         <div class="step-t">Быстрая проверка</div>
-        <div class="step-d">Откройте в браузере ссылку с вашим токеном:</div>
-        <pre><code>https://ai-reesearcher.vercel.app/api/mcp?token=<span class="hl">ВАШ_ТОКЕН</span></code></pre>
-        <div class="step-d">Должно ответить <code>"authorized": true</code> и вашу почту. Если <code>false</code> — токен неверный или скопирован не целиком.</div>
+        <div class="step-d">Откройте в браузере тот же адрес, что вставляли в коннектор. Ответ должен содержать <code>"authorized": true</code> и вашу почту. Если <code>false</code> — токен неверный или скопирован не целиком.</div>
       </div>
+
+<pre><code>https://ai-reesearcher.vercel.app/api/mcp?token=<span class="hl">ВАШ_ТОКЕН</span></code></pre>
+
       <div class="scroll">
         <table>
           <tr><th>Симптом</th><th>Что делать</th></tr>
-          <tr><td>В чате нет инструментов баз</td><td>Claude не перезапущен, либо блок вставлен не в <code>mcpServers</code></td></tr>
-          <tr><td>«Нужен действующий токен доступа»</td><td>Токен не подставлен или устарел — запросите новый</td></tr>
-          <tr><td>«Нет доступа к этой базе»</td><td>База личная и принадлежит другому человеку</td></tr>
-          <tr><td>Записал, а на сайте не видно</td><td>Обновите страницу через <code>Ctrl+Shift+R</code> и проверьте, что вошли тем же адресом</td></tr>
-          <tr><td>Ошибка про JSON в конфиге</td><td>Потеряна запятая или скобка — проверьте файл целиком</td></tr>
+          <tr><td><strong>В чате нет инструментов баз</strong></td><td>чат открыт до подключения — начните новый; в Claude Code — перезапустите приложение</td></tr>
+          <tr><td><strong>«Нужен действующий токен доступа»</strong></td><td>токен не подставлен или устарел — запросите новый</td></tr>
+          <tr><td><strong>«Нет доступа к этой базе»</strong></td><td>база личная и принадлежит другому человеку</td></tr>
+          <tr><td><strong>Записал, а на сайте не видно</strong></td><td>обновите страницу через <code>Ctrl+Shift+R</code> и проверьте, что вошли тем же адресом</td></tr>
+          <tr><td><strong>Ошибка про JSON в конфиге</strong></td><td>потеряна запятая или скобка — проверьте файл целиком</td></tr>
         </table>
       </div>
+
     </div>
   </details>
 
-  <div class="footer">AiVocado Soft · AI-Researcher · подключение к своему Claude</div>
+  <div class="footer">AiVocado Soft · AI-Researcher · подключение к Claude</div>
 
 </div>
 </body>
