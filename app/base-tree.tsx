@@ -30,12 +30,15 @@ function buildTree(tabs: BaseTab[]) {
 export default function BaseTree({
   tabs,
   base,
+  focus,
   onPick,
   onClose,
   onCreate,
 }: {
   tabs: BaseTab[];
   base: string;
+  /** узел, на котором раскрыть дерево при открытии; по умолчанию — текущая база */
+  focus?: string;
   onPick: (id: string) => void;
   onClose: () => void;
   onCreate: () => void;
@@ -43,8 +46,20 @@ export default function BaseTree({
   const { roots, byId } = useMemo(() => buildTree(tabs), [tabs]);
   const [query, setQuery] = useState('');
 
-  // дерево по умолчанию свёрнуто — раскрываешь ветки сам, как в проводнике
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Дерево свёрнуто, но путь до открытой базы раскрыт: окно должно показывать,
+  // где ты сейчас находишься, а не встречать плоским списком, в котором
+  // подчинённость направлению не видна.
+  const [expanded, setExpanded] = useState<Set<string>>(() => {
+    const at = focus ?? base;
+    // раскрываем сам узел и весь путь к нему сверху
+    const path = new Set<string>([at]);
+    let node = byId.get(at);
+    while (node?.parent) {
+      path.add(node.parent);
+      node = byId.get(node.parent);
+    }
+    return path;
+  });
 
   // Esc закрывает
   useEffect(() => {

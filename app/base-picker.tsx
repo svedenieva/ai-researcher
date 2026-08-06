@@ -26,6 +26,10 @@ export default function BasePicker({
   rootLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
+  // узел, на котором раскрыть дерево: из корневой кнопки — текущая база,
+  // из крошки — сам раздел. Дерево должно выпадать из направления, а не
+  // только из общего корня.
+  const [focus, setFocus] = useState<string | undefined>(undefined);
   const ref = useRef<HTMLDivElement>(null);
   const byId = useMemo(() => new Map(tabs.map((t) => [t.id, t])), [tabs]);
 
@@ -63,7 +67,10 @@ export default function BasePicker({
       <button
         type="button"
         className={`${styles.root} ${open ? styles.rootOpen : ''}`}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setFocus(undefined);
+          setOpen((v) => !v);
+        }}
         aria-expanded={open}
         title="Выбрать базу данных"
       >
@@ -75,7 +82,7 @@ export default function BasePicker({
       {path.map((node, i) => (
         <span key={node.id} className={styles.crumbItem}>
           <span className={styles.sep} aria-hidden="true">›</span>
-          {/* крошка — просто переход в этот раздел, без выпадающего списка */}
+          {/* клик по названию — просто переход в этот раздел */}
           <button
             type="button"
             className={`${styles.crumb} ${i === path.length - 1 ? styles.crumbCurrent : ''}`}
@@ -84,6 +91,20 @@ export default function BasePicker({
           >
             {node.name}
           </button>
+          {/* галочка рядом — дерево, раскрытое на этом разделе */}
+          <button
+            type="button"
+            className={styles.crumbCaret}
+            aria-expanded={open && focus === node.id}
+            title={`Показать, что внутри: ${node.name}`}
+            onClick={() => {
+              const same = open && focus === node.id;
+              setFocus(same ? undefined : node.id);
+              setOpen(!same);
+            }}
+          >
+            ▾
+          </button>
         </span>
       ))}
 
@@ -91,6 +112,7 @@ export default function BasePicker({
         <BaseTree
           tabs={tabs}
           base={base}
+          focus={focus}
           // окно остаётся открытым — по дереву можно ходить сколько нужно
           onPick={onChange}
           onClose={() => setOpen(false)}
