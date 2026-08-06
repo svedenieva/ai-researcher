@@ -19,8 +19,24 @@ import { isAllowed } from '@/lib/supabase-auth';
 // чтобы просто использовать токен. Ничего секретного по этим адресам не лежит.
 const PUBLIC_PATHS = ['/login', '/auth/callback', '/api/mcp', '/.well-known/'];
 
+// Не найдя описания в /.well-known/, клиент MCP идёт в адреса OAuth по
+// умолчанию — /register, /authorize, /token в корне. Под общей защитой они
+// отвечали редиректом на /login, то есть на живую страницу входа Google, и
+// клиент докладывал «couldn't register with sign-in service»: он решил, что
+// служба входа есть, просто регистрация не удалась. Правильный ответ здесь —
+// «не поддерживается», чтобы клиент бросил OAuth и работал по токену.
+const OAUTH_STUBS = ['/register', '/authorize', '/token'];
+
+function oauthNotSupported(): NextResponse {
+  return new NextResponse(
+    JSON.stringify({ error: 'oauth_not_supported', error_description: 'Сервер авторизует по личному токену' }),
+    { status: 404, headers: { 'Content-Type': 'application/json' } },
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (OAUTH_STUBS.includes(pathname)) return oauthNotSupported();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
