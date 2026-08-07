@@ -90,7 +90,7 @@ export default function Home() {
       // DELETE не найдёт запись в текущей базе и молча ничего не удалит
       const currentName = tabs.find((t) => t.id === base)?.name;
       const source = record.__source;
-      if (source && source !== currentName) {
+      if (source && currentName && source !== currentName) {
         window.alert(`Эту строку удаляйте в её базе: «${source}»`);
         return;
       }
