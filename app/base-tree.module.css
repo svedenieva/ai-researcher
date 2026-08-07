@@ -169,3 +169,8 @@
     width: min(340px, calc(100vw - 20px));
   }
 }
+
+.actions { display: inline-flex; gap: 4px; margin-left: auto; opacity: 0; transition: opacity .1s; }
+.row:hover .actions { opacity: .8; }
+.actions button { border: 0; background: none; cursor: pointer; font-size: 12px; }
+.actions button:hover { opacity: 1; }

@@ -17,12 +17,15 @@ export default function BasePicker({
   base,
   onChange,
   onCreate,
+  onMutated,
   rootLabel = 'AI-Researcher',
 }: {
   tabs: BaseTab[];
   base: string;
   onChange: (id: string) => void;
   onCreate: () => void;
+  /** база переименована/удалена — надо перечитать список баз */
+  onMutated?: () => void;
   rootLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -117,6 +120,7 @@ export default function BasePicker({
           onPick={onChange}
           onClose={() => setOpen(false)}
           onCreate={onCreate}
+          onMutated={onMutated}
         />
       )}
     </nav>

@@ -34,6 +34,7 @@ export default function BaseTree({
   onPick,
   onClose,
   onCreate,
+  onMutated,
 }: {
   tabs: BaseTab[];
   base: string;
@@ -42,6 +43,8 @@ export default function BaseTree({
   onPick: (id: string) => void;
   onClose: () => void;
   onCreate: () => void;
+  /** база переименована/удалена — надо перечитать список баз */
+  onMutated?: () => void;
 }) {
   const { roots, byId } = useMemo(() => buildTree(tabs), [tabs]);
   const [query, setQuery] = useState('');
@@ -129,6 +132,24 @@ export default function BaseTree({
             <span className={styles.name}>{node.name}</span>
             {node.builtin && <span className={styles.tag}>встроенная</span>}
           </button>
+          {!node.builtin && (
+            <span className={styles.actions}>
+              <button type="button" title="Переименовать" onClick={async (e) => {
+                e.stopPropagation();
+                const name = window.prompt('Новое название базы:', node.name);
+                if (name && name.trim() && name.trim() !== node.name) {
+                  await fetch('/api/bases', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: node.id, name: name.trim() }) });
+                  onMutated?.();
+                }
+              }}>✏️</button>
+              <button type="button" title="Удалить базу в корзину" onClick={async (e) => {
+                e.stopPropagation();
+                if (!window.confirm(`Удалить базу «${node.name}» в корзину? Её строки тоже уедут в корзину, вернуть можно оттуда.`)) return;
+                await fetch('/api/bases', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: node.id }) });
+                onMutated?.();
+              }}>🗑</button>
+            </span>
+          )}
         </div>
         {isOpen && node.children.map((c) => renderNode(c, depth + 1))}
       </div>

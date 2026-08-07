@@ -256,6 +256,7 @@ export default function Home() {
           base={base}
           onChange={onBaseChange}
           onCreate={() => setCreating(true)}
+          onMutated={loadBases}
         />
 
         <div className={styles.headerActions}>
