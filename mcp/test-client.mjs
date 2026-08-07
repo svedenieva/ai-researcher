@@ -43,5 +43,17 @@ const schema = JSON.parse((await client.callTool({ name: 'get_base', arguments: 
 console.assert(schema.columns.length === 2, 'get_base returns columns');
 console.assert(schema.columns[0].type && schema.columns[0].key, 'columns carry type+key');
 
+// ── Task 2: add/update/delete column ──
+await client.callTool({ name: 'add_rows', arguments: { base: baseId, rows: [{ 'Название': 'Figma', 'Цена': 15 }] } });
+await client.callTool({ name: 'add_column', arguments: { base: baseId, label: 'Заметка' } });
+let s = JSON.parse((await client.callTool({ name: 'get_base', arguments: { base: baseId } })).content[0].text);
+console.assert(s.columns.some((c) => c.key === 'заметка'), 'add_column worked');
+await client.callTool({ name: 'update_column', arguments: { base: baseId, key: 'заметка', label: 'Примечание' } });
+s = JSON.parse((await client.callTool({ name: 'get_base', arguments: { base: baseId } })).content[0].text);
+console.assert(s.columns.find((c) => c.key === 'заметка').label === 'Примечание', 'update_column changes label, keeps key');
+await client.callTool({ name: 'delete_column', arguments: { base: baseId, key: 'цена' } });
+const recs = JSON.parse((await client.callTool({ name: 'query_records', arguments: { base: baseId } })).content[0].text);
+console.assert(recs.records[0].цена === 15, 'delete_column keeps underlying cell data');
+
 await client.close();
 process.exit(0);

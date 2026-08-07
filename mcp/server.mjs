@@ -95,6 +95,33 @@ function normalizeColumns(input) {
   }
   return cols;
 }
+// mjs-аналоги хелперов колонок Phase 0 (§5.3) — отдельный рантайм, поэтому дублируются
+function normalizeNewColumnMjs(col, existing) {
+  const label = String(col?.label ?? '').trim();
+  let key = label.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '_').replace(/(^_|_$)/g, '') || `col${existing.length}`;
+  const used = new Set(existing.map((c) => c.key));
+  while (used.has(key)) key = `${key}_`;
+  const type = ['number', 'url', 'long-text', 'select'].includes(col?.type) ? col.type : 'text';
+  return { key, label, type, sortable: true, filterable: Boolean(col?.filterable) && type !== 'long-text' && type !== 'url' };
+}
+function applyColumnPatchMjs(col, patch) {
+  const type = patch?.type ?? col.type;
+  const label = patch?.label !== undefined ? (String(patch.label).trim() || col.label) : col.label;
+  const filterable = (patch?.filterable ?? col.filterable ?? false) && type !== 'long-text' && type !== 'url';
+  return { ...col, label, type, filterable };
+}
+async function loadCustomBase(base) {
+  if (BUILTIN_IDS.has(base)) return { error: 'встроенные базы только для чтения' };
+  const { data, error } = await liveBases();
+  if (error) return { error: error.message };
+  const b = (data ?? []).find((x) => x.id === base);
+  if (!b) return { error: 'база не найдена' };
+  return { base: b, columns: b.columns ?? [] };
+}
+async function saveColumns(base, columns) {
+  const { error } = await supa.from('bases').update({ columns }).eq('id', base);
+  return error ? { error: error.message } : { columns };
+}
 // строка (объект по label или key) → объект по key колонки, с приведением чисел
 function mapRow(cols, row) {
   const data = {};
@@ -149,6 +176,38 @@ server.registerTool(
     return ok({ id: b.id, name: b.name, parent: b.parent ?? null, columns: b.columns ?? [], rowCount: (recs ?? []).length });
   },
 );
+
+// ── add_column / update_column / delete_column ──
+server.registerTool('add_column', {
+  title: 'Добавить колонку',
+  description: 'Добавляет колонку в пользовательскую базу. key выводится из label автоматически.',
+  inputSchema: { base: z.string(), label: z.string(), type: z.enum(['text', 'number', 'select', 'url', 'long-text']).optional(), filterable: z.boolean().optional() },
+}, async ({ base, label, type, filterable }) => {
+  const b = await loadCustomBase(base); if (b.error) return fail(b.error);
+  const next = [...b.columns, normalizeNewColumnMjs({ label, type, filterable }, b.columns)];
+  const r = await saveColumns(base, next); return r.error ? fail(r.error) : ok({ base, columns: r.columns });
+});
+
+server.registerTool('update_column', {
+  title: 'Изменить колонку',
+  description: 'Меняет label/type/filterable колонки. key колонки не меняется — данные строк не теряются.',
+  inputSchema: { base: z.string(), key: z.string(), label: z.string().optional(), type: z.enum(['text', 'number', 'select', 'url', 'long-text']).optional(), filterable: z.boolean().optional() },
+}, async ({ base, key, label, type, filterable }) => {
+  const b = await loadCustomBase(base); if (b.error) return fail(b.error);
+  if (!b.columns.some((c) => c.key === key)) return fail(`нет колонки ${key}`);
+  const next = b.columns.map((c) => c.key === key ? applyColumnPatchMjs(c, { label, type, filterable }) : c);
+  const r = await saveColumns(base, next); return r.error ? fail(r.error) : ok({ base, columns: r.columns });
+});
+
+server.registerTool('delete_column', {
+  title: 'Удалить колонку',
+  description: 'Убирает колонку из базы. Значения ячеек остаются в данных строк — вернув колонку с тем же key, данные снова видны.',
+  inputSchema: { base: z.string(), key: z.string() },
+}, async ({ base, key }) => {
+  const b = await loadCustomBase(base); if (b.error) return fail(b.error);
+  if (!b.columns.some((c) => c.key === key)) return fail(`нет колонки ${key}`);
+  const r = await saveColumns(base, b.columns.filter((c) => c.key !== key)); return r.error ? fail(r.error) : ok({ base, columns: r.columns });
+});
 
 // ── create_base ──
 server.registerTool(
