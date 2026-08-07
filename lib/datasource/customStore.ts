@@ -205,20 +205,48 @@ class SupabaseCustomStore implements CustomStore {
       owner: (row.owner_email as string) ?? null,
     };
   }
-  async listBases(): Promise<CustomBase[]> {
-    const { data, error } = await this.client
-      .from('bases')
-      .select('*')
-      .order('created_at', { ascending: true });
+  private async listBasesFiltered(): Promise<CustomBase[]> {
+    let q = this.client.from('bases').select('*').order('created_at', { ascending: true });
+    let { data, error } = await q.is('deleted_at', null);
+    if (error && /deleted_at/.test(error.message)) {
+      ({ data, error } = await this.client.from('bases').select('*').order('created_at', { ascending: true }));
+    }
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
     return (data ?? []).map((r) => this.norm(r as Record<string, unknown>));
   }
+  async listBases(): Promise<CustomBase[]> {
+    return this.listBasesFiltered();
+  }
   async getBase(id: string): Promise<CustomBase | null> {
-    const { data, error } = await this.client
+    let { data, error } = await this.client
       .from('bases')
       .select('*')
       .eq('id', id)
+      .is('deleted_at', null)
       .maybeSingle();
+    if (error && /deleted_at/.test(error.message)) {
+      ({ data, error } = await this.client.from('bases').select('*').eq('id', id).maybeSingle());
+    }
+    if (error) throw new Error(`Supabase (bases): ${error.message}`);
+    return data ? this.norm(data as Record<string, unknown>) : null;
+  }
+  async softDeleteBase(id: string): Promise<boolean> {
+    const { error } = await this.client.from('bases').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+    if (error) throw new Error(`Supabase (bases): ${error.message}`);
+    return true;
+  }
+  async restoreBase(id: string): Promise<boolean> {
+    const { error } = await this.client.from('bases').update({ deleted_at: null }).eq('id', id);
+    if (error) throw new Error(`Supabase (bases): ${error.message}`);
+    return true;
+  }
+  async renameBase(id: string, name: string): Promise<CustomBase | null> {
+    const { data, error } = await this.client.from('bases').update({ name }).eq('id', id).is('deleted_at', null).select('*').maybeSingle();
+    if (error) throw new Error(`Supabase (bases): ${error.message}`);
+    return data ? this.norm(data as Record<string, unknown>) : null;
+  }
+  async moveBase(id: string, parent: string | null): Promise<CustomBase | null> {
+    const { data, error } = await this.client.from('bases').update({ parent }).eq('id', id).is('deleted_at', null).select('*').maybeSingle();
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
     return data ? this.norm(data as Record<string, unknown>) : null;
   }
