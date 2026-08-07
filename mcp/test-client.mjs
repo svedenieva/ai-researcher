@@ -61,5 +61,25 @@ await client.callTool({ name: 'delete_base', arguments: { base: baseId } });
 const listed = JSON.parse((await client.callTool({ name: 'list_bases', arguments: {} })).content[0].text);
 console.assert(!listed.bases.some((b) => b.id === baseId), 'deleted base hidden from list_bases');
 
+// ── Task 4: delete_rows + bin lifecycle ──
+// recreate a base + row, delete row to bin, verify bin, restore, then delete base and empty just that base
+const c2 = JSON.parse((await client.callTool({ name: 'create_base', arguments: { name: 'Bin Test', columns: [{ label: 'Название' }] } })).content[0].text);
+await client.callTool({ name: 'add_rows', arguments: { base: c2.id, rows: [{ 'Название': 'temp' }] } });
+const rowId = JSON.parse((await client.callTool({ name: 'query_records', arguments: { base: c2.id } })).content[0].text).records[0].id;
+await client.callTool({ name: 'delete_rows', arguments: { base: c2.id, ids: [rowId] } });
+let afterDel = JSON.parse((await client.callTool({ name: 'query_records', arguments: { base: c2.id } })).content[0].text);
+console.assert(afterDel.records.length === 0, 'deleted row hidden from query_records');
+const bin = JSON.parse((await client.callTool({ name: 'list_bin', arguments: {} })).content[0].text);
+console.assert(bin.records.some((r) => r.id === rowId), 'row appears in bin');
+await client.callTool({ name: 'restore', arguments: { rows: { base: c2.id, ids: [rowId] } } });
+let restored = JSON.parse((await client.callTool({ name: 'query_records', arguments: { base: c2.id } })).content[0].text);
+console.assert(restored.records.length === 1, 'restore brings row back');
+// dry-run vs confirm
+await client.callTool({ name: 'delete_base', arguments: { base: c2.id } });
+const dry = JSON.parse((await client.callTool({ name: 'empty_bin', arguments: { base: c2.id } })).content[0].text);
+console.assert(dry.dryRun === true, 'empty_bin without confirm is a dry-run');
+const done = JSON.parse((await client.callTool({ name: 'empty_bin', arguments: { base: c2.id, confirm: true } })).content[0].text);
+console.assert(done.emptied === true, 'empty_bin with confirm deletes');
+
 await client.close();
 process.exit(0);

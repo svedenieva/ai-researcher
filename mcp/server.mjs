@@ -243,6 +243,63 @@ server.registerTool('delete_base', {
   return ok({ deleted: base, bin: true });
 });
 
+// ── delete_rows ──
+server.registerTool('delete_rows', {
+  title: 'Удалить строки (в корзину)', description: 'Переносит строки в корзину по списку id. Восстановимо через restore.',
+  inputSchema: { base: z.string(), ids: z.array(z.string()).min(1) },
+}, async ({ base, ids }) => {
+  if (BUILTIN_IDS.has(base)) return fail('во встроенных базах строки не удаляются');
+  const { data, error } = await supa.from('base_records').update({ deleted_at: new Date().toISOString() }).eq('base_id', base).in('id', ids).select('id');
+  if (error) return fail(error.message);
+  return ok({ deleted: (data ?? []).map((r) => r.id), bin: true });
+});
+
+// ── list_bin / restore ──
+server.registerTool('list_bin', {
+  title: 'Корзина', description: 'Показывает удалённые базы и строки (deleted_at не пуст).',
+  inputSchema: {},
+}, async () => {
+  const { data: bd, error: be } = await supa.from('bases').select('id, name').not('deleted_at', 'is', null);
+  if (be) return fail(be.message);
+  const { data: rd, error: re } = await supa.from('base_records').select('id, base_id, data').not('deleted_at', 'is', null);
+  if (re) return fail(re.message);
+  return ok({
+    bases: (bd ?? []).map((b) => ({ id: b.id, name: b.name })),
+    records: (rd ?? []).map((r) => ({ id: r.id, base: r.base_id, name: r.data?.name ?? r.data?.['название'] ?? null })),
+  });
+});
+
+server.registerTool('restore', {
+  title: 'Восстановить из корзины', description: 'Возвращает базу или строки из корзины (deleted_at → null).',
+  inputSchema: { base: z.string().optional().describe('id базы для восстановления'), rows: z.object({ base: z.string(), ids: z.array(z.string()).min(1) }).optional().describe('строки для восстановления') },
+}, async ({ base, rows }) => {
+  if (!base && !rows) return fail('укажи base или rows');
+  const out = {};
+  if (base) { const { error } = await supa.from('bases').update({ deleted_at: null }).eq('id', base); if (error) return fail(error.message); out.base = base; }
+  if (rows) { const { data, error } = await supa.from('base_records').update({ deleted_at: null }).eq('base_id', rows.base).in('id', rows.ids).select('id'); if (error) return fail(error.message); out.rows = (data ?? []).map((r) => r.id); }
+  return ok({ restored: out });
+});
+
+// ── empty_bin (confirm-gated, dry-run by default) ──
+server.registerTool('empty_bin', {
+  title: 'Очистить корзину (безвозвратно)',
+  description: 'Окончательно удаляет содержимое корзины. Без confirm:true возвращает предпросмотр и ничего не удаляет.',
+  inputSchema: { confirm: z.boolean().optional(), base: z.string().optional().describe('очистить только эту базу; иначе — всё') },
+}, async ({ confirm, base }) => {
+  // предпросмотр
+  let baseQ = supa.from('bases').select('id, name').not('deleted_at', 'is', null); if (base) baseQ = baseQ.eq('id', base);
+  const { data: binBases, error: be } = await baseQ; if (be) return fail(be.message);
+  let recQ = supa.from('base_records').select('id', { count: 'exact', head: true }).not('deleted_at', 'is', null); if (base) recQ = recQ.eq('base_id', base);
+  const { count: recCount, error: re } = await recQ; if (re) return fail(re.message);
+  if (!confirm) return ok({ dryRun: true, wouldDelete: { bases: (binBases ?? []).map((b) => b.name), baseCount: (binBases ?? []).length, records: recCount ?? 0 }, hint: 'повтори с confirm:true чтобы удалить безвозвратно' });
+  // реальное удаление
+  let recDel = supa.from('base_records').delete().not('deleted_at', 'is', null); if (base) recDel = recDel.eq('base_id', base);
+  const { error: rde } = await recDel; if (rde) return fail(rde.message);
+  let bases = 0;
+  for (const b of binBases ?? []) { await supa.from('base_records').delete().eq('base_id', b.id); const { error: de } = await supa.from('bases').delete().eq('id', b.id); if (de) return fail(de.message); bases++; }
+  return ok({ emptied: true, bases, records: recCount ?? 0 });
+});
+
 // ── create_base ──
 server.registerTool(
   'create_base',
