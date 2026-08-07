@@ -38,3 +38,30 @@ create table if not exists sites (
 -- Реестр общий: владелец записан для отображения, а не для ограничения
 -- доступа. Все, кто прошёл вход, видят все сайты — в отличие от таблицы
 -- `bases`, где записи делятся по владельцам.
+
+-- ─────────────────────────────────────────────────────────────
+--  Пользовательские базы (цель №1) и их строки.
+--  Раньше создавались руками в консоли; здесь — канонический DDL.
+--  jsonb `columns`/`data` — схема без миграций; deleted_at — корзина.
+-- ─────────────────────────────────────────────────────────────
+create table if not exists bases (
+  id          text primary key,
+  name        text not null,
+  tone        text,
+  columns     jsonb not null default '[]',
+  parent      text,
+  owner_email text,
+  created_at  timestamptz not null default now()
+);
+create table if not exists base_records (
+  id         uuid primary key default gen_random_uuid(),
+  base_id    text not null references bases(id),
+  data       jsonb not null default '{}',
+  created_at timestamptz not null default now()
+);
+
+-- корзина: delete → выставляет deleted_at; restore → null; empty → реальный DELETE
+alter table bases        add column if not exists deleted_at timestamptz;
+alter table base_records add column if not exists deleted_at timestamptz;
+create index if not exists bases_deleted_at_idx        on bases (deleted_at);
+create index if not exists base_records_deleted_at_idx on base_records (deleted_at);
