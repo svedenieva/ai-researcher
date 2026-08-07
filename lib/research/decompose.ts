@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { modelCandidates, openrouterChat } from './freeModels';
 
 // Декомпозиция запроса на подтемы — общий код для роута /api/research/decompose
 // и для инструмента коннектора research_decompose.
@@ -14,7 +15,6 @@ import Anthropic from '@anthropic-ai/sdk';
 //   3) структурная эвристика — если ключей нет или вызовы упали.
 
 const ANTHROPIC_MODEL = process.env.RESEARCH_MODEL || 'claude-opus-5';
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.5';
 
 const SYSTEM_PROMPT =
   'Ты — старший аналитик рынка AI-продуктов. Тебе дают исследовательский ' +
@@ -63,16 +63,10 @@ function parseList(text: string): string[] {
 }
 
 async function openrouterSubtopics(prompt: string): Promise<string[]> {
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://ai-reesearcher.vercel.app',
-      'X-Title': 'AI-Researcher',
-    },
-    body: JSON.stringify({
-      model: OPENROUTER_MODEL,
+  const candidates = await modelCandidates();
+  if (!candidates.length) return [];
+  const result = await openrouterChat(
+    {
       max_tokens: 1024,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -81,13 +75,12 @@ async function openrouterSubtopics(prompt: string): Promise<string[]> {
           content: `Запрос для исследования: "${prompt}"\n\nВерни ТОЛЬКО JSON-массив строк (подтемы), без текста вокруг.`,
         },
       ],
-    }),
-  });
-  if (!res.ok) {
-    throw new Error(`OpenRouter ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  }
-  const data = await res.json();
-  const text: string = data?.choices?.[0]?.message?.content ?? '';
+    },
+    candidates,
+  );
+  if (!result) return [];
+  const text: string =
+    (result.json as { choices?: { message?: { content?: string } }[] })?.choices?.[0]?.message?.content ?? '';
   return parseList(text);
 }
 
