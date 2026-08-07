@@ -83,6 +83,18 @@ export default function Home() {
     [base, coerce],
   );
 
+  const onDeleteRow = useCallback(
+    (record: CatalogRecord) => {
+      if (!window.confirm('Удалить строку в корзину? Её можно вернуть из корзины.')) return;
+      fetch('/api/records', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base, ids: [String(record.id)] }),
+      }).then(() => setRefreshTick((t) => t + 1));
+    },
+    [base],
+  );
+
   const loadBases = useCallback(async () => {
     try {
       const r = await fetch('/api/bases');
@@ -317,6 +329,7 @@ export default function Home() {
             editable={isCustom}
             onCellEdit={onCellEdit}
             onAddRow={onAddRow}
+            onDeleteRow={isCustom ? onDeleteRow : undefined}
             editableColumns={isCustom}
             onColumnAdd={(col) => columnAction({ action: 'add', column: col })}
             onColumnRename={(key, label) => columnAction({ action: 'update', key, patch: { label } })}
