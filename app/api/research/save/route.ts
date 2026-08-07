@@ -1,6 +1,6 @@
 import { getCustomStore } from '@/lib/datasource/customStore';
 import { BASES } from '@/lib/datasource/bases';
-import { reportToRows, REPORT_COLUMNS } from '@/lib/research/saveReport';
+import { reportToRows, REPORT_COLUMNS, type ReportRow } from '@/lib/research/saveReport';
 import type { Finding } from '@/lib/research/types';
 
 export const dynamic = 'force-dynamic';
@@ -29,13 +29,36 @@ export async function POST(request: Request): Promise<Response> {
     if (target?.mode === 'existing') {
       const baseId = String(target?.baseId ?? '');
       if (!baseId || BUILTIN_IDS.has(baseId)) return Response.json({ error: 'В эту базу нельзя сохранять' }, { status: 400 });
-      const base = await store.getBase(baseId);
+      let base = await store.getBase(baseId);
       if (!base) return Response.json({ error: 'База не найдена' }, { status: 404 });
-      const have = new Set((await store.listRecords(baseId)).map((r) => String(r.name ?? '').toLowerCase()));
-      const keys = new Set(base.columns.map((c) => c.key));
+
+      // Сопоставляем REPORT_COLUMNS с колонками целевой базы. Базы, созданные
+      // нашим же save-роутом (mode: 'new'), несут английские ключи 1-в-1 —
+      // но базы, заведённые из приложения/MCP, получают ключ как слаг
+      // русской метки (label «Название» → key «название»). Ищем колонку по
+      // key ИЛИ по label (без учёта регистра); если нет — заводим её, чтобы
+      // ничего не терять и не писать в несуществующие поля.
+      const keyMap: Record<string, string> = {};
+      for (const rc of REPORT_COLUMNS) {
+        let col = base.columns.find(
+          (c) => c.key === rc.key || c.label.trim().toLowerCase() === rc.label.toLowerCase(),
+        );
+        if (!col) {
+          base = await store.addColumn(baseId, { label: rc.label, type: rc.type, filterable: rc.filterable });
+          if (!base) return Response.json({ error: 'Не удалось добавить колонку' }, { status: 500 });
+          col = base.columns.find((c) => c.label.trim().toLowerCase() === rc.label.toLowerCase());
+        }
+        keyMap[rc.key] = col!.key;
+      }
+
+      const nameKey = keyMap.name;
+      const have = new Set(
+        (await store.listRecords(baseId)).map((r) => String(r[nameKey] ?? '').toLowerCase()),
+      );
       const fresh = rows.filter((r) => !have.has(r.name.toLowerCase()));
-      // сохраняем только колонки, которые есть в целевой базе
-      const mapped = fresh.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => keys.has(k))));
+      const mapped = fresh.map((r) =>
+        Object.fromEntries(REPORT_COLUMNS.map((rc) => [keyMap[rc.key], r[rc.key as keyof ReportRow]])),
+      );
       const added = mapped.length ? await store.addRecords(baseId, mapped as Record<string, unknown>[]) : 0;
       return Response.json({ baseId, baseName: base.name, added, skipped: rows.length - fresh.length });
     }

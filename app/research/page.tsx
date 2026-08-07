@@ -4,27 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import ThemeToggle from '../theme-toggle';
 import styles from './research.module.css';
+import { reportToRows } from '@/lib/research/saveReport';
+import type { Finding } from '@/lib/research/types';
 
 interface Check {
   count: number;
   matches: string[];
-}
-
-interface RelevantCompany {
-  id: string;
-  name: string;
-  verdict: string | null;
-  vertical: string | null;
-  url: string | null;
-}
-
-interface Finding {
-  subtopic: string;
-  summary: string;
-  findings: string[];
-  relevant: RelevantCompany[];
-  sources: Array<{ title: string; url: string }>;
-  source: 'mock' | 'web';
 }
 
 export default function Research() {
@@ -56,7 +41,7 @@ export default function Research() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<{ baseId: string; baseName: string; added: number; skipped: number } | null>(null);
 
-  const totalCompanies = (report ?? []).reduce((n, f) => n + f.relevant.length, 0);
+  const totalCompanies = reportToRows(report ?? []).length;
 
   const openSave = () => {
     setNewName(prompt.trim().slice(0, 40) || 'Исследование');

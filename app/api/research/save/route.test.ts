@@ -39,6 +39,27 @@ describe('POST /api/research/save', () => {
     expect(body.skipped).toBe(1);   // HeyGen already there
   });
 
+  it('appends to a real (app/MCP-created) existing base with Cyrillic-label-derived keys', async () => {
+    const store = getCustomStore();
+    const base = await store.createBase({
+      name: 'Реал',
+      columns: [
+        { key: 'название', label: 'Название', type: 'text' },
+        { key: 'ссылка', label: 'Ссылка', type: 'url' },
+      ],
+    });
+    await store.addRecord(base.id, { название: 'HeyGen' });
+    const res = await POST(req({ report, target: { mode: 'existing', baseId: base.id } }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.skipped).toBe(1); // HeyGen already there — dedup works by label-matched key
+    expect(body.added).toBe(1);
+    const rows = await getCustomStore().listRecords(base.id);
+    const foo = rows.find((r) => r['название'] === 'Foo');
+    expect(foo).toBeTruthy();
+    expect(foo!['ссылка']).toBe('https://foo.com'); // not empty — url landed under the matched column
+  });
+
   it('rejects a builtin base', async () => {
     const res = await POST(req({ report, target: { mode: 'existing', baseId: 'market' } }));
     expect(res.status).toBe(400);

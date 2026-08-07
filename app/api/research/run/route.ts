@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { getDataSource } from '@/lib/datasource';
 import type { CatalogRecord } from '@/lib/datasource/types';
+import type { Finding, RelevantCompany } from '@/lib/research/types';
 
 // Шаг 5 — запуск исследования.
 //
@@ -33,23 +34,6 @@ function keywords(text: string): string[] {
         .filter((w) => w.length >= 3 && !STOP.has(w)),
     ),
   ];
-}
-
-interface RelevantCompany {
-  id: string;
-  name: string;
-  verdict: string | null;
-  vertical: string | null;
-  url: string | null;
-}
-
-interface Finding {
-  subtopic: string;
-  summary: string;
-  findings: string[];
-  relevant: RelevantCompany[];
-  sources: Array<{ title: string; url: string }>;
-  source: 'mock' | 'web';
 }
 
 // ── живой движок: веб-поиск + синтез через OpenRouter ────────────
