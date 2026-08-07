@@ -81,5 +81,11 @@ console.assert(dry.dryRun === true, 'empty_bin without confirm is a dry-run');
 const done = JSON.parse((await client.callTool({ name: 'empty_bin', arguments: { base: c2.id, confirm: true } })).content[0].text);
 console.assert(done.emptied === true, 'empty_bin with confirm deletes');
 
+// ── Task 5: pagination ──
+const p0 = JSON.parse((await client.callTool({ name: 'catalog_search', arguments: { limit: 5, offset: 0 } })).content[0].text);
+const p1 = JSON.parse((await client.callTool({ name: 'catalog_search', arguments: { limit: 5, offset: 5 } })).content[0].text);
+console.assert(p0.results.length === 5 && p0.hasMore === true, 'page 0 has 5 + hasMore');
+console.assert(p0.results[0].id !== p1.results[0].id, 'offset advances the window');
+
 await client.close();
 process.exit(0);

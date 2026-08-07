@@ -377,10 +377,12 @@ server.registerTool(
       base: z.string().describe('id базы (market/ai/it/workforce или id пользовательской)'),
       search: z.string().optional().describe('подстрока для поиска'),
       limit: z.number().int().positive().max(500).optional().describe('макс. записей (по умолчанию 50)'),
+      offset: z.number().int().nonnegative().optional().describe('смещение страницы (по умолчанию 0)'),
     },
   },
-  async ({ base, search, limit }) => {
+  async ({ base, search, limit, offset }) => {
     const lim = limit ?? 50;
+    const off = offset ?? 0;
     const q = (search ?? '').trim().toLowerCase();
     if (BUILTIN_IDS.has(base)) {
       const def = BUILTIN_BASES.find((b) => b.id === base);
@@ -389,13 +391,15 @@ server.registerTool(
       let recs = (data ?? []).map((r) => ({ ...r.data, section: r.data.section ?? sectionFor(r.data.vertical) }));
       if (def.section) recs = recs.filter((r) => r.section === def.section);
       if (q) recs = recs.filter((r) => Object.values(r).filter((v) => typeof v === 'string').join(' ').toLowerCase().includes(q));
-      return ok({ base, total: recs.length, records: recs.slice(0, lim).map((r) => ({ id: r.id, name: r.name, verdict: r.verdict, vertical: r.vertical, section: r.section, url: r.url })) });
+      const page = recs.slice(off, off + lim);
+      return ok({ base, total: recs.length, offset: off, hasMore: off + page.length < recs.length, records: page.map((r) => ({ id: r.id, name: r.name, verdict: r.verdict, vertical: r.vertical, section: r.section, url: r.url })) });
     }
     const { data, error } = await liveRecords(base);
     if (error) return fail(error.message);
     let recs = (data ?? []).map((r) => ({ id: r.id, ...r.data }));
     if (q) recs = recs.filter((r) => Object.values(r).filter((v) => typeof v === 'string').join(' ').toLowerCase().includes(q));
-    return ok({ base, total: recs.length, records: recs.slice(0, lim) });
+    const page = recs.slice(off, off + lim);
+    return ok({ base, total: recs.length, offset: off, hasMore: off + page.length < recs.length, records: page });
   },
 );
 
@@ -433,16 +437,19 @@ server.registerTool(
       query: z.string().optional().describe('текстовый запрос'),
       section: z.enum(['AI', 'IT', 'WorkOS']).optional(),
       limit: z.number().int().positive().max(100).optional(),
+      offset: z.number().int().nonnegative().optional().describe('смещение страницы (по умолчанию 0)'),
     },
   },
-  async ({ query, section, limit }) => {
+  async ({ query, section, limit, offset }) => {
     const { data, error } = await supa.from('products').select('data');
     if (error) return fail(error.message);
     let recs = (data ?? []).map((r) => ({ ...r.data, section: r.data.section ?? sectionFor(r.data.vertical) }));
     if (section) recs = recs.filter((r) => r.section === section);
     const q = (query ?? '').trim().toLowerCase();
     if (q) recs = recs.filter((r) => Object.values(r).filter((v) => typeof v === 'string').join(' ').toLowerCase().includes(q));
-    return ok({ total: recs.length, results: recs.slice(0, limit ?? 20).map((r) => ({ id: r.id, name: r.name, verdict: r.verdict, section: r.section, vertical: r.vertical, url: r.url })) });
+    const off = offset ?? 0;
+    const page = recs.slice(off, off + (limit ?? 20));
+    return ok({ total: recs.length, offset: off, hasMore: off + page.length < recs.length, results: page.map((r) => ({ id: r.id, name: r.name, verdict: r.verdict, section: r.section, vertical: r.vertical, url: r.url })) });
   },
 );
 
