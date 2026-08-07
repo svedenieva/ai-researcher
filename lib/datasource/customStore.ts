@@ -39,6 +39,9 @@ export interface CustomStore {
   addRecord(baseId: string, data: Record<string, unknown>): Promise<CatalogRecord>;
   addRecords(baseId: string, rows: Record<string, unknown>[]): Promise<number>;
   updateRecord(baseId: string, id: string, patch: Record<string, unknown>): Promise<CatalogRecord | null>;
+  /** ручной порядок строк: перечисленные id встают в заданном порядке.
+      Возвращает число переставленных строк. */
+  reorderRecords(baseId: string, orderedIds: string[]): Promise<number>;
   renameBase(id: string, name: string): Promise<CustomBase | null>;
   moveBase(id: string, parent: string | null): Promise<CustomBase | null>;
   softDeleteBase(id: string): Promise<boolean>;
@@ -149,6 +152,15 @@ export class MemoryCustomStore implements CustomStore {
     if (!row) return null;
     Object.assign(row, patch);
     return row;
+  }
+  async reorderRecords(baseId: string, orderedIds: string[]) {
+    const bucket = this.rows[baseId];
+    if (!bucket || !orderedIds.length) return 0;
+    // порядок массива и есть порядок выдачи (listRecords отдаёт как лежит):
+    // переставляем по рангу из списка, неупомянутые оседают в конце
+    const rank = new Map(orderedIds.map((id, i) => [id, i]));
+    bucket.sort((a, b) => (rank.get(String(a.id)) ?? 1e9) - (rank.get(String(b.id)) ?? 1e9));
+    return orderedIds.filter((id) => bucket.some((r) => String(r.id) === id)).length;
   }
 
   async softDeleteBase(id: string) {
@@ -307,10 +319,42 @@ class SupabaseCustomStore implements CustomStore {
         .order('created_at', { ascending: true }));
     }
     if (error) throw new Error(`Supabase (base_records): ${error.message}`);
-    return (data ?? []).map((r) => {
-      const row = r as { id: string; data: Record<string, unknown> };
-      return { id: row.id, ...row.data } as CatalogRecord;
+    // ручной порядок хранится в data.__pos (число). Схема без миграций —
+    // поэтому позиция живёт в том же jsonb, а не в отдельной колонке. Строки
+    // без __pos (ещё не переставляли) уходят в конец, сохраняя порядок по
+    // created_at: сортировка стабильная, а выборка уже упорядочена по нему.
+    const rows = (data ?? []).map((r) => r as { id: string; data: Record<string, unknown> });
+    const posOf = (d: Record<string, unknown>) =>
+      typeof d.__pos === 'number' ? (d.__pos as number) : Number.MAX_SAFE_INTEGER;
+    rows.sort((a, b) => posOf(a.data) - posOf(b.data));
+    return rows.map(({ id, data: d }) => {
+      // __pos — служебное поле, наружу его не отдаём
+      const { __pos: _pos, ...rest } = d;
+      return { id, ...rest } as CatalogRecord;
     });
+  }
+  async reorderRecords(baseId: string, orderedIds: string[]): Promise<number> {
+    if (!orderedIds.length) return 0;
+    // читаем текущие строки (id + data), чтобы вписать __pos, не затерев поля
+    let { data, error } = await this.client
+      .from('base_records').select('id, data').eq('base_id', baseId).is('deleted_at', null);
+    if (error && /deleted_at/.test(error.message)) {
+      ({ data, error } = await this.client.from('base_records').select('id, data').eq('base_id', baseId));
+    }
+    if (error) throw new Error(`Supabase (base_records): ${error.message}`);
+    const rank = new Map(orderedIds.map((id, i) => [id, i]));
+    const payload: { id: string; base_id: string; data: Record<string, unknown> }[] = [];
+    for (const r of data ?? []) {
+      const row = r as { id: string; data: Record<string, unknown> };
+      const p = rank.get(String(row.id));
+      if (p === undefined) continue; // id не из этого списка — не трогаем
+      payload.push({ id: row.id, base_id: baseId, data: { ...(row.data ?? {}), __pos: p } });
+    }
+    if (!payload.length) return 0;
+    // один upsert по id — переставляем всю базу за один запрос (базы небольшие)
+    const { error: upErr } = await this.client.from('base_records').upsert(payload, { onConflict: 'id' });
+    if (upErr) throw new Error(`Supabase (base_records): ${upErr.message}`);
+    return payload.length;
   }
   async softDeleteRecords(baseId: string, ids: string[]): Promise<number> {
     if (!ids.length) return 0;

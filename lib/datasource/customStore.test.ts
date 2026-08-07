@@ -75,6 +75,27 @@ describe('bin lifecycle', () => {
   });
 });
 
+describe('manual row order', () => {
+  it('reorders rows to the given id order; listRecords reflects it', async () => {
+    const s = new MemoryCustomStore();
+    const b = await s.createBase({ name: 'T', columns: [{ key: 'name', label: 'N', type: 'text' }] });
+    const a = await s.addRecord(b.id, { name: 'a' });
+    const c = await s.addRecord(b.id, { name: 'b' });
+    const d = await s.addRecord(b.id, { name: 'c' });
+    const n = await s.reorderRecords(b.id, [d.id, a.id, c.id]);
+    expect(n).toBe(3);
+    expect((await s.listRecords(b.id)).map((r) => r.id)).toEqual([d.id, a.id, c.id]);
+  });
+  it('ids not in the list keep their place at the end', async () => {
+    const s = new MemoryCustomStore();
+    const b = await s.createBase({ name: 'T', columns: [{ key: 'name', label: 'N', type: 'text' }] });
+    const a = await s.addRecord(b.id, { name: 'a' });
+    const c = await s.addRecord(b.id, { name: 'b' });
+    await s.reorderRecords(b.id, [c.id]); // only c mentioned → c first, a after
+    expect((await s.listRecords(b.id)).map((r) => r.id)).toEqual([c.id, a.id]);
+  });
+});
+
 describe('column mutations (data-retention rules)', () => {
   it('deleting a column keeps the underlying cell data', async () => {
     const s = new MemoryCustomStore();

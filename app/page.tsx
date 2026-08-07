@@ -127,6 +127,19 @@ export default function Home() {
     [base],
   );
 
+  // ручной порядок строк: шлём полный список id в новом порядке, затем
+  // перечитываем (сервер вернёт строки уже по новому порядку)
+  const reorderRows = useCallback(
+    (orderedIds: string[]) => {
+      fetch('/api/records/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base, order: orderedIds }),
+      }).then(() => setRefreshTick((t) => t + 1));
+    },
+    [base],
+  );
+
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const b = p.get('base');
@@ -137,6 +150,10 @@ export default function Home() {
     if (s) {
       const [key, dir] = s.split(':');
       if (key) setSort({ key, dir: dir === 'desc' ? 'desc' : 'asc' });
+    } else if (b && !BUILTIN_IDS.has(b)) {
+      // пользовательская база без явной сортировки в ссылке — естественный
+      // порядок (иначе стартовый DEFAULT_SORT по «pop» дал бы фантомную группу)
+      setSort(undefined);
     }
     const f: Record<string, string> = {};
     for (const [key, value] of p.entries()) {
@@ -245,6 +262,12 @@ export default function Home() {
     setSearch('');
     setCreating(false);
     setFavoritesOnly(false);
+    // Пользовательские базы открываем в естественном порядке (без сортировки):
+    // так работает ручное перетаскивание строк, и не всплывает фантомная
+    // группа по несуществующей в этих базах колонке «pop». Встроенные срезы
+    // каталога по-прежнему открываются отсортированными по популярности.
+    setSort(BUILTIN_IDS.has(id) ? DEFAULT_SORT : undefined);
+    setExtraLevels([]);
   }, []);
 
 
@@ -338,6 +361,7 @@ export default function Home() {
             editable={isCustom}
             onCellEdit={onCellEdit}
             onAddRow={onAddRow}
+            onRowReorder={isCustom && !favoritesOnly ? reorderRows : undefined}
             onDeleteRow={isCustom ? onDeleteRow : undefined}
             editableColumns={isCustom}
             onColumnAdd={(col) => columnAction({ action: 'add', column: col })}
