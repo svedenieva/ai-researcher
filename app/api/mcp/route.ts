@@ -1,6 +1,7 @@
 import { getDataSource } from '@/lib/datasource';
 import { BASES } from '@/lib/datasource/bases';
 import { getCustomStore } from '@/lib/datasource/customStore';
+import { decompose } from '@/lib/research/decompose';
 import type { ColumnDef } from '@/lib/datasource/types';
 // @ts-expect-error — общий текст правил, один на stdio и HTTP
 import { INSTRUCTIONS } from '@/lib/mcp/instructions.mjs';
@@ -233,7 +234,12 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       if (BUILTIN_IDS.has(id)) return failed('встроенные базы только для чтения');
       const base = await store.getBase(id);
       if (!base) return failed('база не найдена');
-      const rec = await store.updateRecord(id, String(args.id ?? ''), (args.data ?? {}) as Record<string, unknown>);
+      // Метки колонок → ключи, как в create_base и add_rows. Без этого патч
+      // вида {"Заметка": "…"} писал ключ «Заметка», а колонка звалась «заметка»
+      // — правка не приставала к строке.
+      const patch = mapRow(base.columns, args.data);
+      if (!Object.keys(patch).length) return failed('нет полей для обновления');
+      const rec = await store.updateRecord(id, String(args.id ?? ''), patch);
       return rec ? text(rec) : failed('строка не найдена');
     }
 
@@ -257,15 +263,11 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
     case 'research_decompose': {
       const prompt = String(args.prompt ?? '').trim();
       if (!prompt) return failed('пустой запрос');
-      // тот же роут, что использует сайт, — правила декомпозиции в одном месте
-      const origin = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
-      const res = await fetch(`${origin}/api/research/decompose`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      });
-      const body = await res.json();
-      return text({ source: body.source, subtopics: body.subtopics ?? [] });
+      // Зовём логику напрямую, а не роут по HTTP: самозапрос к
+      // /api/research/decompose на проде ловил редирект на /login и возвращал
+      // пустой список. Правила декомпозиции — в одном месте (lib/research).
+      const { source, subtopics } = await decompose(prompt);
+      return text({ source, subtopics });
     }
 
     default:
