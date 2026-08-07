@@ -270,16 +270,38 @@ class SupabaseCustomStore implements CustomStore {
     return { id, name: def.name, tone, columns: def.columns, parent: def.parent ?? null, owner: def.owner ?? null };
   }
   async listRecords(baseId: string): Promise<CatalogRecord[]> {
-    const { data, error } = await this.client
-      .from('base_records')
-      .select('id, data')
-      .eq('base_id', baseId)
-      .order('created_at', { ascending: true });
+    let q = this.client.from('base_records').select('id, data').eq('base_id', baseId).is('deleted_at', null);
+    let { data, error } = await q.order('created_at', { ascending: true });
+    if (error && /deleted_at/.test(error.message)) {
+      ({ data, error } = await this.client
+        .from('base_records')
+        .select('id, data')
+        .eq('base_id', baseId)
+        .order('created_at', { ascending: true }));
+    }
     if (error) throw new Error(`Supabase (base_records): ${error.message}`);
     return (data ?? []).map((r) => {
       const row = r as { id: string; data: Record<string, unknown> };
       return { id: row.id, ...row.data } as CatalogRecord;
     });
+  }
+  async softDeleteRecords(baseId: string, ids: string[]): Promise<number> {
+    if (!ids.length) return 0;
+    const { error, count } = await this.client
+      .from('base_records')
+      .update({ deleted_at: new Date().toISOString() }, { count: 'exact' })
+      .eq('base_id', baseId).in('id', ids);
+    if (error) throw new Error(`Supabase (base_records): ${error.message}`);
+    return count ?? ids.length;
+  }
+  async restoreRecords(baseId: string, ids: string[]): Promise<number> {
+    if (!ids.length) return 0;
+    const { error, count } = await this.client
+      .from('base_records')
+      .update({ deleted_at: null }, { count: 'exact' })
+      .eq('base_id', baseId).in('id', ids);
+    if (error) throw new Error(`Supabase (base_records): ${error.message}`);
+    return count ?? ids.length;
   }
   async addRecord(baseId: string, data: Record<string, unknown>): Promise<CatalogRecord> {
     const { data: inserted, error } = await this.client
