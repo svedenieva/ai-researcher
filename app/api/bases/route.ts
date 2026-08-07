@@ -8,6 +8,8 @@ import type { ColumnDef } from '@/lib/datasource/types';
 // Базы меняются в рантайме (создаются из UI), поэтому роут динамический.
 export const dynamic = 'force-dynamic';
 
+const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
+
 interface BaseDTO {
   id: string;
   name: string;
@@ -118,4 +120,30 @@ export async function POST(request: Request): Promise<Response> {
     const msg = e instanceof Error ? e.message : 'Ошибка создания базы';
     return Response.json({ error: msg }, { status: 500 });
   }
+}
+
+// переименовать / переместить пользовательскую базу
+export async function PATCH(request: Request): Promise<Response> {
+  let body: { id?: unknown; name?: unknown; parent?: unknown };
+  try { body = await request.json(); } catch { return Response.json({ error: 'Некорректный запрос' }, { status: 400 }); }
+  const id = String(body?.id ?? '');
+  if (!id || BUILTIN_IDS.has(id)) return Response.json({ error: 'Эту базу нельзя менять' }, { status: 400 });
+  const store = getCustomStore();
+  let base = null;
+  if (typeof body?.name === 'string' && body.name.trim()) base = await store.renameBase(id, body.name.trim());
+  if (body?.parent !== undefined) base = await store.moveBase(id, body.parent === null ? null : String(body.parent));
+  if (!base) return Response.json({ error: 'База не найдена' }, { status: 404 });
+  return Response.json({ base });
+}
+
+// удалить / восстановить пользовательскую базу (корзина)
+export async function DELETE(request: Request): Promise<Response> {
+  let body: { id?: unknown; restore?: unknown };
+  try { body = await request.json(); } catch { return Response.json({ error: 'Некорректный запрос' }, { status: 400 }); }
+  const id = String(body?.id ?? '');
+  if (!id || BUILTIN_IDS.has(id)) return Response.json({ error: 'Эту базу нельзя удалить' }, { status: 400 });
+  const store = getCustomStore();
+  if (body?.restore === true) { const okr = await store.restoreBase(id); return Response.json({ restored: okr ? id : null }); }
+  const okd = await store.softDeleteBase(id);
+  return Response.json({ deleted: okd ? id : null });
 }

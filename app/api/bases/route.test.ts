@@ -1,0 +1,27 @@
+import { describe, it, expect } from 'vitest';
+import { PATCH, DELETE } from './route';
+import { getCustomStore } from '@/lib/datasource/customStore';
+
+function req(method: string, body: unknown) {
+  return new Request('http://localhost/api/bases', { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+}
+
+describe('/api/bases mutations', () => {
+  it('renames a base', async () => {
+    const b = await getCustomStore().createBase({ name: 'Old', columns: [{ key: 'name', label: 'N', type: 'text' }] });
+    const res = await PATCH(req('PATCH', { id: b.id, name: 'New' }));
+    expect((await res.json()).base.name).toBe('New');
+  });
+  it('soft-deletes and restores a base', async () => {
+    const store = getCustomStore();
+    const b = await store.createBase({ name: 'Temp', columns: [{ key: 'name', label: 'N', type: 'text' }] });
+    await DELETE(req('DELETE', { id: b.id }));
+    expect(await store.getBase(b.id)).toBeNull();
+    await DELETE(req('DELETE', { id: b.id, restore: true }));
+    expect(await store.getBase(b.id)).not.toBeNull();
+  });
+  it('rejects builtin bases', async () => {
+    const res = await DELETE(req('DELETE', { id: 'it' }));
+    expect(res.status).toBe(400);
+  });
+});
