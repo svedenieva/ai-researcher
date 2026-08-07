@@ -87,8 +87,15 @@ export default function Research() {
       if (!res.ok) throw new Error(body?.error ?? 'Ошибка сверки');
       const results: Check[] = body.results ?? [];
       setChecks(results);
-      // подсказка: «уже есть» снимаем (не дублируем), «новое» оставляем
-      setSelected((subtopics ?? []).map((s, i) => s.trim() !== '' && (results[i]?.count ?? 0) === 0));
+      // Подсказка: «уже есть» снимаем (не дублируем), «новое» оставляем.
+      const suggested = (subtopics ?? []).map(
+        (s, i) => s.trim() !== '' && (results[i]?.count ?? 0) === 0,
+      );
+      // ...но если по каталогу всё уже известно, авто-снятие обнулило бы выбор
+      // и «Далее →» осталась бы навсегда заблокированной без объяснения.
+      // Тогда оставляем всё отмеченным — решает человек, а не тупик.
+      const anyNew = suggested.some(Boolean);
+      setSelected(anyNew ? suggested : (subtopics ?? []).map((s) => s.trim() !== ''));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка');
     } finally {
