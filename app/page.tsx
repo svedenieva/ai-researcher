@@ -272,6 +272,7 @@ export default function Home() {
             ↓ CSV
           </a>
           <Link href="/sites" className={styles.navLink}>Сайты</Link>
+          <Link href="/bin" className={styles.navLink}>🗑 Корзина</Link>
           <Link href="/research" className={styles.newResearch}>+ Новое исследование</Link>
           <ThemeToggle />
         </div>
