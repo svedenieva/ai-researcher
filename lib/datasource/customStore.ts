@@ -370,6 +370,23 @@ class SupabaseCustomStore implements CustomStore {
     }
     return { bases, records: recCount ?? 0 };
   }
+  private async writeColumns(baseId: string, cols: ColumnDef[]): Promise<CustomBase | null> {
+    const { data, error } = await this.client.from('bases').update({ columns: cols }).eq('id', baseId).is('deleted_at', null).select('*').maybeSingle();
+    if (error) throw new Error(`Supabase (bases): ${error.message}`);
+    return data ? this.norm(data as Record<string, unknown>) : null;
+  }
+  async addColumn(baseId: string, col: NewColumn): Promise<CustomBase | null> {
+    const base = await this.getBase(baseId); if (!base) return null;
+    return this.writeColumns(baseId, [...base.columns, normalizeNewColumn(col, base.columns)]);
+  }
+  async updateColumn(baseId: string, key: string, patch: ColumnPatch): Promise<CustomBase | null> {
+    const base = await this.getBase(baseId); if (!base) return null;
+    return this.writeColumns(baseId, base.columns.map((c) => c.key === key ? applyColumnPatch(c, patch) : c));
+  }
+  async deleteColumn(baseId: string, key: string): Promise<CustomBase | null> {
+    const base = await this.getBase(baseId); if (!base) return null;
+    return this.writeColumns(baseId, base.columns.filter((c) => c.key !== key));
+  }
 }
 
 // один экземпляр на процесс. Держим его на globalThis: в dev каждый роут
