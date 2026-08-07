@@ -48,6 +48,46 @@ export default function Research() {
   const [reason, setReason] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
 
+  // ── сохранение отчёта в базу ──
+  const [saveMode, setSaveMode] = useState<'new' | 'existing'>('new');
+  const [newName, setNewName] = useState('');
+  const [targetBase, setTargetBase] = useState('');
+  const [customBases, setCustomBases] = useState<{ id: string; name: string }[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState<{ baseId: string; baseName: string; added: number; skipped: number } | null>(null);
+
+  const totalCompanies = (report ?? []).reduce((n, f) => n + f.relevant.length, 0);
+
+  const openSave = () => {
+    setNewName(prompt.trim().slice(0, 40) || 'Исследование');
+    setSaved(null);
+    fetch('/api/bases').then((r) => r.json()).then((b) => {
+      setCustomBases((b.bases ?? []).filter((x: { builtin: boolean }) => !x.builtin).map((x: { id: string; name: string }) => ({ id: x.id, name: x.name })));
+    }).catch(() => setCustomBases([]));
+  };
+
+  const saveToBase = async () => {
+    const target = saveMode === 'new'
+      ? { mode: 'new' as const, name: newName.trim() }
+      : { mode: 'existing' as const, baseId: targetBase };
+    if (saveMode === 'new' ? !newName.trim() : !targetBase) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/research/save', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report, target }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.error ?? 'Ошибка сохранения');
+      setSaved(body);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const decompose = async () => {
     if (!prompt.trim()) return;
     setLoading(true);
@@ -119,6 +159,7 @@ export default function Research() {
       setReport(body.report ?? []);
       setMode(body.mode ?? "mock");
       setReason(body.reason ?? null);
+      if ((body.report ?? []).length) openSave();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка');
     } finally {
@@ -394,6 +435,37 @@ export default function Research() {
                 </article>
               ))}
             </div>
+
+            {totalCompanies > 0 && !saved && (
+              <div className={styles.saveBox}>
+                <div className={styles.saveTitle}>Сохранить найденные компании в базу ({totalCompanies})</div>
+                <label className={styles.saveRow}>
+                  <input type="radio" checked={saveMode === 'new'} onChange={() => setSaveMode('new')} />
+                  Новая база:
+                  <input className={styles.saveInput} value={newName} onChange={(e) => setNewName(e.target.value)}
+                    disabled={saveMode !== 'new'} placeholder="Название базы" />
+                </label>
+                <label className={styles.saveRow}>
+                  <input type="radio" checked={saveMode === 'existing'} onChange={() => setSaveMode('existing')} />
+                  В существующую:
+                  <select className={styles.saveInput} value={targetBase} onChange={(e) => setTargetBase(e.target.value)}
+                    disabled={saveMode !== 'existing'}>
+                    <option value="">— выбрать —</option>
+                    {customBases.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </label>
+                <button type="button" className={styles.primary} onClick={saveToBase}
+                  disabled={saving || (saveMode === 'new' ? !newName.trim() : !targetBase)}>
+                  {saving ? 'Сохраняю…' : 'Сохранить в базу'}
+                </button>
+              </div>
+            )}
+            {saved && (
+              <p className={styles.savedLine}>
+                ✅ Сохранено {saved.added} в «{saved.baseName}»{saved.skipped ? ` (пропущено дублей: ${saved.skipped})` : ''}.{' '}
+                <Link href={`/?base=${encodeURIComponent(saved.baseId)}`} className={styles.savedLink}>Открыть базу →</Link>
+              </p>
+            )}
 
             <div className={styles.planActions}>
               <button

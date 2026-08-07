@@ -434,3 +434,11 @@
   text-decoration-color: var(--rule);
 }
 .sourceLink:hover { color: var(--sage); }
+
+/* панель сохранения отчёта в базу */
+.saveBox { margin-top: 20px; padding: 16px; border: 1px solid rgba(0,0,0,.12); border-radius: 10px; display: grid; gap: 10px; }
+.saveTitle { font-weight: 600; }
+.saveRow { display: flex; align-items: center; gap: 8px; }
+.saveInput { flex: 1; padding: 6px 8px; border: 1px solid rgba(0,0,0,.15); border-radius: 6px; }
+.savedLine { margin-top: 16px; }
+.savedLink { text-decoration: underline; }
