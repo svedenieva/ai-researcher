@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { GET } from './route';
+import { GET, DELETE } from './route';
 import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
+import { getCustomStore } from '@/lib/datasource/customStore';
 
 function call(url: string) {
   return GET(new Request(url));
@@ -83,5 +84,24 @@ describe('GET /api/records', () => {
     );
     const body = await res.json();
     expect(body.facets.region).toEqual(expect.arrayContaining(['EU', 'US']));
+  });
+});
+
+describe('DELETE /api/records', () => {
+  it('soft-deletes and restores rows', async () => {
+    const store = getCustomStore();
+    const b = await store.createBase({ name: 'DelTest', columns: [{ key: 'name', label: 'N', type: 'text' }] });
+    const r = await store.addRecord(b.id, { name: 'x' });
+    const del = await DELETE(new Request('http://localhost/api/records', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ base: b.id, ids: [r.id] }) }));
+    expect((await del.json()).deleted).toBe(1);
+    expect((await store.listRecords(b.id)).length).toBe(0);
+    const res = await DELETE(new Request('http://localhost/api/records', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ base: b.id, ids: [r.id], restore: true }) }));
+    expect((await res.json()).restored).toBe(1);
+    expect((await store.listRecords(b.id)).length).toBe(1);
+  });
+
+  it('rejects builtin bases', async () => {
+    const res = await DELETE(new Request('http://localhost/api/records', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ base: 'market', ids: ['1'] }) }));
+    expect(res.status).toBe(400);
   });
 });

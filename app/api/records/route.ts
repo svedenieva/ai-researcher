@@ -205,3 +205,21 @@ export async function PATCH(request: Request): Promise<Response> {
     return Response.json({ error: msg }, { status: 500 });
   }
 }
+
+// удалить/восстановить строки пользовательской базы (корзина)
+export async function DELETE(request: Request): Promise<Response> {
+  let body: { base?: unknown; ids?: unknown; restore?: unknown };
+  try { body = await request.json(); } catch { return Response.json({ error: 'Некорректный запрос' }, { status: 400 }); }
+  const baseId = String(body?.base ?? '');
+  const ids = Array.isArray(body?.ids) ? body.ids.map(String) : [];
+  if (!baseId || BUILTIN_IDS.has(baseId) || !ids.length) {
+    return Response.json({ error: 'Нельзя удалить эти строки' }, { status: 400 });
+  }
+  const store = getCustomStore();
+  if (body?.restore === true) {
+    const restored = await store.restoreRecords(baseId, ids);
+    return Response.json({ restored });
+  }
+  const deleted = await store.softDeleteRecords(baseId, ids);
+  return Response.json({ deleted });
+}
