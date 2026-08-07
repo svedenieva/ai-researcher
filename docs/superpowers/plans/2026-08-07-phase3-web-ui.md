@@ -165,7 +165,9 @@ git commit -m "feat(ui): delete a row to the bin from the grid"
 
 ---
 
-### Task 3: Column manager panel
+> **⚠️ SUPERSEDED (2026-08-07):** Task 3 below is **dropped**. Column management is already built **in-grid** in the `@aivocado/mindsheet` package (inline rename, retype, delete, drag-reorder, add-column track) and wired in `app/page.tsx` (committed `0a328b5`). Do **not** build the `ManageColumns` side-panel. Also note: **Task 1's `onDeleteRow` must layer onto the already-modified MindSheet** (which now has `editableColumns`/`onColumn*` props and a reworked header) — read the current `MindSheet.tsx` before editing.
+
+### Task 3: Column manager panel — ❌ SUPERSEDED, DO NOT IMPLEMENT
 
 **Files:**
 - Create: `app/manage-columns.tsx`, `app/manage-columns.module.css`

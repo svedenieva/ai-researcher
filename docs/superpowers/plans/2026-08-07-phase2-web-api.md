@@ -18,7 +18,9 @@
 
 ---
 
-### Task 1: Column routes — `/api/columns`
+> **⚠️ SUPERSEDED (2026-08-07):** Task 1 below is **dropped**. Column management already exists in the working tree as a single `POST /api/columns` with `{action: add|update|delete|reorder}` (committed `0a328b5`), adopted as canonical. Do **not** build the REST-verb `/api/columns` from Task 1. Start this phase at **Task 2**. Tasks 2–5 (records delete/restore, bases rename/move/delete, bin routes) are unchanged and still required.
+
+### Task 1: Column routes — `/api/columns` — ❌ SUPERSEDED, DO NOT IMPLEMENT
 
 **Files:**
 - Create: `app/api/columns/route.ts`

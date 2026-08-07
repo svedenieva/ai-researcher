@@ -74,7 +74,7 @@ Columns live inside the `bases.columns` JSON array; each cell's value lives unde
 
 - **add_column** appends a new `ColumnDef`.
 - **rename column** changes the `label` only. The `key` never changes, so no cell data is ever orphaned.
-- **retype column** changes `type` (and re-derives `filterable`) with best-effort coercion of *displayed* values (text→number parses; unparseable shows blank). The stored JSON is not rewritten destructively; a later retype-back recovers it.
+- **retype column** changes `type` (and re-derives `filterable`). For text→number, stored values are **coerced and persisted**: parseable strings are rewritten to numbers (so sort/aggregates work), and values that won't parse are left as-is. No data is dropped — unlike Airtable's text→attachment which clears; the UI warns up front how many values won't convert. (Decision 2026-08-07: persist coercion, superseding the earlier display-only draft.)
 - **delete_column** removes the def from the array. Cell values remain in each record's `data` under that key — re-adding a column with the same key brings the column back fully populated.
 
 Because a column can always be reconstructed, columns need no bin.
