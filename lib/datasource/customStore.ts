@@ -50,6 +50,20 @@ export interface CustomStore {
   addColumn(baseId: string, col: NewColumn): Promise<CustomBase | null>;
   updateColumn(baseId: string, key: string, patch: ColumnPatch): Promise<CustomBase | null>;
   deleteColumn(baseId: string, key: string): Promise<CustomBase | null>;
+  reorderColumns(baseId: string, keys: string[]): Promise<CustomBase | null>;
+}
+
+// Порядок колонок по списку ключей: перечисленные встают в заданном порядке,
+// не упомянутые (на случай рассинхрона) сохраняются в конце в прежнем порядке.
+export function reorderByKeys(cols: ColumnDef[], keys: string[]): ColumnDef[] {
+  const byKey = new Map(cols.map((c) => [c.key, c]));
+  const out: ColumnDef[] = [];
+  for (const k of keys) {
+    const c = byKey.get(k);
+    if (c) { out.push(c); byKey.delete(k); }
+  }
+  for (const c of cols) if (byKey.has(c.key)) out.push(c);
+  return out;
 }
 
 // новую колонку: label→key (стабильный), type по умолчанию text, filterable
@@ -181,6 +195,7 @@ export class MemoryCustomStore implements CustomStore {
     return this.mutateColumns(baseId, (cols) => cols.map((c) => c.key === key ? applyColumnPatch(c, patch) : c));
   }
   async deleteColumn(baseId: string, key: string) { return this.mutateColumns(baseId, (cols) => cols.filter((c) => c.key !== key)); }
+  async reorderColumns(baseId: string, keys: string[]) { return this.mutateColumns(baseId, (cols) => reorderByKeys(cols, keys)); }
   private async mutateColumns(baseId: string, fn: (cols: ColumnDef[]) => ColumnDef[]) {
     const b = this.bases.find((x) => x.id === baseId); if (!b || this.deletedBases.has(baseId)) return null;
     b.columns = fn(b.columns); return b;
@@ -397,11 +412,46 @@ class SupabaseCustomStore implements CustomStore {
   }
   async updateColumn(baseId: string, key: string, patch: ColumnPatch): Promise<CustomBase | null> {
     const base = await this.getBase(baseId); if (!base) return null;
-    return this.writeColumns(baseId, base.columns.map((c) => c.key === key ? applyColumnPatch(c, patch) : c));
+    const before = base.columns.find((c) => c.key === key);
+    const result = await this.writeColumns(baseId, base.columns.map((c) => c.key === key ? applyColumnPatch(c, patch) : c));
+    // Смена типа на число — приводим уже записанные значения: разбираемые
+    // строки становятся числами (чтобы сортировка и итоги работали), а те, что
+    // числом не станут, остаются как есть. Данные не теряем — в отличие от
+    // Airtable (text→attachment очищает); честность про потери держит UI,
+    // предупреждая заранее, сколько значений не подойдёт.
+    if (patch.type === 'number' && before && before.type !== 'number') {
+      await this.coerceColumnToNumber(baseId, key);
+    }
+    return result;
+  }
+  // проходим строки базы и переписываем значение колонки в число, где выходит
+  private async coerceColumnToNumber(baseId: string, key: string): Promise<void> {
+    // как в listBases: пробуем с фильтром корзины, а если колонки deleted_at
+    // ещё нет в базе (миграция не прогнана) — берём все строки
+    let { data, error } = await this.client
+      .from('base_records').select('id, data').eq('base_id', baseId).is('deleted_at', null);
+    if (error && /deleted_at/.test(error.message)) {
+      ({ data, error } = await this.client.from('base_records').select('id, data').eq('base_id', baseId));
+    }
+    if (error) throw new Error(`Supabase (base_records): ${error.message}`);
+    for (const r of data ?? []) {
+      const row = r as { id: string; data: Record<string, unknown> };
+      const v = row.data?.[key];
+      if (v === undefined || v === null || typeof v === 'number') continue;
+      const n = Number(String(v).replace(',', '.'));
+      if (!Number.isFinite(n) || String(v).trim() === '') continue;
+      const merged = { ...row.data, [key]: n };
+      const { error: ue } = await this.client.from('base_records').update({ data: merged }).eq('id', row.id);
+      if (ue) throw new Error(`Supabase (base_records): ${ue.message}`);
+    }
   }
   async deleteColumn(baseId: string, key: string): Promise<CustomBase | null> {
     const base = await this.getBase(baseId); if (!base) return null;
     return this.writeColumns(baseId, base.columns.filter((c) => c.key !== key));
+  }
+  async reorderColumns(baseId: string, keys: string[]): Promise<CustomBase | null> {
+    const base = await this.getBase(baseId); if (!base) return null;
+    return this.writeColumns(baseId, reorderByKeys(base.columns, keys));
   }
 }
 

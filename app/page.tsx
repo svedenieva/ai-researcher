@@ -93,6 +93,19 @@ export default function Home() {
     }
   }, []);
 
+  // живое управление колонками — один роут, разные действия; после каждого
+  // перечитываем записи (колонки приходят вместе с ними)
+  const columnAction = useCallback(
+    (payload: Record<string, unknown>) => {
+      fetch('/api/columns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base, ...payload }),
+      }).then(() => setRefreshTick((t) => t + 1));
+    },
+    [base],
+  );
+
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const b = p.get('base');
@@ -302,6 +315,12 @@ export default function Home() {
             editable={isCustom}
             onCellEdit={onCellEdit}
             onAddRow={onAddRow}
+            editableColumns={isCustom}
+            onColumnAdd={(col) => columnAction({ action: 'add', column: col })}
+            onColumnRename={(key, label) => columnAction({ action: 'update', key, patch: { label } })}
+            onColumnRetype={(key, type) => columnAction({ action: 'update', key, patch: { type } })}
+            onColumnDelete={(key) => columnAction({ action: 'delete', key })}
+            onColumnsReorder={(keys) => columnAction({ action: 'reorder', keys })}
             autoGroup
             recordCard
             viewKey={base}
