@@ -3,9 +3,13 @@
 // caller falls back to its heuristic rather than a paid model.
 interface ORModel { id?: string; pricing?: { prompt?: string; completion?: string } }
 
+function isZero(v?: string): boolean {
+  return typeof v === 'string' && v.trim() !== '' && Number(v) === 0;
+}
+
 export function pickFree(models: ORModel[]): string[] {
   return (models ?? [])
-    .filter((m) => m?.id && m.pricing && Number(m.pricing.prompt) === 0 && Number(m.pricing.completion) === 0)
+    .filter((m) => m?.id && m.pricing && isZero(m.pricing.prompt) && isZero(m.pricing.completion))
     .map((m) => String(m.id));
 }
 

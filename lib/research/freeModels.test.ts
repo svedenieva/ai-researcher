@@ -14,4 +14,7 @@ describe('pickFree', () => {
   it('ignores entries without pricing or id', () => {
     expect(pickFree([{ id: 'x' } as never, { pricing: { prompt: '0', completion: '0' } } as never])).toEqual([]);
   });
+  it('excludes models with empty-string pricing (not a valid zero)', () => {
+    expect(pickFree([{ id: 'e/empty', pricing: { prompt: '', completion: '' } }])).toEqual([]);
+  });
 });

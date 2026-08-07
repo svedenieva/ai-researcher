@@ -479,9 +479,13 @@ server.registerTool(
 const FREE_MODELS_TTL_MS = 60 * 60 * 1000;
 let freeModelsCache = null; // { ids, at }
 
+function isZeroPrice(v) {
+  return typeof v === 'string' && v.trim() !== '' && Number(v) === 0;
+}
+
 function pickFreeIds(models) {
   return (Array.isArray(models) ? models : [])
-    .filter((m) => m?.id && m.pricing && Number(m.pricing.prompt) === 0 && Number(m.pricing.completion) === 0)
+    .filter((m) => m?.id && m.pricing && isZeroPrice(m.pricing.prompt) && isZeroPrice(m.pricing.completion))
     .map((m) => String(m.id));
 }
 
