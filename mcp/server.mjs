@@ -63,6 +63,19 @@ const BUILTIN_BASES = [
 ];
 const BUILTIN_IDS = new Set(BUILTIN_BASES.map((b) => b.id));
 
+// чтение, исключающее корзину; при отсутствии колонки deleted_at (до миграции)
+// откатываемся к неотфильтрованному запросу — так же, как веб-стор
+async function liveBases() {
+  let { data, error } = await supa.from('bases').select('id, name, tone, columns, parent').is('deleted_at', null).order('created_at');
+  if (error && /deleted_at/.test(error.message)) ({ data, error } = await supa.from('bases').select('id, name, tone, columns, parent').order('created_at'));
+  return { data, error };
+}
+async function liveRecords(baseId) {
+  let { data, error } = await supa.from('base_records').select('id, data').eq('base_id', baseId).is('deleted_at', null).order('created_at');
+  if (error && /deleted_at/.test(error.message)) ({ data, error } = await supa.from('base_records').select('id, data').eq('base_id', baseId).order('created_at'));
+  return { data, error };
+}
+
 function slugId(name, taken) {
   const base = name.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '-').replace(/(^-|-$)/g, '').slice(0, 24) || 'base';
   let id = base, n = 1;
@@ -110,11 +123,30 @@ server.registerTool(
   'list_bases',
   { title: 'Список баз', description: 'Все базы витрины: 4 встроенных (срезы каталога) + пользовательские.' },
   async () => {
-    const { data, error } = await supa.from('bases').select('id, name, tone, columns').order('created_at');
+    const { data, error } = await liveBases();
     if (error) return fail(error.message);
     const custom = (data ?? []).map((b) => ({ id: b.id, name: b.name, builtin: false, columns: (b.columns ?? []).map((c) => c.key) }));
     const builtin = BUILTIN_BASES.map((b) => ({ id: b.id, name: b.name, builtin: true }));
     return ok({ bases: [...builtin, ...custom] });
+  },
+);
+
+// ── get_base ──
+server.registerTool(
+  'get_base',
+  {
+    title: 'Схема базы',
+    description: 'Полное описание пользовательской базы: колонки (key, label, type, filterable) и число строк.',
+    inputSchema: { base: z.string().describe('id базы') },
+  },
+  async ({ base }) => {
+    if (BUILTIN_IDS.has(base)) return fail('встроенные базы — срезы каталога, у них фиксированные колонки');
+    const { data, error } = await liveBases();
+    if (error) return fail(error.message);
+    const b = (data ?? []).find((x) => x.id === base);
+    if (!b) return fail('база не найдена');
+    const { data: recs } = await liveRecords(base);
+    return ok({ id: b.id, name: b.name, parent: b.parent ?? null, columns: b.columns ?? [], rowCount: (recs ?? []).length });
   },
 );
 
@@ -209,7 +241,7 @@ server.registerTool(
       if (q) recs = recs.filter((r) => Object.values(r).filter((v) => typeof v === 'string').join(' ').toLowerCase().includes(q));
       return ok({ base, total: recs.length, records: recs.slice(0, lim).map((r) => ({ id: r.id, name: r.name, verdict: r.verdict, vertical: r.vertical, section: r.section, url: r.url })) });
     }
-    const { data, error } = await supa.from('base_records').select('id, data').eq('base_id', base);
+    const { data, error } = await liveRecords(base);
     if (error) return fail(error.message);
     let recs = (data ?? []).map((r) => ({ id: r.id, ...r.data }));
     if (q) recs = recs.filter((r) => Object.values(r).filter((v) => typeof v === 'string').join(' ').toLowerCase().includes(q));

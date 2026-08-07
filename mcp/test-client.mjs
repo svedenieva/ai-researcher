@@ -36,5 +36,12 @@ await call('create_base', {
 });
 await call('query_records', { base: 'mcp-smoke' });
 
+// ── Task 1: get_base schema visibility ──
+const created = await client.callTool({ name: 'create_base', arguments: { name: 'MCP Test Base', columns: [{ label: 'Название' }, { label: 'Цена', type: 'number' }] } });
+const baseId = JSON.parse(created.content[0].text).id;
+const schema = JSON.parse((await client.callTool({ name: 'get_base', arguments: { base: baseId } })).content[0].text);
+console.assert(schema.columns.length === 2, 'get_base returns columns');
+console.assert(schema.columns[0].type && schema.columns[0].key, 'columns carry type+key');
+
 await client.close();
 process.exit(0);
