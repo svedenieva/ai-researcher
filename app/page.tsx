@@ -85,6 +85,15 @@ export default function Home() {
 
   const onDeleteRow = useCallback(
     (record: CatalogRecord) => {
+      // строки, подтянутые из вложенных дочерних баз, помечены __source =
+      // отображаемое имя дочерней базы — удалять их можно только там, иначе
+      // DELETE не найдёт запись в текущей базе и молча ничего не удалит
+      const currentName = tabs.find((t) => t.id === base)?.name;
+      const source = record.__source;
+      if (source && source !== currentName) {
+        window.alert(`Эту строку удаляйте в её базе: «${source}»`);
+        return;
+      }
       if (!window.confirm('Удалить строку в корзину? Её можно вернуть из корзины.')) return;
       fetch('/api/records', {
         method: 'DELETE',
@@ -92,7 +101,7 @@ export default function Home() {
         body: JSON.stringify({ base, ids: [String(record.id)] }),
       }).then(() => setRefreshTick((t) => t + 1));
     },
-    [base],
+    [base, tabs],
   );
 
   const loadBases = useCallback(async () => {

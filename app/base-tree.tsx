@@ -147,6 +147,9 @@ export default function BaseTree({
                 if (!window.confirm(`Удалить базу «${node.name}» в корзину? Её строки тоже уедут в корзину, вернуть можно оттуда.`)) return;
                 await fetch('/api/bases', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: node.id }) });
                 onMutated?.();
+                // удалили открытую сейчас базу — уходим на родителя (или на
+                // встроенную по умолчанию), иначе экран остаётся на несуществующей базе
+                if (node.id === base) onPick(node.parent ?? 'market');
               }}>🗑</button>
             </span>
           )}
