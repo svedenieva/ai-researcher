@@ -334,6 +334,42 @@ class SupabaseCustomStore implements CustomStore {
     if (error) throw new Error(`Supabase (base_records): ${error.message}`);
     return { id, ...merged } as CatalogRecord;
   }
+  async listBin(): Promise<BinContents> {
+    const { data: bd, error: be } = await this.client.from('bases').select('*').not('deleted_at', 'is', null);
+    if (be) throw new Error(`Supabase (bases): ${be.message}`);
+    const bases = (bd ?? []).map((r) => this.norm(r as Record<string, unknown>));
+    // имена всех баз (в т.ч. живых) — для подписи строк в корзине
+    const { data: allBases } = await this.client.from('bases').select('id, name');
+    const nameById = new Map((allBases ?? []).map((b) => [String((b as { id: string }).id), String((b as { name: string }).name)]));
+    const { data: rd, error: re } = await this.client.from('base_records').select('id, base_id, data').not('deleted_at', 'is', null);
+    if (re) throw new Error(`Supabase (base_records): ${re.message}`);
+    const records: BinRecord[] = (rd ?? []).map((r) => {
+      const row = r as { id: string; base_id: string; data: Record<string, unknown> };
+      return { baseId: row.base_id, baseName: nameById.get(row.base_id) ?? row.base_id, record: { id: row.id, ...row.data } as CatalogRecord };
+    });
+    return { bases, records };
+  }
+  async emptyBin(scope?: { baseId?: string }): Promise<{ bases: number; records: number }> {
+    // строки: удаляем помеченные (по base_id, если задан scope)
+    let recDel = this.client.from('base_records').delete({ count: 'exact' }).not('deleted_at', 'is', null);
+    if (scope?.baseId) recDel = recDel.eq('base_id', scope.baseId);
+    const { count: recCount, error: re } = await recDel;
+    if (re) throw new Error(`Supabase (base_records): ${re.message}`);
+    // базы: удаляем помеченные; сначала их строки целиком (FK), затем сами базы
+    let bases = 0;
+    let binnedBaseQ = this.client.from('bases').select('id').not('deleted_at', 'is', null);
+    if (scope?.baseId) binnedBaseQ = binnedBaseQ.eq('id', scope.baseId);
+    const { data: binnedBases, error: bqe } = await binnedBaseQ;
+    if (bqe) throw new Error(`Supabase (bases): ${bqe.message}`);
+    for (const b of binnedBases ?? []) {
+      const id = String((b as { id: string }).id);
+      await this.client.from('base_records').delete().eq('base_id', id); // включая живые строки удаляемой базы
+      const { error: de } = await this.client.from('bases').delete().eq('id', id);
+      if (de) throw new Error(`Supabase (bases): ${de.message}`);
+      bases++;
+    }
+    return { bases, records: recCount ?? 0 };
+  }
 }
 
 // один экземпляр на процесс. Держим его на globalThis: в dev каждый роут
