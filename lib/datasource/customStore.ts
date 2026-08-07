@@ -26,6 +26,11 @@ export interface NewBase {
   owner?: string | null;
 }
 
+export type NewColumn = { label: string; type?: ColumnDef['type']; filterable?: boolean };
+export type ColumnPatch = { label?: string; type?: ColumnDef['type']; filterable?: boolean };
+export interface BinRecord { baseId: string; baseName: string; record: CatalogRecord }
+export interface BinContents { bases: CustomBase[]; records: BinRecord[] }
+
 export interface CustomStore {
   listBases(): Promise<CustomBase[]>;
   getBase(id: string): Promise<CustomBase | null>;
@@ -34,6 +39,36 @@ export interface CustomStore {
   addRecord(baseId: string, data: Record<string, unknown>): Promise<CatalogRecord>;
   addRecords(baseId: string, rows: Record<string, unknown>[]): Promise<number>;
   updateRecord(baseId: string, id: string, patch: Record<string, unknown>): Promise<CatalogRecord | null>;
+  renameBase(id: string, name: string): Promise<CustomBase | null>;
+  moveBase(id: string, parent: string | null): Promise<CustomBase | null>;
+  softDeleteBase(id: string): Promise<boolean>;
+  restoreBase(id: string): Promise<boolean>;
+  softDeleteRecords(baseId: string, ids: string[]): Promise<number>;
+  restoreRecords(baseId: string, ids: string[]): Promise<number>;
+  listBin(): Promise<BinContents>;
+  emptyBin(scope?: { baseId?: string }): Promise<{ bases: number; records: number }>;
+  addColumn(baseId: string, col: NewColumn): Promise<CustomBase | null>;
+  updateColumn(baseId: string, key: string, patch: ColumnPatch): Promise<CustomBase | null>;
+  deleteColumn(baseId: string, key: string): Promise<CustomBase | null>;
+}
+
+// новую колонку: label→key (стабильный), type по умолчанию text, filterable
+// не для url/long-text (как в create_base)
+export function normalizeNewColumn(col: NewColumn, existing: ColumnDef[]): ColumnDef {
+  const label = String(col.label ?? '').trim();
+  let key = label.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '_').replace(/(^_|_$)/g, '') || `col${existing.length}`;
+  const used = new Set(existing.map((c) => c.key));
+  while (used.has(key)) key = `${key}_`;
+  const type: ColumnDef['type'] = (['number', 'url', 'long-text', 'select'] as const).includes(col.type as never) ? col.type! : 'text';
+  return { key, label, type, sortable: true, filterable: Boolean(col.filterable) && type !== 'long-text' && type !== 'url' };
+}
+// патч колонки: key НЕИЗМЕНЕН; label/type/filterable опционально; filterable
+// пересчитывается под новый тип
+export function applyColumnPatch(col: ColumnDef, patch: ColumnPatch): ColumnDef {
+  const type = patch.type ?? col.type;
+  const label = patch.label !== undefined ? String(patch.label).trim() || col.label : col.label;
+  const filterable = (patch.filterable ?? col.filterable ?? false) && type !== 'long-text' && type !== 'url';
+  return { ...col, label, type, filterable };
 }
 
 const TONES: CustomBase['tone'][] = ['teal', 'blue', 'amber', 'sage'];
@@ -53,15 +88,18 @@ function slugId(name: string, taken: Set<string>): string {
 }
 
 // ── in-memory (dev) ─────────────────────────────────────────────
-class MemoryCustomStore implements CustomStore {
+export class MemoryCustomStore implements CustomStore {
   private bases: CustomBase[] = [];
   private rows: Record<string, CatalogRecord[]> = {};
   private seq = 0;
+  private deletedBases = new Set<string>();
+  private deletedRows: Record<string, Set<string>> = {};
 
   async listBases() {
-    return this.bases;
+    return this.bases.filter((b) => !this.deletedBases.has(b.id));
   }
   async getBase(id: string) {
+    if (this.deletedBases.has(id)) return null;
     return this.bases.find((b) => b.id === id) ?? null;
   }
   async createBase(def: NewBase) {
@@ -79,7 +117,8 @@ class MemoryCustomStore implements CustomStore {
     return base;
   }
   async listRecords(baseId: string) {
-    return this.rows[baseId] ?? [];
+    const gone = this.deletedRows[baseId] ?? new Set<string>();
+    return (this.rows[baseId] ?? []).filter((r) => !gone.has(r.id));
   }
   async addRecord(baseId: string, data: Record<string, unknown>) {
     const record = { id: `r${++this.seq}`, ...data } as CatalogRecord;
@@ -96,6 +135,55 @@ class MemoryCustomStore implements CustomStore {
     if (!row) return null;
     Object.assign(row, patch);
     return row;
+  }
+
+  async softDeleteBase(id: string) {
+    if (!this.bases.some((b) => b.id === id)) return false;
+    this.deletedBases.add(id);
+    return true;
+  }
+  async softDeleteRecords(baseId: string, ids: string[]) {
+    const set = (this.deletedRows[baseId] ??= new Set());
+    let n = 0;
+    for (const id of ids) if ((this.rows[baseId] ?? []).some((r) => r.id === id) && !set.has(id)) { set.add(id); n++; }
+    return n;
+  }
+  async restoreBase(id: string) { const had = this.deletedBases.delete(id); return had; }
+  async restoreRecords(baseId: string, ids: string[]) {
+    const set = this.deletedRows[baseId]; if (!set) return 0;
+    let n = 0; for (const id of ids) if (set.delete(id)) n++; return n;
+  }
+  async listBin(): Promise<BinContents> {
+    const bases = this.bases.filter((b) => this.deletedBases.has(b.id));
+    const records: BinRecord[] = [];
+    for (const [baseId, set] of Object.entries(this.deletedRows)) {
+      const base = this.bases.find((b) => b.id === baseId);
+      for (const r of this.rows[baseId] ?? []) if (set.has(r.id)) records.push({ baseId, baseName: base?.name ?? baseId, record: r });
+    }
+    return { bases, records };
+  }
+  async emptyBin(scope?: { baseId?: string }) {
+    let bases = 0, records = 0;
+    const baseIds = scope?.baseId ? [scope.baseId] : [...this.deletedBases];
+    for (const id of baseIds) if (this.deletedBases.delete(id)) { this.bases = this.bases.filter((b) => b.id !== id); delete this.rows[id]; delete this.deletedRows[id]; bases++; }
+    for (const [baseId, set] of Object.entries(this.deletedRows)) {
+      if (scope?.baseId && scope.baseId !== baseId) continue;
+      const rows = this.rows[baseId] ?? [];
+      this.rows[baseId] = rows.filter((r) => !set.has(r.id));
+      records += set.size; set.clear();
+    }
+    return { bases, records };
+  }
+  async renameBase(id: string, name: string) { const b = this.bases.find((x) => x.id === id); if (!b || this.deletedBases.has(id)) return null; b.name = name; return b; }
+  async moveBase(id: string, parent: string | null) { const b = this.bases.find((x) => x.id === id); if (!b || this.deletedBases.has(id)) return null; b.parent = parent; return b; }
+  async addColumn(baseId: string, col: NewColumn) { return this.mutateColumns(baseId, (cols) => [...cols, normalizeNewColumn(col, cols)]); }
+  async updateColumn(baseId: string, key: string, patch: ColumnPatch) {
+    return this.mutateColumns(baseId, (cols) => cols.map((c) => c.key === key ? applyColumnPatch(c, patch) : c));
+  }
+  async deleteColumn(baseId: string, key: string) { return this.mutateColumns(baseId, (cols) => cols.filter((c) => c.key !== key)); }
+  private async mutateColumns(baseId: string, fn: (cols: ColumnDef[]) => ColumnDef[]) {
+    const b = this.bases.find((x) => x.id === baseId); if (!b || this.deletedBases.has(baseId)) return null;
+    b.columns = fn(b.columns); return b;
   }
 }
 
