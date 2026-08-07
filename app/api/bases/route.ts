@@ -131,7 +131,32 @@ export async function PATCH(request: Request): Promise<Response> {
   const store = getCustomStore();
   let base = null;
   if (typeof body?.name === 'string' && body.name.trim()) base = await store.renameBase(id, body.name.trim());
-  if (body?.parent !== undefined) base = await store.moveBase(id, body.parent === null ? null : String(body.parent));
+  if (body?.parent !== undefined) {
+    const newParent = body.parent === null ? null : String(body.parent);
+    if (newParent !== null) {
+      // нельзя вложить базу в саму себя или в собственную ветку — иначе
+      // дерево зацикливается, и /api/records при обходе потомков уходит
+      // в бесконечную рекурсию (RangeError на каждом чтении такой базы)
+      const all = await store.listBases();
+      const kids = new Map<string, string[]>();
+      for (const b of all) {
+        if (!b.parent) continue;
+        kids.set(b.parent, [...(kids.get(b.parent) ?? []), b.id]);
+      }
+      const descendants = new Set<string>();
+      const walk = (nodeId: string) => {
+        for (const child of kids.get(nodeId) ?? []) {
+          descendants.add(child);
+          walk(child);
+        }
+      };
+      walk(id);
+      if (newParent === id || descendants.has(newParent)) {
+        return Response.json({ error: 'Нельзя вложить базу в саму себя или в свою же ветку' }, { status: 400 });
+      }
+    }
+    base = await store.moveBase(id, newParent);
+  }
   if (!base) return Response.json({ error: 'База не найдена' }, { status: 404 });
   return Response.json({ base });
 }
