@@ -231,22 +231,34 @@ class SupabaseCustomStore implements CustomStore {
     return data ? this.norm(data as Record<string, unknown>) : null;
   }
   async softDeleteBase(id: string): Promise<boolean> {
-    const { error } = await this.client.from('bases').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+    const { error, count } = await this.client
+      .from('bases')
+      .update({ deleted_at: new Date().toISOString() }, { count: 'exact' })
+      .eq('id', id);
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
-    return true;
+    return (count ?? 0) > 0;
   }
   async restoreBase(id: string): Promise<boolean> {
-    const { error } = await this.client.from('bases').update({ deleted_at: null }).eq('id', id);
+    const { error, count } = await this.client
+      .from('bases')
+      .update({ deleted_at: null }, { count: 'exact' })
+      .eq('id', id);
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
-    return true;
+    return (count ?? 0) > 0;
   }
   async renameBase(id: string, name: string): Promise<CustomBase | null> {
-    const { data, error } = await this.client.from('bases').update({ name }).eq('id', id).is('deleted_at', null).select('*').maybeSingle();
+    let { data, error } = await this.client.from('bases').update({ name }).eq('id', id).is('deleted_at', null).select('*').maybeSingle();
+    if (error && /deleted_at/.test(error.message)) {
+      ({ data, error } = await this.client.from('bases').update({ name }).eq('id', id).select('*').maybeSingle());
+    }
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
     return data ? this.norm(data as Record<string, unknown>) : null;
   }
   async moveBase(id: string, parent: string | null): Promise<CustomBase | null> {
-    const { data, error } = await this.client.from('bases').update({ parent }).eq('id', id).is('deleted_at', null).select('*').maybeSingle();
+    let { data, error } = await this.client.from('bases').update({ parent }).eq('id', id).is('deleted_at', null).select('*').maybeSingle();
+    if (error && /deleted_at/.test(error.message)) {
+      ({ data, error } = await this.client.from('bases').update({ parent }).eq('id', id).select('*').maybeSingle());
+    }
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
     return data ? this.norm(data as Record<string, unknown>) : null;
   }
@@ -363,7 +375,8 @@ class SupabaseCustomStore implements CustomStore {
     if (bqe) throw new Error(`Supabase (bases): ${bqe.message}`);
     for (const b of binnedBases ?? []) {
       const id = String((b as { id: string }).id);
-      await this.client.from('base_records').delete().eq('base_id', id); // включая живые строки удаляемой базы
+      const { error: ce } = await this.client.from('base_records').delete().eq('base_id', id); // включая живые строки удаляемой базы
+      if (ce) throw new Error(`Supabase (base_records): ${ce.message}`);
       const { error: de } = await this.client.from('bases').delete().eq('id', id);
       if (de) throw new Error(`Supabase (bases): ${de.message}`);
       bases++;
@@ -371,7 +384,10 @@ class SupabaseCustomStore implements CustomStore {
     return { bases, records: recCount ?? 0 };
   }
   private async writeColumns(baseId: string, cols: ColumnDef[]): Promise<CustomBase | null> {
-    const { data, error } = await this.client.from('bases').update({ columns: cols }).eq('id', baseId).is('deleted_at', null).select('*').maybeSingle();
+    let { data, error } = await this.client.from('bases').update({ columns: cols }).eq('id', baseId).is('deleted_at', null).select('*').maybeSingle();
+    if (error && /deleted_at/.test(error.message)) {
+      ({ data, error } = await this.client.from('bases').update({ columns: cols }).eq('id', baseId).select('*').maybeSingle());
+    }
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
     return data ? this.norm(data as Record<string, unknown>) : null;
   }
