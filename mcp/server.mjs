@@ -209,6 +209,40 @@ server.registerTool('delete_column', {
   const r = await saveColumns(base, b.columns.filter((c) => c.key !== key)); return r.error ? fail(r.error) : ok({ base, columns: r.columns });
 });
 
+// ── rename_base / move_base / delete_base ──
+server.registerTool('rename_base', {
+  title: 'Переименовать базу', description: 'Меняет название пользовательской базы (id/слаг не меняется).',
+  inputSchema: { base: z.string(), name: z.string() },
+}, async ({ base, name }) => {
+  if (BUILTIN_IDS.has(base)) return fail('встроенные базы переименовывать нельзя');
+  if (!name?.trim()) return fail('нужно название');
+  const { data, error } = await supa.from('bases').update({ name: name.trim() }).eq('id', base).is('deleted_at', null).select('id, name').maybeSingle();
+  if (error) return fail(error.message); if (!data) return fail('база не найдена');
+  return ok({ id: data.id, name: data.name });
+});
+
+server.registerTool('move_base', {
+  title: 'Переместить базу', description: 'Меняет родителя базы в дереве (parent = id раздела или null для верхнего уровня).',
+  inputSchema: { base: z.string(), parent: z.string().nullable().optional() },
+}, async ({ base, parent }) => {
+  if (BUILTIN_IDS.has(base)) return fail('встроенные базы перемещать нельзя');
+  const p = parent ?? null;
+  if (p) { const { data } = await liveBases(); const known = new Set([...(data ?? []).map((b) => b.id), ...BUILTIN_IDS]); if (!known.has(p)) return fail(`нет базы с id ${p}`); if (p === base) return fail('база не может быть своим родителем'); }
+  const { data, error } = await supa.from('bases').update({ parent: p }).eq('id', base).is('deleted_at', null).select('id, parent').maybeSingle();
+  if (error) return fail(error.message); if (!data) return fail('база не найдена');
+  return ok({ id: data.id, parent: data.parent ?? null });
+});
+
+server.registerTool('delete_base', {
+  title: 'Удалить базу (в корзину)', description: 'Переносит базу и её строки в корзину. Восстановимо через restore; окончательно — только empty_bin.',
+  inputSchema: { base: z.string() },
+}, async ({ base }) => {
+  if (BUILTIN_IDS.has(base)) return fail('встроенные базы удалять нельзя');
+  const { data, error } = await supa.from('bases').update({ deleted_at: new Date().toISOString() }).eq('id', base).select('id').maybeSingle();
+  if (error) return fail(error.message); if (!data) return fail('база не найдена');
+  return ok({ deleted: base, bin: true });
+});
+
 // ── create_base ──
 server.registerTool(
   'create_base',

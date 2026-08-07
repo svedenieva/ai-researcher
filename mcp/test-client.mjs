@@ -55,5 +55,11 @@ await client.callTool({ name: 'delete_column', arguments: { base: baseId, key: '
 const recs = JSON.parse((await client.callTool({ name: 'query_records', arguments: { base: baseId } })).content[0].text);
 console.assert(recs.records[0].цена === 15, 'delete_column keeps underlying cell data');
 
+// ── Task 3: rename/move + delete_base → bin ──
+await client.callTool({ name: 'rename_base', arguments: { base: baseId, name: 'MCP Test Base 2' } });
+await client.callTool({ name: 'delete_base', arguments: { base: baseId } });
+const listed = JSON.parse((await client.callTool({ name: 'list_bases', arguments: {} })).content[0].text);
+console.assert(!listed.bases.some((b) => b.id === baseId), 'deleted base hidden from list_bases');
+
 await client.close();
 process.exit(0);
