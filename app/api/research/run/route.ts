@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { getDataSource } from '@/lib/datasource';
 import type { CatalogRecord } from '@/lib/datasource/types';
 import type { Finding, RelevantCompany } from '@/lib/research/types';
+import { modelCandidates, openrouterChat } from '@/lib/research/freeModels';
 
 // Шаг 5 — запуск исследования.
 //
@@ -39,7 +40,6 @@ function keywords(text: string): string[] {
 // ── живой движок: веб-поиск + синтез через OpenRouter ────────────
 // Плагин web у OpenRouter ищет сам и возвращает ссылки в annotations,
 // поэтому отдельный ключ поисковика не нужен.
-const MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.5';
 
 const SYSTEM = `Ты — аналитик рынка AI-продуктов. По подтеме исследования найди в вебе
 актуальные факты и компании. Отвечай СТРОГО одним JSON-объектом, без текста вокруг:
@@ -63,28 +63,23 @@ async function webReport(
   subtopic: string,
   docs: Array<{ record: CatalogRecord; tokens: Set<string> }>,
 ): Promise<Finding | null> {
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://ai-reesearcher.vercel.app',
-      'X-Title': 'AI-Researcher',
-    },
-    body: JSON.stringify({
-      model: MODEL,
+  const candidates = await modelCandidates();
+  if (!candidates.length) return null;
+  const result = await openrouterChat(
+    {
       plugins: [{ id: 'web', max_results: 5 }],
       max_tokens: 1100,
       messages: [
         { role: 'system', content: SYSTEM },
         { role: 'user', content: `Подтема исследования: "${subtopic}"` },
       ],
-    }),
-  });
-  if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${(await res.text()).slice(0, 200)}`);
+    },
+    candidates,
+  );
+  if (!result) return null;
 
-  const body = await res.json();
-  const msg = body?.choices?.[0]?.message;
+  const msg = (result.json as { choices?: { message?: { content?: string; annotations?: unknown[] } }[] })
+    ?.choices?.[0]?.message;
   const parsed = parseJson(String(msg?.content ?? ''));
   if (!parsed) return null;
 
