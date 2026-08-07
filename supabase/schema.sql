@@ -47,7 +47,7 @@ create table if not exists sites (
 create table if not exists bases (
   id          text primary key,
   name        text not null,
-  tone        text,
+  tone        text not null,
   columns     jsonb not null default '[]',
   parent      text,
   owner_email text,
