@@ -1,4 +1,5 @@
 import './globals.css';
+import { LangProvider } from './lang-provider';
 
 export const metadata = { title: 'AI-Researcher' };
 
@@ -12,11 +13,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     // the pre-hydration script sets data-theme before React hydrates, so the
     // server/client <html> attributes differ by design — silence that warning.
-    <html lang="ru" suppressHydrationWarning>
+    <html lang="uk" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <LangProvider>{children}</LangProvider>
+      </body>
     </html>
   );
 }

@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react';
 import { parseTable, inferType } from '@/lib/parseTable';
 import type { ColumnType } from '@/lib/datasource/types';
+import { useLang } from './lang-provider';
+import { t, tImportN, tColumnN } from '@/lib/i18n';
 import styles from './forms.module.css';
 
 interface ColDraft {
@@ -10,14 +12,6 @@ interface ColDraft {
   type: ColumnType;
   filterable: boolean;
 }
-
-const TYPE_LABELS: Record<ColumnType, string> = {
-  text: 'Текст',
-  number: 'Число',
-  select: 'Выбор',
-  'long-text': 'Длинный текст',
-  url: 'Ссылка',
-};
 
 export default function CreateBase({
   onCancel,
@@ -28,10 +22,18 @@ export default function CreateBase({
   onCreated: (id: string) => void;
   parents?: { id: string; name: string }[];
 }) {
+  const { lang } = useLang();
+  const TYPE_LABELS: Record<ColumnType, string> = {
+    text: t(lang, 'typeText'),
+    number: t(lang, 'typeNumber'),
+    select: t(lang, 'typeSelect'),
+    'long-text': t(lang, 'typeLongText'),
+    url: t(lang, 'typeUrl'),
+  };
   const [mode, setMode] = useState<'manual' | 'import'>('manual');
   const [name, setName] = useState('');
   const [parent, setParent] = useState('');
-  const [cols, setCols] = useState<ColDraft[]>([{ label: 'Название', type: 'text', filterable: false }]);
+  const [cols, setCols] = useState<ColDraft[]>(() => [{ label: t(lang, 'defaultColName'), type: 'text', filterable: false }]);
   const [raw, setRaw] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export default function CreateBase({
     () =>
       parsed.headers.map((h, i) => {
         const type = inferType(parsed.rows.map((r) => r[i] ?? ''));
-        return { label: h || `Колонка ${i + 1}`, type, filterable: type === 'select' };
+        return { label: h || tColumnN(lang, i + 1), type, filterable: type === 'select' };
       }),
     [parsed],
   );
@@ -76,10 +78,10 @@ export default function CreateBase({
         }),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body?.error ?? 'Ошибка создания');
+      if (!res.ok) throw new Error(body?.error ?? t(lang, 'createError'));
       onCreated(body.base.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
+      setError(e instanceof Error ? e.message : t(lang, 'error'));
     } finally {
       setBusy(false);
     }
@@ -92,8 +94,8 @@ export default function CreateBase({
   return (
     <section className={styles.panel}>
       <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle}>Новая база</h2>
-        <span className={styles.panelHint}>с нуля или импортом из таблицы</span>
+        <h2 className={styles.panelTitle}>{t(lang, 'newBase')}</h2>
+        <span className={styles.panelHint}>{t(lang, 'fromScratch')}</span>
       </div>
 
       <div className={styles.modeTabs}>
@@ -102,32 +104,32 @@ export default function CreateBase({
           className={mode === 'manual' ? styles.modeActive : styles.modeTab}
           onClick={() => setMode('manual')}
         >
-          Вручную
+          {t(lang, 'manualTab')}
         </button>
         <button
           type="button"
           className={mode === 'import' ? styles.modeActive : styles.modeTab}
           onClick={() => setMode('import')}
         >
-          Импорт таблицы
+          {t(lang, 'importTab')}
         </button>
       </div>
 
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>Название базы</span>
+        <span className={styles.fieldLabel}>{t(lang, 'baseName')}</span>
         <input
           className={styles.input}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Напр.: Инструменты для дизайна"
+          placeholder={t(lang, 'baseNamePlaceholder')}
           autoFocus
         />
       </label>
 
       <label className={styles.field}>
-        <span className={styles.fieldLabel}>Внутри базы (необязательно)</span>
+        <span className={styles.fieldLabel}>{t(lang, 'insideBase')}</span>
         <select className={styles.input} value={parent} onChange={(e) => setParent(e.target.value)}>
-          <option value="">— верхний уровень —</option>
+          <option value="">{t(lang, 'topLevel')}</option>
           {parents.map((p) => (
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
@@ -136,7 +138,7 @@ export default function CreateBase({
 
       {mode === 'manual' ? (
         <>
-          <div className={styles.colsLabel}>Колонки</div>
+          <div className={styles.colsLabel}>{t(lang, 'columns')}</div>
           <div className={styles.colList}>
             {cols.map((c, i) => (
               <div key={i} className={styles.colRow}>
@@ -144,7 +146,7 @@ export default function CreateBase({
                   className={styles.input}
                   value={c.label}
                   onChange={(e) => setCol(i, { label: e.target.value })}
-                  placeholder="Название колонки"
+                  placeholder={t(lang, 'columnNamePlaceholder')}
                 />
                 <select
                   className={styles.select}
@@ -155,34 +157,34 @@ export default function CreateBase({
                     <option key={t} value={t}>{TYPE_LABELS[t]}</option>
                   ))}
                 </select>
-                <label className={styles.checkbox} title="Показывать фильтр по этой колонке">
+                <label className={styles.checkbox} title={t(lang, 'showFilterTitle')}>
                   <input
                     type="checkbox"
                     checked={c.filterable}
                     onChange={(e) => setCol(i, { filterable: e.target.checked })}
                     disabled={c.type === 'long-text' || c.type === 'url'}
                   />
-                  фильтр
+                  {t(lang, 'filterCheckbox')}
                 </label>
                 <button
                   type="button"
                   className={styles.iconBtn}
                   onClick={() => removeCol(i)}
                   disabled={cols.length === 1}
-                  aria-label="Убрать колонку"
+                  aria-label={t(lang, 'removeColumn')}
                 >
                   ×
                 </button>
               </div>
             ))}
           </div>
-          <button type="button" className={styles.ghost} onClick={addCol}>+ Колонка</button>
+          <button type="button" className={styles.ghost} onClick={addCol}>{t(lang, 'addColumnBtn')}</button>
         </>
       ) : (
         <>
           <div className={styles.importRow}>
             <label className={styles.uploadBtn}>
-              Загрузить CSV
+              {t(lang, 'uploadCsv')}
               <input
                 type="file"
                 accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"
@@ -190,19 +192,19 @@ export default function CreateBase({
                 onChange={(e) => onFile(e.target.files?.[0])}
               />
             </label>
-            <span className={styles.panelHint}>или вставь таблицу ниже (Ctrl+V из Google Sheets / Excel)</span>
+            <span className={styles.panelHint}>{t(lang, 'orPaste')}</span>
           </div>
           <textarea
             className={styles.input}
             rows={5}
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
-            placeholder={'Название\tКатегория\tЦена\nFigma\tUI\t15\nFramer\tUI\t30'}
+            placeholder={t(lang, 'pasteExample')}
           />
           {parsed.headers.length > 0 && (
             <div className={styles.importPreview}>
               <div className={styles.previewLine}>
-                <strong>{importCols.length}</strong> колонок · <strong>{parsed.rows.length}</strong> строк
+                <strong>{importCols.length}</strong> {t(lang, 'columnsWord')} · <strong>{parsed.rows.length}</strong> {t(lang, 'rowsWord')}
               </div>
               <div className={styles.previewCols}>
                 {importCols.map((c, i) => (
@@ -217,13 +219,13 @@ export default function CreateBase({
       )}
 
       <div className={styles.actions}>
-        <button type="button" className={styles.ghost} onClick={onCancel} disabled={busy}>Отмена</button>
+        <button type="button" className={styles.ghost} onClick={onCancel} disabled={busy}>{t(lang, 'cancel')}</button>
         <button type="button" className={styles.primary} onClick={submit} disabled={busy || !canSubmit}>
           {busy
-            ? 'Создаю…'
+            ? t(lang, 'creating')
             : mode === 'import' && parsed.rows.length
-              ? `Импортировать ${parsed.rows.length} строк`
-              : 'Создать базу'}
+              ? tImportN(lang, parsed.rows.length)
+              : t(lang, 'create')}
         </button>
       </div>
       {error && <p className={styles.error}>{error}</p>}

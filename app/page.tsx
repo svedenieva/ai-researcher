@@ -8,8 +8,11 @@ import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/type
 import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
 import { BASES, DEFAULT_BASE } from '@/lib/datasource/bases';
 import ThemeToggle from './theme-toggle';
+import LangSwitch from './lang-switch';
 import CreateBase from './create-base';
 import BasePicker from './base-picker';
+import { useLang } from './lang-provider';
+import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import styles from './page.module.css';
 
 const DEFAULT_SORT = { key: 'pop', dir: 'asc' as const };
@@ -29,6 +32,7 @@ const BUILTIN_TABS: BaseTab[] = BASES.map((b) => ({ id: b.id, name: b.name, tone
 
 export default function Home() {
   const router = useRouter();
+  const { lang } = useLang();
   const [columns, setColumns] = useState<ColumnDef[]>([]);
   const [records, setRecords] = useState<CatalogRecord[]>([]);
   const [total, setTotal] = useState<number>();
@@ -312,13 +316,14 @@ export default function Home() {
           <a
             href={exportHref}
             className={styles.navLink}
-            title="Выгрузить то, что сейчас на экране, в CSV (RFC 4180)"
+            title={tr(lang, 'csvHint')}
           >
             ↓ CSV
           </a>
-          <Link href="/sites" className={styles.navLink}>Сайты</Link>
-          <Link href="/bin" className={styles.navLink}>🗑 Корзина</Link>
-          <Link href="/research" className={styles.newResearch}>+ Новое исследование</Link>
+          <Link href="/sites" className={styles.navLink}>{tr(lang, 'sites')}</Link>
+          <Link href="/bin" className={styles.navLink}>{tr(lang, 'trash')}</Link>
+          <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>
+          <LangSwitch />
           <ThemeToggle />
         </div>
       </header>
@@ -372,6 +377,7 @@ export default function Home() {
             autoGroup
             recordCard
             viewKey={base}
+            strings={mindsheetStrings(lang)}
           />
         </div>
       </main>

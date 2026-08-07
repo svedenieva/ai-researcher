@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import BaseTree from './base-tree';
+import { useLang } from './lang-provider';
+import { t, tGoTo, tShowInside } from '@/lib/i18n';
 import styles from './base-picker.module.css';
 
 export interface BaseTab {
@@ -28,6 +30,7 @@ export default function BasePicker({
   onMutated?: () => void;
   rootLabel?: string;
 }) {
+  const { lang } = useLang();
   const [open, setOpen] = useState(false);
   // узел, на котором раскрыть дерево: из корневой кнопки — текущая база,
   // из крошки — сам раздел. Дерево должно выпадать из направления, а не
@@ -65,7 +68,7 @@ export default function BasePicker({
   }, [open]);
 
   return (
-    <nav className={styles.crumbs} aria-label="Путь к базе" ref={ref}>
+    <nav className={styles.crumbs} aria-label={t(lang, 'pathAria')} ref={ref}>
       {/* единственная точка входа в дерево баз */}
       <button
         type="button"
@@ -75,7 +78,7 @@ export default function BasePicker({
           setOpen((v) => !v);
         }}
         aria-expanded={open}
-        title="Выбрать базу данных"
+        title={t(lang, 'chooseBase')}
       >
         <span className={styles.rootIcon} aria-hidden="true">🗂</span>
         {rootLabel}
@@ -90,7 +93,7 @@ export default function BasePicker({
             type="button"
             className={`${styles.crumb} ${i === path.length - 1 ? styles.crumbCurrent : ''}`}
             onClick={() => onChange(node.id)}
-            title={`Перейти: ${node.name}`}
+            title={tGoTo(lang, node.name)}
           >
             {node.name}
           </button>
@@ -99,7 +102,7 @@ export default function BasePicker({
             type="button"
             className={styles.crumbCaret}
             aria-expanded={open && focus === node.id}
-            title={`Показать, что внутри: ${node.name}`}
+            title={tShowInside(lang, node.name)}
             onClick={() => {
               const same = open && focus === node.id;
               setFocus(same ? undefined : node.id);
