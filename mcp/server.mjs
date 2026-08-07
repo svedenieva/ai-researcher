@@ -470,6 +470,65 @@ server.registerTool(
   },
 );
 
+// ── свободные модели OpenRouter (авто-выбор + fallback) ──
+// OPENROUTER_MODEL, если задан, перекрывает автовыбор фиксированной моделью.
+// Иначе тянем список моделей OpenRouter, оставляем только бесплатные (price
+// 0/0), перемешиваем и пробуем по очереди, пока какая-то не ответит. Список
+// кэшируется на час; на сбое сети — пустой массив, тогда вызывающий код падает
+// на эвристику, а не на платную модель.
+const FREE_MODELS_TTL_MS = 60 * 60 * 1000;
+let freeModelsCache = null; // { ids, at }
+
+function pickFreeIds(models) {
+  return (Array.isArray(models) ? models : [])
+    .filter((m) => m?.id && m.pricing && Number(m.pricing.prompt) === 0 && Number(m.pricing.completion) === 0)
+    .map((m) => String(m.id));
+}
+
+async function freeModelIds() {
+  if (freeModelsCache && Date.now() - freeModelsCache.at < FREE_MODELS_TTL_MS) return freeModelsCache.ids;
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/models', {
+      headers: process.env.OPENROUTER_API_KEY ? { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}` } : {},
+    });
+    if (!res.ok) throw new Error(`OpenRouter models ${res.status}`);
+    const data = await res.json();
+    const ids = pickFreeIds(data?.data);
+    freeModelsCache = { ids, at: Date.now() };
+    return ids;
+  } catch (e) {
+    console.error('free model list fetch failed:', e);
+    return freeModelsCache?.ids ?? [];
+  }
+}
+
+async function modelCandidates(limit = 6) {
+  const override = process.env.OPENROUTER_MODEL?.trim();
+  if (override) return [override];
+  const ids = [...(await freeModelIds())];
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  return ids.slice(0, limit);
+}
+
+async function openrouterChatCandidates(body, candidates) {
+  for (const model of candidates) {
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...body, model }),
+      });
+      if (res.ok) return await res.json();
+    } catch (e) {
+      console.error(`model ${model} failed, trying next:`, e);
+    }
+  }
+  return null;
+}
+
 // ── research_decompose ──
 const SYS = 'Ты — старший аналитик рынка AI-продуктов. Разложи запрос на 8–10 конкретных, взаимно не пересекающихся, проверяемых подтем на русском. Каждая — короткая формулировка (до ~8 слов). Верни ТОЛЬКО JSON-массив строк.';
 function heuristic(prompt) {
@@ -494,13 +553,12 @@ server.registerTool(
     const user = `Запрос: "${prompt}"\n\nВерни ТОЛЬКО JSON-массив строк.`;
     try {
       if (process.env.OPENROUTER_API_KEY) {
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.5', max_tokens: 1024, messages: [{ role: 'system', content: SYS }, { role: 'user', content: user }] }),
-        });
-        if (res.ok) {
-          const j = await res.json();
+        const candidates = await modelCandidates();
+        if (candidates.length) {
+          const j = await openrouterChatCandidates(
+            { max_tokens: 1024, messages: [{ role: 'system', content: SYS }, { role: 'user', content: user }] },
+            candidates,
+          );
           const subs = parseList(j?.choices?.[0]?.message?.content ?? '');
           if (subs.length >= 3) return ok({ source: 'openrouter', subtopics: subs });
         }
