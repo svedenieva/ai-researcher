@@ -2,7 +2,6 @@ import { getDataSource } from '@/lib/datasource';
 import { JsonDataSource } from '@/lib/datasource/json';
 import { BASES, baseById } from '@/lib/datasource/bases';
 import { getCustomStore } from '@/lib/datasource/customStore';
-import { currentEmail } from '@/lib/current-user';
 import type { ListParams } from '@/lib/datasource/types';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
@@ -52,14 +51,12 @@ export async function GET(request: Request): Promise<Response> {
     try {
       const store = getCustomStore();
       const custom = await store.getBase(baseId);
-      const me = await currentEmail();
-      // чужую базу не отдаём даже по прямой ссылке
-      if (custom && custom.owner && custom.owner !== me) {
-        return Response.json({ error: "Нет доступа к этой базе" }, { status: 403 });
-      }
+      // Реестр общий: доступ даёт вход в приложение, а не владелец базы.
+      // Направления раздаются по людям, и разделение по владельцам приводило
+      // к тому, что никто не видел чужого.
       if (custom) {
-        const all = (await store.listBases()).filter((b) => !b.owner || b.owner === me);
-        // все потомки выбранной базы (чужие ветки не подмешиваем)
+        const all = await store.listBases();
+        // все потомки выбранной базы
         const kids = new Map<string, string[]>();
         for (const b of all) {
           if (!b.parent) continue;
@@ -122,9 +119,8 @@ export async function GET(request: Request): Promise<Response> {
   let merged = records;
   try {
     const store = getCustomStore();
-    const me = await currentEmail();
-    // чужие базы в раздел не подмешиваем
-    const all = (await store.listBases()).filter((b) => !b.owner || b.owner === me);
+    // раздел показывает всё, что в него вложено, независимо от владельца
+    const all = await store.listBases();
     const kids = new Map<string, string[]>();
     for (const b of all) {
       if (!b.parent) continue;
@@ -175,10 +171,7 @@ export async function POST(request: Request): Promise<Response> {
     const store = getCustomStore();
     const base = await store.getBase(baseId);
     if (!base) return Response.json({ error: 'База не найдена' }, { status: 404 });
-    const me = await currentEmail();
-    if (base.owner && base.owner !== me) {
-      return Response.json({ error: 'Нет доступа к этой базе' }, { status: 403 });
-    }
+    // писать может любой вошедший — реестр общий, владелец только для показа
     const record = await store.addRecord(baseId, data);
     return Response.json({ record });
   } catch (e) {
@@ -204,11 +197,6 @@ export async function PATCH(request: Request): Promise<Response> {
 
   try {
     const store = getCustomStore();
-    const base = await store.getBase(baseId);
-    const me = await currentEmail();
-    if (base?.owner && base.owner !== me) {
-      return Response.json({ error: 'Нет доступа к этой базе' }, { status: 403 });
-    }
     const record = await store.updateRecord(baseId, id, patch);
     if (!record) return Response.json({ error: 'Строка не найдена' }, { status: 404 });
     return Response.json({ record });

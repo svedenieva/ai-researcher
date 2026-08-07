@@ -166,7 +166,8 @@ function mapRow(cols: ColumnDef[], row: unknown): Record<string, unknown> {
 
 async function callTool(name: string, args: Record<string, unknown>, me: string) {
   const store = getCustomStore();
-  const visible = async () => (await store.listBases()).filter((b) => !b.owner || b.owner === me);
+  // реестр общий: доступ даёт токен, а не владелец базы — так же, как на сайте
+  const visible = async () => store.listBases();
 
   switch (name) {
     case 'list_bases': {
@@ -202,7 +203,6 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       if (BUILTIN_IDS.has(id)) return failed('во встроенные базы писать нельзя');
       const base = await store.getBase(id);
       if (!base) return failed('база не найдена');
-      if (base.owner && base.owner !== me) return failed('нет доступа к этой базе');
       const rows = Array.isArray(args.rows) ? args.rows.map((r) => mapRow(base.columns, r)).filter((d) => Object.keys(d).length) : [];
       const added = rows.length ? await store.addRecords(id, rows) : 0;
       return text({ added });
@@ -224,7 +224,6 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       }
       const base = await store.getBase(id);
       if (!base) return failed('база не найдена');
-      if (base.owner && base.owner !== me) return failed('нет доступа к этой базе');
       const recs = (await store.listRecords(id)).filter(match);
       return text({ base: id, total: recs.length, records: recs.slice(0, limit) });
     }
@@ -234,7 +233,6 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       if (BUILTIN_IDS.has(id)) return failed('встроенные базы только для чтения');
       const base = await store.getBase(id);
       if (!base) return failed('база не найдена');
-      if (base.owner && base.owner !== me) return failed('нет доступа к этой базе');
       const rec = await store.updateRecord(id, String(args.id ?? ''), (args.data ?? {}) as Record<string, unknown>);
       return rec ? text(rec) : failed('строка не найдена');
     }

@@ -22,16 +22,16 @@ export async function GET(): Promise<Response> {
   const builtin: BaseDTO[] = BASES.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: true, parent: null }));
   let custom: BaseDTO[] = [];
   try {
-    const me = await currentEmail();
     const rows = await getCustomStore().listBases();
-    // человек видит свои базы и общие (owner не проставлен — заведены до
-    // разделения по владельцам)
-    const mine = rows.filter((b) => !b.owner || b.owner === me);
-    // родителем может быть и встроенная база (AI-сфера и т.п.) — её видно всем
-    const visible = new Set([...mine.map((b) => b.id), ...BASES.map((b) => b.id)]);
-    custom = mine
-      // база без видимого родителя всплывает на верхний уровень, иначе
-      // потеряется в дереве вместе с чужой веткой
+    // Реестр общий: все, кто прошёл вход, видят все базы. Раньше человек видел
+    // только свои и общие — но направления раздаются по людям (IT-сферу ведёт
+    // одна, маркетинг другая), и в таком виде никто не видел чужого. Владелец
+    // по-прежнему записывается, но доступ больше не ограничивает — так же
+    // устроен раздел «Сайты».
+    const visible = new Set([...rows.map((b) => b.id), ...BASES.map((b) => b.id)]);
+    custom = rows
+      // база без существующего родителя всплывает на верхний уровень,
+      // иначе потеряется в дереве
       .map((b) => ({
         id: b.id,
         name: b.name,
