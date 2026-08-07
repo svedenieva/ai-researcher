@@ -60,6 +60,8 @@ await client.callTool({ name: 'rename_base', arguments: { base: baseId, name: 'M
 await client.callTool({ name: 'delete_base', arguments: { base: baseId } });
 const listed = JSON.parse((await client.callTool({ name: 'list_bases', arguments: {} })).content[0].text);
 console.assert(!listed.bases.some((b) => b.id === baseId), 'deleted base hidden from list_bases');
+const qAfterDelete = await client.callTool({ name: 'query_records', arguments: { base: baseId } });
+console.assert(qAfterDelete.isError === true, 'query_records on a soft-deleted base fails, does not leak rows');
 
 // ── Task 4: delete_rows + bin lifecycle ──
 // recreate a base + row, delete row to bin, verify bin, restore, then delete base and empty just that base

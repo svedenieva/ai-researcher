@@ -216,7 +216,8 @@ server.registerTool('rename_base', {
 }, async ({ base, name }) => {
   if (BUILTIN_IDS.has(base)) return fail('встроенные базы переименовывать нельзя');
   if (!name?.trim()) return fail('нужно название');
-  const { data, error } = await supa.from('bases').update({ name: name.trim() }).eq('id', base).is('deleted_at', null).select('id, name').maybeSingle();
+  let { data, error } = await supa.from('bases').update({ name: name.trim() }).eq('id', base).is('deleted_at', null).select('id, name').maybeSingle();
+  if (error && /deleted_at/.test(error.message)) ({ data, error } = await supa.from('bases').update({ name: name.trim() }).eq('id', base).select('id, name').maybeSingle());
   if (error) return fail(error.message); if (!data) return fail('база не найдена');
   return ok({ id: data.id, name: data.name });
 });
@@ -228,7 +229,8 @@ server.registerTool('move_base', {
   if (BUILTIN_IDS.has(base)) return fail('встроенные базы перемещать нельзя');
   const p = parent ?? null;
   if (p) { const { data } = await liveBases(); const known = new Set([...(data ?? []).map((b) => b.id), ...BUILTIN_IDS]); if (!known.has(p)) return fail(`нет базы с id ${p}`); if (p === base) return fail('база не может быть своим родителем'); }
-  const { data, error } = await supa.from('bases').update({ parent: p }).eq('id', base).is('deleted_at', null).select('id, parent').maybeSingle();
+  let { data, error } = await supa.from('bases').update({ parent: p }).eq('id', base).is('deleted_at', null).select('id, parent').maybeSingle();
+  if (error && /deleted_at/.test(error.message)) ({ data, error } = await supa.from('bases').update({ parent: p }).eq('id', base).select('id, parent').maybeSingle());
   if (error) return fail(error.message); if (!data) return fail('база не найдена');
   return ok({ id: data.id, parent: data.parent ?? null });
 });
@@ -275,7 +277,7 @@ server.registerTool('restore', {
 }, async ({ base, rows }) => {
   if (!base && !rows) return fail('укажи base или rows');
   const out = {};
-  if (base) { const { error } = await supa.from('bases').update({ deleted_at: null }).eq('id', base); if (error) return fail(error.message); out.base = base; }
+  if (base) { const { data, error } = await supa.from('bases').update({ deleted_at: null }).eq('id', base).select('id').maybeSingle(); if (error) return fail(error.message); if (!data) return fail('база не найдена'); out.base = base; }
   if (rows) { const { data, error } = await supa.from('base_records').update({ deleted_at: null }).eq('base_id', rows.base).in('id', rows.ids).select('id'); if (error) return fail(error.message); out.rows = (data ?? []).map((r) => r.id); }
   return ok({ restored: out });
 });
@@ -286,18 +288,29 @@ server.registerTool('empty_bin', {
   description: 'Окончательно удаляет содержимое корзины. Без confirm:true возвращает предпросмотр и ничего не удаляет.',
   inputSchema: { confirm: z.boolean().optional(), base: z.string().optional().describe('очистить только эту базу; иначе — всё') },
 }, async ({ confirm, base }) => {
-  // предпросмотр
+  // предпросмотр — честный: реальное удаление ниже стирает ВСЕ строки binned-баз
+  // (не только помеченные deleted_at), плюс отдельно помеченные строки в живых базах
   let baseQ = supa.from('bases').select('id, name').not('deleted_at', 'is', null); if (base) baseQ = baseQ.eq('id', base);
   const { data: binBases, error: be } = await baseQ; if (be) return fail(be.message);
-  let recQ = supa.from('base_records').select('id', { count: 'exact', head: true }).not('deleted_at', 'is', null); if (base) recQ = recQ.eq('base_id', base);
-  const { count: recCount, error: re } = await recQ; if (re) return fail(re.message);
-  if (!confirm) return ok({ dryRun: true, wouldDelete: { bases: (binBases ?? []).map((b) => b.name), baseCount: (binBases ?? []).length, records: recCount ?? 0 }, hint: 'повтори с confirm:true чтобы удалить безвозвратно' });
+  const binIds = (binBases ?? []).map((b) => b.id);
+  let ownRowCount = 0;
+  if (binIds.length) {
+    const { count, error: oe } = await supa.from('base_records').select('id', { count: 'exact', head: true }).in('base_id', binIds);
+    if (oe) return fail(oe.message);
+    ownRowCount = count ?? 0;
+  }
+  let looseQ = supa.from('base_records').select('id, base_id').not('deleted_at', 'is', null); if (base) looseQ = looseQ.eq('base_id', base);
+  const { data: looseRows, error: re } = await looseQ; if (re) return fail(re.message);
+  const binIdSet = new Set(binIds);
+  const looseCount = (looseRows ?? []).filter((r) => !binIdSet.has(r.base_id)).length;
+  const recCount = ownRowCount + looseCount;
+  if (!confirm) return ok({ dryRun: true, wouldDelete: { bases: (binBases ?? []).map((b) => b.name), baseCount: (binBases ?? []).length, records: recCount }, hint: 'повтори с confirm:true чтобы удалить безвозвратно' });
   // реальное удаление
   let recDel = supa.from('base_records').delete().not('deleted_at', 'is', null); if (base) recDel = recDel.eq('base_id', base);
   const { error: rde } = await recDel; if (rde) return fail(rde.message);
   let bases = 0;
   for (const b of binBases ?? []) { await supa.from('base_records').delete().eq('base_id', b.id); const { error: de } = await supa.from('bases').delete().eq('id', b.id); if (de) return fail(de.message); bases++; }
-  return ok({ emptied: true, bases, records: recCount ?? 0 });
+  return ok({ emptied: true, bases, records: recCount });
 });
 
 // ── create_base ──
@@ -386,7 +399,7 @@ server.registerTool(
     const q = (search ?? '').trim().toLowerCase();
     if (BUILTIN_IDS.has(base)) {
       const def = BUILTIN_BASES.find((b) => b.id === base);
-      const { data, error } = await supa.from('products').select('data');
+      const { data, error } = await supa.from('products').select('data').order('id');
       if (error) return fail(error.message);
       let recs = (data ?? []).map((r) => ({ ...r.data, section: r.data.section ?? sectionFor(r.data.vertical) }));
       if (def.section) recs = recs.filter((r) => r.section === def.section);
@@ -394,6 +407,10 @@ server.registerTool(
       const page = recs.slice(off, off + lim);
       return ok({ base, total: recs.length, offset: off, hasMore: off + page.length < recs.length, records: page.map((r) => ({ id: r.id, name: r.name, verdict: r.verdict, vertical: r.vertical, section: r.section, url: r.url })) });
     }
+    // база должна быть живой (не в корзине) — иначе после delete_base записи
+    // всё ещё читались бы напрямую по id базы в обход list_bases
+    const live = await loadCustomBase(base);
+    if (live.error) return fail(live.error);
     const { data, error } = await liveRecords(base);
     if (error) return fail(error.message);
     let recs = (data ?? []).map((r) => ({ id: r.id, ...r.data }));
@@ -441,7 +458,7 @@ server.registerTool(
     },
   },
   async ({ query, section, limit, offset }) => {
-    const { data, error } = await supa.from('products').select('data');
+    const { data, error } = await supa.from('products').select('data').order('id');
     if (error) return fail(error.message);
     let recs = (data ?? []).map((r) => ({ ...r.data, section: r.data.section ?? sectionFor(r.data.vertical) }));
     if (section) recs = recs.filter((r) => r.section === section);
