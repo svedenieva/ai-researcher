@@ -5,9 +5,9 @@
 .empty { color: #b3261e; border: 1px solid #b3261e; background: none; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
 .empty:disabled { opacity: .4; cursor: default; }
 .none { opacity: .6; margin-top: 32px; }
-section { margin-top: 24px; }
-section h2 { font-size: 14px; opacity: .7; }
-section ul { list-style: none; padding: 0; margin: 8px 0 0; }
-section li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,.08); }
-section li em { opacity: .55; font-style: normal; }
-section button { border: 1px solid rgba(0,0,0,.2); background: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.section { margin-top: 24px; }
+.section h2 { font-size: 14px; opacity: .7; }
+.section ul { list-style: none; padding: 0; margin: 8px 0 0; }
+.section li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,.08); }
+.section li em { opacity: .55; font-style: normal; }
+.section button { border: 1px solid rgba(0,0,0,.2); background: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; }

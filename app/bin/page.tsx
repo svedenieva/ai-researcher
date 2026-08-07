@@ -35,7 +35,7 @@ export default function BinPage() {
       {empty_ && <p className={styles.none}>Корзина пуста.</p>}
 
       {bin.bases.length > 0 && (
-        <section><h2>Базы</h2><ul>
+        <section className={styles.section}><h2>Базы</h2><ul>
           {bin.bases.map((b) => (
             <li key={b.id}><span>{b.name}</span><button onClick={() => restoreBase(b.id)}>Восстановить</button></li>
           ))}
@@ -43,7 +43,7 @@ export default function BinPage() {
       )}
 
       {bin.records.length > 0 && (
-        <section><h2>Строки</h2><ul>
+        <section className={styles.section}><h2>Строки</h2><ul>
           {bin.records.map((r) => (
             <li key={r.record.id}><span>{String(r.record.name ?? r.record['название'] ?? r.record.id)} <em>· {r.baseName}</em></span><button onClick={() => restoreRow(r.baseId, r.record.id)}>Восстановить</button></li>
           ))}
