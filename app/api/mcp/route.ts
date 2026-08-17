@@ -1,21 +1,23 @@
 import { getDataSource } from '@/lib/datasource';
 import { BASES } from '@/lib/datasource/bases';
 import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
+import type { CustomBase, CustomStore } from '@/lib/datasource/customStore';
 import { decompose } from '@/lib/research/decompose';
 import type { ColumnDef } from '@/lib/datasource/types';
-// @ts-expect-error — общий текст правил, один на stdio и HTTP
+// @ts-expect-error — shared rules text, one copy for stdio and HTTP
 import { INSTRUCTIONS } from '@/lib/mcp/instructions.mjs';
 
-// MCP по HTTP (JSON-RPC 2.0) прямо в приложении: человек добавляет одну ссылку
-// с личным токеном — ни Node, ни файлов, ни ключа Supabase у него на машине.
-// Кто пришёл, определяем по токену, поэтому каждый видит свои базы и общие.
+// MCP over HTTP (JSON-RPC 2.0) baked right into the app: a person adds one
+// link with a personal token — no Node, no local files, no Supabase key on
+// their machine. Who's calling is determined by the token, so everyone sees
+// their own bases plus the shared ones.
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
 
-// MCP_TOKENS = "токен:почта,токен2:почта2"
+// MCP_TOKENS = "token:email,token2:email2"
 function emailForToken(token: string | null): string | null {
   if (!token) return null;
   const map = process.env.MCP_TOKENS ?? '';
@@ -27,31 +29,42 @@ function emailForToken(token: string | null): string | null {
   return null;
 }
 
+// Prefer the Authorization: Bearer header; fall back to ?token= for clients
+// that can't set custom headers.
 function tokenFrom(request: Request): string | null {
   const auth = request.headers.get('authorization') ?? '';
   if (auth.toLowerCase().startsWith('bearer ')) return auth.slice(7).trim();
   return new URL(request.url).searchParams.get('token');
 }
 
-// ── описания инструментов (схемы в формате JSON Schema) ────────
+// ── tool descriptions (JSON Schema) ─────────────────────────────
 const TOOLS = [
   {
     name: 'list_bases',
-    description: 'Все базы витрины: встроенные срезы каталога + доступные пользователю.',
+    description: 'All storefront bases: built-in catalog slices + the bases available to this user.',
     inputSchema: { type: 'object', properties: {} },
   },
   {
+    name: 'get_base',
+    description: 'Schema and row count of a live custom base.',
+    inputSchema: {
+      type: 'object',
+      required: ['base'],
+      properties: { base: { type: 'string', description: 'base id' } },
+    },
+  },
+  {
     name: 'create_base',
-    description: 'Создаёт базу с колонками и (опционально) начальными строками.',
+    description: 'Creates a base with columns and (optionally) initial rows.',
     inputSchema: {
       type: 'object',
       required: ['name', 'columns'],
       properties: {
-        name: { type: 'string', description: 'название базы' },
-        parent: { type: 'string', description: 'id базы-родителя (необязательно)' },
+        name: { type: 'string', description: 'base name' },
+        parent: { type: 'string', description: 'id of the parent base (optional)' },
         columns: {
           type: 'array',
-          description: 'колонки базы',
+          description: 'base columns',
           items: {
             type: 'object',
             required: ['label'],
@@ -64,27 +77,107 @@ const TOOLS = [
         },
         rows: {
           type: 'array',
-          description: 'строки: объекты по label или key колонки',
+          description: 'rows: objects keyed by column label or key',
           items: { type: 'object' },
         },
       },
     },
   },
   {
+    name: 'add_column',
+    description: 'Adds a column to a live custom base.',
+    inputSchema: {
+      type: 'object',
+      required: ['base', 'label'],
+      properties: {
+        base: { type: 'string' },
+        label: { type: 'string' },
+        type: { type: 'string', enum: ['text', 'number', 'select', 'url', 'long-text'] },
+        filterable: { type: 'boolean' },
+      },
+    },
+  },
+  {
+    name: 'update_column',
+    description: "Changes a column's label, type or filterable state. The key stays unchanged.",
+    inputSchema: {
+      type: 'object',
+      required: ['base', 'key'],
+      properties: {
+        base: { type: 'string' },
+        key: { type: 'string' },
+        label: { type: 'string' },
+        type: { type: 'string', enum: ['text', 'number', 'select', 'url', 'long-text'] },
+        filterable: { type: 'boolean' },
+      },
+    },
+  },
+  {
+    name: 'delete_column',
+    description: 'Removes a column from a live custom base. Existing cell data stays stored.',
+    inputSchema: {
+      type: 'object',
+      required: ['base', 'key'],
+      properties: { base: { type: 'string' }, key: { type: 'string' } },
+    },
+  },
+  {
+    name: 'rename_base',
+    description: "Renames a live custom base without changing its id.",
+    inputSchema: {
+      type: 'object',
+      required: ['base', 'name'],
+      properties: { base: { type: 'string' }, name: { type: 'string' } },
+    },
+  },
+  {
+    name: 'move_base',
+    description: "Changes a custom base's parent in the tree.",
+    inputSchema: {
+      type: 'object',
+      required: ['base'],
+      properties: {
+        base: { type: 'string' },
+        parent: { type: ['string', 'null'], description: 'new parent id, or null for top level' },
+      },
+    },
+  },
+  {
+    name: 'delete_base',
+    description: 'Moves a live custom base to the trash.',
+    inputSchema: {
+      type: 'object',
+      required: ['base'],
+      properties: { base: { type: 'string' } },
+    },
+  },
+  {
     name: 'add_rows',
-    description: 'Добавляет строки в существующую базу.',
+    description: 'Adds rows to an existing base.',
     inputSchema: {
       type: 'object',
       required: ['base', 'rows'],
       properties: {
-        base: { type: 'string', description: 'id базы' },
+        base: { type: 'string', description: 'base id' },
         rows: { type: 'array', items: { type: 'object' } },
       },
     },
   },
   {
+    name: 'delete_rows',
+    description: 'Moves individual rows to the trash by id.',
+    inputSchema: {
+      type: 'object',
+      required: ['base', 'ids'],
+      properties: {
+        base: { type: 'string' },
+        ids: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  },
+  {
     name: 'query_records',
-    description: 'Записи базы с необязательным текстовым поиском.',
+    description: 'Records from a base, with optional text search and pagination.',
     inputSchema: {
       type: 'object',
       required: ['base'],
@@ -92,12 +185,13 @@ const TOOLS = [
         base: { type: 'string' },
         search: { type: 'string' },
         limit: { type: 'number' },
+        offset: { type: 'number', description: 'how many records to skip' },
       },
     },
   },
   {
     name: 'update_record',
-    description: 'Меняет поля одной строки.',
+    description: "Changes one row's fields.",
     inputSchema: {
       type: 'object',
       required: ['base', 'id', 'data'],
@@ -105,8 +199,40 @@ const TOOLS = [
     },
   },
   {
+    name: 'list_bin',
+    description: 'Lists deleted bases and rows.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'restore',
+    description: 'Restores a deleted base, or deleted rows.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        base: { type: 'string', description: 'id of a deleted base' },
+        rows: {
+          type: 'object',
+          description: 'rows to restore',
+          required: ['base', 'ids'],
+          properties: { base: { type: 'string' }, ids: { type: 'array', items: { type: 'string' } } },
+        },
+      },
+    },
+  },
+  {
+    name: 'empty_bin',
+    description: 'Permanently deletes the trash. Without confirm:true it only returns a preview.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        confirm: { type: 'boolean' },
+        base: { type: 'string', description: 'empty only this base' },
+      },
+    },
+  },
+  {
     name: 'catalog_search',
-    description: 'Поиск компаний в каталоге продуктов, можно ограничить разделом.',
+    description: 'Searches companies in the product catalog, optionally scoped to a section.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -118,7 +244,7 @@ const TOOLS = [
   },
   {
     name: 'research_decompose',
-    description: 'Разбивает исследовательский запрос на подтемы.',
+    description: 'Breaks a research query into subtopics.',
     inputSchema: {
       type: 'object',
       required: ['prompt'],
@@ -128,7 +254,8 @@ const TOOLS = [
 ];
 
 const text = (obj: unknown) => ({ content: [{ type: 'text', text: JSON.stringify(obj, null, 2) }] });
-const failed = (msg: string) => ({ content: [{ type: 'text', text: `Ошибка: ${msg}` }], isError: true });
+const failed = (msg: string) => ({ content: [{ type: 'text', text: `Error: ${msg}` }], isError: true });
+type Failure = ReturnType<typeof failed>;
 
 function normalizeColumns(input: unknown): ColumnDef[] {
   const cols: ColumnDef[] = [];
@@ -153,7 +280,7 @@ function normalizeColumns(input: unknown): ColumnDef[] {
   return cols;
 }
 
-// строка-объект (по label или key) → объект по ключам колонок, числа приводим
+// row-object (keyed by label or key) → object keyed by column keys, numbers coerced
 function mapRow(cols: ColumnDef[], row: unknown): Record<string, unknown> {
   const src = (row ?? {}) as Record<string, unknown>;
   const data: Record<string, unknown> = {};
@@ -165,9 +292,40 @@ function mapRow(cols: ColumnDef[], row: unknown): Record<string, unknown> {
   return data;
 }
 
+// Fetches a custom base and checks it's writable by `me`: not built-in, exists,
+// and visible under the shared-registry access model (own / shared / ownerless).
+async function requireBase(
+  store: CustomStore,
+  id: string,
+  me: string,
+): Promise<{ base: CustomBase; error?: undefined } | { base?: undefined; error: Failure }> {
+  if (BUILTIN_IDS.has(id)) return { error: failed('built-in bases are read-only') };
+  const base = await store.getBase(id);
+  if (!base || !canAccessBase(base, me)) return { error: failed('base not found') };
+  return { base };
+}
+
+// Would assigning `parent` to `id` create a cycle in the base tree? Walks the
+// parent chain from `parent` up; built-in bases are always valid roots.
+async function wouldCreateCycle(store: CustomStore, id: string, parent: string): Promise<boolean> {
+  if (parent === id) return true;
+  const all = await store.listAllBases();
+  const byId = new Map(all.map((b) => [b.id, b]));
+  let current: string | null = parent;
+  const visited = new Set<string>();
+  while (current) {
+    if (current === id) return true;
+    if (visited.has(current)) return true;
+    visited.add(current);
+    if (BUILTIN_IDS.has(current)) return false;
+    current = byId.get(current)?.parent ?? null;
+  }
+  return false;
+}
+
 async function callTool(name: string, args: Record<string, unknown>, me: string) {
   const store = getCustomStore();
-  // приватная модель: токен → почта; человек видит свои базы, общие и ничейные
+  // private model: token → email; a person sees their own bases, shared ones, and ownerless ones
   const visible = async () => store.listBases(me);
 
   switch (name) {
@@ -187,11 +345,25 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       });
     }
 
+    case 'get_base': {
+      const id = String(args.base ?? '');
+      const gate = await requireBase(store, id, me);
+      if (gate.error) return gate.error;
+      const rows = await store.listRecords(id);
+      return text({
+        id: gate.base.id,
+        name: gate.base.name,
+        parent: gate.base.parent,
+        columns: gate.base.columns,
+        rowCount: rows.length,
+      });
+    }
+
     case 'create_base': {
       const nm = String(args.name ?? '').trim();
       const cols = normalizeColumns(args.columns);
-      if (!nm) return failed('нужно название');
-      if (!cols.length) return failed('нужна хотя бы одна колонка');
+      if (!nm) return failed('name is required');
+      if (!cols.length) return failed('at least one column is required');
       const parent = typeof args.parent === 'string' && args.parent ? args.parent : null;
       const base = await store.createBase({ name: nm, columns: cols, parent, owner: me });
       const rows = Array.isArray(args.rows) ? args.rows.map((r) => mapRow(cols, r)).filter((d) => Object.keys(d).length) : [];
@@ -199,19 +371,106 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       return text({ id: base.id, name: base.name, columns: cols.map((c) => c.key), imported });
     }
 
+    case 'add_column': {
+      const id = String(args.base ?? '');
+      const gate = await requireBase(store, id, me);
+      if (gate.error) return gate.error;
+      const label = String(args.label ?? '').trim();
+      if (!label) return failed('column label is required');
+      const type = typeof args.type === 'string' ? (args.type as ColumnDef['type']) : undefined;
+      const updated = await store.addColumn(id, { label, type, filterable: Boolean(args.filterable) });
+      if (!updated) return failed('base not found');
+      return text({ base: id, columns: updated.columns });
+    }
+
+    case 'update_column': {
+      const id = String(args.base ?? '');
+      const key = String(args.key ?? '');
+      const gate = await requireBase(store, id, me);
+      if (gate.error) return gate.error;
+      if (!gate.base.columns.some((c) => c.key === key)) return failed(`no column ${key}`);
+      const type = typeof args.type === 'string' ? (args.type as ColumnDef['type']) : undefined;
+      const updated = await store.updateColumn(id, key, {
+        label: typeof args.label === 'string' ? args.label : undefined,
+        type,
+        filterable: typeof args.filterable === 'boolean' ? args.filterable : undefined,
+      });
+      if (!updated) return failed('base not found');
+      return text({ base: id, columns: updated.columns });
+    }
+
+    case 'delete_column': {
+      const id = String(args.base ?? '');
+      const key = String(args.key ?? '');
+      const gate = await requireBase(store, id, me);
+      if (gate.error) return gate.error;
+      if (!gate.base.columns.some((c) => c.key === key)) return failed(`no column ${key}`);
+      const updated = await store.deleteColumn(id, key);
+      if (!updated) return failed('base not found');
+      return text({ base: id, columns: updated.columns });
+    }
+
+    case 'rename_base': {
+      const id = String(args.base ?? '');
+      const name = String(args.name ?? '').trim();
+      const gate = await requireBase(store, id, me);
+      if (gate.error) return gate.error;
+      if (!name) return failed('name is required');
+      const updated = await store.renameBase(id, name);
+      if (!updated) return failed('base not found');
+      return text({ id: updated.id, name: updated.name });
+    }
+
+    case 'move_base': {
+      const id = String(args.base ?? '');
+      const gate = await requireBase(store, id, me);
+      if (gate.error) return gate.error;
+      const parent = args.parent === null || args.parent === undefined ? null : String(args.parent);
+      if (parent) {
+        if (parent === id) return failed('a base cannot be its own parent');
+        if (!BUILTIN_IDS.has(parent)) {
+          const parentBase = await store.getBase(parent);
+          if (!parentBase) return failed(`no base with id ${parent}`);
+        }
+        if (await wouldCreateCycle(store, id, parent)) return failed('moving the base would create a parent cycle');
+      }
+      const updated = await store.moveBase(id, parent);
+      if (!updated) return failed('base not found');
+      return text({ id: updated.id, parent: updated.parent });
+    }
+
+    case 'delete_base': {
+      const id = String(args.base ?? '');
+      const gate = await requireBase(store, id, me);
+      if (gate.error) return gate.error;
+      const ok = await store.softDeleteBase(id);
+      if (!ok) return failed('base not found');
+      return text({ deleted: id, bin: true });
+    }
+
     case 'add_rows': {
       const id = String(args.base ?? '');
-      if (BUILTIN_IDS.has(id)) return failed('во встроенные базы писать нельзя');
-      const base = await store.getBase(id);
-      if (!base || !canAccessBase(base, me)) return failed('база не найдена');
-      const rows = Array.isArray(args.rows) ? args.rows.map((r) => mapRow(base.columns, r)).filter((d) => Object.keys(d).length) : [];
+      const gate = await requireBase(store, id, me);
+      if (gate.error) return gate.error;
+      const rows = Array.isArray(args.rows) ? args.rows.map((r) => mapRow(gate.base.columns, r)).filter((d) => Object.keys(d).length) : [];
       const added = rows.length ? await store.addRecords(id, rows) : 0;
       return text({ added });
+    }
+
+    case 'delete_rows': {
+      const id = String(args.base ?? '');
+      const gate = await requireBase(store, id, me);
+      if (gate.error) return gate.error;
+      const ids = Array.isArray(args.ids) ? args.ids.map(String) : [];
+      if (!ids.length) return failed('need at least one row id');
+      const deleted = await store.softDeleteRecords(id, ids);
+      return text({ deleted, bin: true });
     }
 
     case 'query_records': {
       const id = String(args.base ?? '');
       const limit = Number(args.limit ?? 50);
+      const offset = Number(args.offset ?? 0);
       const q = String(args.search ?? '').trim().toLowerCase();
       const match = (r: Record<string, unknown>) =>
         !q ||
@@ -221,26 +480,80 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
         const def = BASES.find((b) => b.id === id)!;
         let recs = await getDataSource().list(def.section ? { filters: { section: def.section } } : undefined);
         recs = recs.filter(match);
-        return text({ base: id, total: recs.length, records: recs.slice(0, limit) });
+        const page = recs.slice(offset, offset + limit);
+        return text({ base: id, total: recs.length, offset, hasMore: offset + page.length < recs.length, records: page });
       }
       const base = await store.getBase(id);
-      if (!base || !canAccessBase(base, me)) return failed('база не найдена');
+      if (!base || !canAccessBase(base, me)) return failed('base not found');
       const recs = (await store.listRecords(id)).filter(match);
-      return text({ base: id, total: recs.length, records: recs.slice(0, limit) });
+      const page = recs.slice(offset, offset + limit);
+      return text({ base: id, total: recs.length, offset, hasMore: offset + page.length < recs.length, records: page });
     }
 
     case 'update_record': {
       const id = String(args.base ?? '');
-      if (BUILTIN_IDS.has(id)) return failed('встроенные базы только для чтения');
-      const base = await store.getBase(id);
-      if (!base || !canAccessBase(base, me)) return failed('база не найдена');
-      // Метки колонок → ключи, как в create_base и add_rows. Без этого патч
-      // вида {"Заметка": "…"} писал ключ «Заметка», а колонка звалась «заметка»
-      // — правка не приставала к строке.
-      const patch = mapRow(base.columns, args.data);
-      if (!Object.keys(patch).length) return failed('нет полей для обновления');
+      const gate = await requireBase(store, id, me);
+      if (gate.error) return gate.error;
+      // Labels → keys, same as create_base and add_rows. Without this, a patch
+      // like {"Заметка": "…"} wrote a key of «Заметка» while the column was
+      // keyed «заметка» — the edit never stuck to the row.
+      const patch = mapRow(gate.base.columns, args.data);
+      if (!Object.keys(patch).length) return failed('no fields to update');
       const rec = await store.updateRecord(id, String(args.id ?? ''), patch);
-      return rec ? text(rec) : failed('строка не найдена');
+      return rec ? text(rec) : failed('row not found');
+    }
+
+    case 'list_bin': {
+      const bin = await store.listBin();
+      return text({
+        bases: bin.bases.map((b) => ({ id: b.id, name: b.name })),
+        records: bin.records.map((r) => ({
+          id: r.record.id,
+          base: r.baseId,
+          name: (r.record as Record<string, unknown>).name ?? (r.record as Record<string, unknown>)['название'] ?? null,
+        })),
+      });
+    }
+
+    case 'restore': {
+      const rowsArg = args.rows as { base?: unknown; ids?: unknown } | undefined;
+      if (!args.base && !rowsArg) return failed('specify base or rows');
+      const restored: { base?: string; rows?: number } = {};
+
+      if (typeof args.base === 'string' && args.base) {
+        if (BUILTIN_IDS.has(args.base)) return failed('built-in bases cannot be restored');
+        const ok = await store.restoreBase(args.base);
+        if (!ok) return failed('base not found in trash');
+        restored.base = args.base;
+      }
+
+      if (rowsArg) {
+        const base = typeof rowsArg.base === 'string' ? rowsArg.base : '';
+        const ids = Array.isArray(rowsArg.ids) ? rowsArg.ids.map(String) : [];
+        if (!base || !ids.length) return failed('rows needs base and ids');
+        restored.rows = await store.restoreRecords(base, ids);
+      }
+
+      return text({ restored });
+    }
+
+    case 'empty_bin': {
+      const confirm = Boolean(args.confirm);
+      const scopeId = typeof args.base === 'string' && args.base ? args.base : undefined;
+      const bin = await store.listBin();
+      const scopedBases = scopeId ? bin.bases.filter((b) => b.id === scopeId) : bin.bases;
+      const scopedRecords = scopeId ? bin.records.filter((r) => r.baseId === scopeId) : bin.records;
+
+      if (!confirm) {
+        return text({
+          dryRun: true,
+          wouldDelete: { baseCount: scopedBases.length, records: scopedRecords.length },
+          hint: 'call again with confirm:true to delete permanently',
+        });
+      }
+
+      const result = await store.emptyBin(scopeId ? { baseId: scopeId } : undefined);
+      return text({ emptied: true, ...result });
     }
 
     case 'catalog_search': {
@@ -262,21 +575,23 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
 
     case 'research_decompose': {
       const prompt = String(args.prompt ?? '').trim();
-      if (!prompt) return failed('пустой запрос');
-      // Зовём логику напрямую, а не роут по HTTP: самозапрос к
-      // /api/research/decompose на проде ловил редирект на /login и возвращал
-      // пустой список. Правила декомпозиции — в одном месте (lib/research).
+      if (!prompt) return failed('empty query');
+      // Calling the logic directly rather than the HTTP route: a self-request
+      // to /api/research/decompose hit the /login redirect in prod and
+      // returned an empty list. Decomposition rules live in one place
+      // (lib/research).
       const { source, subtopics } = await decompose(prompt);
       return text({ source, subtopics });
     }
 
     default:
-      return failed(`неизвестный инструмент: ${name}`);
+      return failed(`unknown tool: ${name}`);
   }
 }
 
-// Часть клиентов ждёт ответ потоком (text/event-stream), часть — обычным JSON.
-// Отвечаем в том формате, который клиент запросил, иначе он молча не подключится.
+// Some clients expect a streamed reply (text/event-stream), some expect plain
+// JSON. We answer in whichever format the client asked for, otherwise it
+// silently fails to connect.
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -315,14 +630,15 @@ export async function POST(request: Request): Promise<Response> {
   const errorReply = (code: number, message: string) =>
     envelope({ jsonrpc: '2.0', id, error: { code, message } }, wantsStream);
 
-  // уведомления (без id) ответа не требуют
+  // notifications (no id) don't get a reply
   if (id === undefined || id === null) return new Response(null, { status: 202, headers: CORS });
 
   if (method === 'initialize') {
-    // Отвечаем той версией протокола, которую попросил клиент, если она нам
-    // знакома. Раньше здесь стояла жёстко 2024-11-05: клиент просил новую,
-    // получал старую и вправе был на этом оборваться — «not connected» без
-    // единой внятной ошибки. Наш обмен по сути одинаков во всех трёх версиях.
+    // Reply with whichever protocol version the client asked for, if we know
+    // it. This used to be hard-coded to 2024-11-05: a client asking for a
+    // newer version got the old one back and was within its rights to bail —
+    // "not connected" with no clear reason. Our exchange is effectively the
+    // same across all three versions.
     const asked = typeof params.protocolVersion === 'string' ? params.protocolVersion : '';
     const KNOWN = ['2025-06-18', '2025-03-26', '2024-11-05'];
     return reply({
@@ -333,8 +649,8 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  // всё остальное — только по действующему токену
-  if (!me) return errorReply(-32001, 'Нужен действующий токен доступа');
+  // everything else requires a valid token
+  if (!me) return errorReply(-32001, 'A valid access token is required');
 
   if (method === 'tools/list') return reply({ tools: TOOLS });
 
@@ -344,15 +660,15 @@ export async function POST(request: Request): Promise<Response> {
     try {
       return reply(await callTool(name, args, me));
     } catch (e) {
-      return reply(failed(e instanceof Error ? e.message : 'сбой инструмента'));
+      return reply(failed(e instanceof Error ? e.message : 'tool call failed'));
     }
   }
 
   if (method === 'prompts/list') {
     return reply({
       prompts: [
-        { name: 'create-base', description: 'Как завести базу под новую тему', arguments: [{ name: 'topic', required: false }] },
-        { name: 'research-topic', description: 'Провести исследование и сохранить в базу', arguments: [{ name: 'topic', required: true }] },
+        { name: 'create-base', description: 'How to set up a base for a new topic', arguments: [{ name: 'topic', required: false }] },
+        { name: 'research-topic', description: 'Research a topic and save it to a base', arguments: [{ name: 'topic', required: true }] },
       ],
     });
   }
@@ -362,24 +678,24 @@ export async function POST(request: Request): Promise<Response> {
     const topic = String(((params as { arguments?: Record<string, unknown> }).arguments ?? {}).topic ?? '');
     const body =
       name === 'research-topic'
-        ? `${INSTRUCTIONS}\n\nПроведи исследование по теме: "${topic}". Веб-поиск делай своими инструментами, каталог используй для сверки, в конце предложи сохранить найденное в базу.`
+        ? `${INSTRUCTIONS}\n\nResearch the topic: "${topic}". Do the web search with your own tools, use the catalog to cross-check, and at the end offer to save what you found to a base.`
         : topic
-          ? `${INSTRUCTIONS}\n\nТема: ${topic}`
+          ? `${INSTRUCTIONS}\n\nTopic: ${topic}`
           : INSTRUCTIONS;
     return reply({ messages: [{ role: 'user', content: { type: 'text', text: body } }] });
   }
 
-  return errorReply(-32601, `Метод не поддерживается: ${method}`);
+  return errorReply(-32601, `Unsupported method: ${method}`);
 }
 
 export async function GET(request: Request): Promise<Response> {
-  // Клиент, открывающий поток событий, должен получить явный отказ: сервер
-  // отвечает на каждый запрос сразу и отдельный канал не держит. Молчаливый
-  // JSON вместо этого подвешивает подключение.
+  // A client opening an event stream should get an explicit refusal: this
+  // server answers each request right away and doesn't hold a separate
+  // channel open. Silent JSON instead would leave the connection hanging.
   if ((request.headers.get('accept') ?? '').includes('text/event-stream')) {
     return new Response('SSE stream not offered', { status: 405, headers: CORS });
   }
-  // обычное открытие в браузере — страничка самопроверки
+  // a normal browser open — self-check page
   const me = emailForToken(tokenFrom(request));
   return Response.json(
     {
