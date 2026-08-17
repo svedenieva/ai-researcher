@@ -1,5 +1,6 @@
-import { getCustomStore } from '@/lib/datasource/customStore';
+import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
 import { BASES } from '@/lib/datasource/bases';
+import { currentEmail } from '@/lib/current-user';
 import { reportToRows, REPORT_COLUMNS, type ReportRow } from '@/lib/research/saveReport';
 import type { Finding } from '@/lib/research/types';
 
@@ -16,12 +17,14 @@ export async function POST(request: Request): Promise<Response> {
 
   const target = body?.target as { mode?: unknown; name?: unknown; baseId?: unknown } | undefined;
   const store = getCustomStore();
+  const me = await currentEmail();
 
   try {
     if (target?.mode === 'new') {
       const name = String(target?.name ?? '').trim();
       if (!name) return Response.json({ error: 'Нужно название базы' }, { status: 400 });
-      const base = await store.createBase({ name, columns: REPORT_COLUMNS });
+      // новая база — приватная, владелец текущий пользователь
+      const base = await store.createBase({ name, columns: REPORT_COLUMNS, owner: me });
       const added = await store.addRecords(base.id, rows as unknown as Record<string, unknown>[]);
       return Response.json({ baseId: base.id, baseName: base.name, added, skipped: 0 });
     }
@@ -30,7 +33,8 @@ export async function POST(request: Request): Promise<Response> {
       const baseId = String(target?.baseId ?? '');
       if (!baseId || BUILTIN_IDS.has(baseId)) return Response.json({ error: 'В эту базу нельзя сохранять' }, { status: 400 });
       let base = await store.getBase(baseId);
-      if (!base) return Response.json({ error: 'База не найдена' }, { status: 404 });
+      // сохранять можно только в доступную базу, не в чужую приватную
+      if (!base || !canAccessBase(base, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
 
       // Сопоставляем REPORT_COLUMNS с колонками целевой базы. Базы, созданные
       // нашим же save-роутом (mode: 'new'), несут английские ключи 1-в-1 —

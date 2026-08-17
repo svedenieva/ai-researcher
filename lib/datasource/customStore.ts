@@ -14,8 +14,10 @@ export interface CustomBase {
   columns: ColumnDef[];
   /** родитель в дереве баз (id базы) или null для верхнего уровня */
   parent: string | null;
-  /** кто завёл базу; null — общая база, видна всем */
+  /** кто завёл базу; null — «ничейная» легаси/командная база, видна всем */
   owner: string | null;
+  /** явно помеченная общей — видна всем, даже если у неё есть владелец */
+  shared: boolean;
 }
 
 export interface NewBase {
@@ -24,6 +26,17 @@ export interface NewBase {
   columns: ColumnDef[];
   parent?: string | null;
   owner?: string | null;
+  shared?: boolean;
+}
+
+// ── доступ к базе ──────────────────────────────────────────────────────────
+// Приватная модель: человек видит свои базы (owner===me), явно общие (shared) и
+// «ничейные» легаси-базы (owner===null) — это командная база знаний, общая для
+// всех. Новые базы всегда получают владельца, поэтому owner===null = ровно
+// прежние командные базы. Так изоляция работает БЕЗ миграции и без риска, что
+// у команды пропадёт база знаний.
+export function canAccessBase(base: { owner: string | null; shared?: boolean }, me: string | null): boolean {
+  return base.owner === null || base.shared === true || (me !== null && base.owner === me);
 }
 
 export type NewColumn = { label: string; type?: ColumnDef['type']; filterable?: boolean };
@@ -32,7 +45,11 @@ export interface BinRecord { baseId: string; baseName: string; record: CatalogRe
 export interface BinContents { bases: CustomBase[]; records: BinRecord[] }
 
 export interface CustomStore {
-  listBases(): Promise<CustomBase[]>;
+  /** базы, доступные пользователю me (свои + общие + ничейные). */
+  listBases(me: string | null): Promise<CustomBase[]>;
+  /** ВСЕ базы без фильтра доступа — только для служебных нужд (уникальность id,
+      обход дерева). Не отдавать напрямую в UI/MCP. */
+  listAllBases(): Promise<CustomBase[]>;
   getBase(id: string): Promise<CustomBase | null>;
   createBase(def: NewBase): Promise<CustomBase>;
   listRecords(baseId: string): Promise<CatalogRecord[]>;
@@ -112,8 +129,11 @@ export class MemoryCustomStore implements CustomStore {
   private deletedBases = new Set<string>();
   private deletedRows: Record<string, Set<string>> = {};
 
-  async listBases() {
+  async listAllBases() {
     return this.bases.filter((b) => !this.deletedBases.has(b.id));
+  }
+  async listBases(me: string | null) {
+    return (await this.listAllBases()).filter((b) => canAccessBase(b, me));
   }
   async getBase(id: string) {
     if (this.deletedBases.has(id)) return null;
@@ -128,6 +148,7 @@ export class MemoryCustomStore implements CustomStore {
       columns: def.columns,
       parent: def.parent ?? null,
       owner: def.owner ?? null,
+      shared: def.shared ?? false,
     };
     this.bases.push(base);
     this.rows[id] = [];
@@ -230,9 +251,12 @@ class SupabaseCustomStore implements CustomStore {
       columns: (row.columns as ColumnDef[]) ?? [],
       parent: (row.parent as string) ?? null,
       owner: (row.owner_email as string) ?? null,
+      // колонки shared может ещё не быть в живой БД — тогда undefined→false.
+      // Изоляция всё равно работает: owner===null (легаси/командные) видны всем.
+      shared: Boolean(row.shared),
     };
   }
-  private async listBasesFiltered(): Promise<CustomBase[]> {
+  async listAllBases(): Promise<CustomBase[]> {
     let q = this.client.from('bases').select('*').order('created_at', { ascending: true });
     let { data, error } = await q.is('deleted_at', null);
     if (error && /deleted_at/.test(error.message)) {
@@ -241,8 +265,8 @@ class SupabaseCustomStore implements CustomStore {
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
     return (data ?? []).map((r) => this.norm(r as Record<string, unknown>));
   }
-  async listBases(): Promise<CustomBase[]> {
-    return this.listBasesFiltered();
+  async listBases(me: string | null): Promise<CustomBase[]> {
+    return (await this.listAllBases()).filter((b) => canAccessBase(b, me));
   }
   async getBase(id: string): Promise<CustomBase | null> {
     let { data, error } = await this.client
@@ -290,7 +314,9 @@ class SupabaseCustomStore implements CustomStore {
     return data ? this.norm(data as Record<string, unknown>) : null;
   }
   async createBase(def: NewBase): Promise<CustomBase> {
-    const existing = await this.listBases();
+    // уникальность id — по ВСЕМ базам, не только доступным: id глобальны, два
+    // человека не должны получить одинаковый слаг
+    const existing = await this.listAllBases();
     const id = slugId(def.name, new Set(existing.map((b) => b.id)));
     const tone = def.tone ?? TONES[existing.length % TONES.length];
     // parent включаем в insert только если задан — так создание базы на
@@ -298,15 +324,17 @@ class SupabaseCustomStore implements CustomStore {
     const row: Record<string, unknown> = { id, name: def.name, tone, columns: def.columns };
     if (def.parent) row.parent = def.parent;
     if (def.owner) row.owner_email = def.owner;
+    if (def.shared) row.shared = true;
     let { error } = await this.client.from('bases').insert(row);
-    // колонки owner_email может ещё не быть (миграция не накатана) — тогда
-    // заводим базу как общую, вместо того чтобы падать
-    if (error && /owner_email/.test(error.message)) {
+    // колонок owner_email / shared может ещё не быть (миграция не накатана) —
+    // тогда убираем их и заводим базу без них, вместо того чтобы падать
+    if (error && /owner_email|shared/.test(error.message)) {
       delete row.owner_email;
+      delete row.shared;
       ({ error } = await this.client.from('bases').insert(row));
     }
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
-    return { id, name: def.name, tone, columns: def.columns, parent: def.parent ?? null, owner: def.owner ?? null };
+    return { id, name: def.name, tone, columns: def.columns, parent: def.parent ?? null, owner: def.owner ?? null, shared: def.shared ?? false };
   }
   async listRecords(baseId: string): Promise<CatalogRecord[]> {
     let q = this.client.from('base_records').select('id, data').eq('base_id', baseId).is('deleted_at', null);

@@ -1,5 +1,6 @@
-import { getCustomStore } from '@/lib/datasource/customStore';
+import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
 import { BASES } from '@/lib/datasource/bases';
+import { currentEmail } from '@/lib/current-user';
 import type { ColumnPatch, NewColumn } from '@/lib/datasource/customStore';
 
 // Живое управление колонками пользовательской базы: добавить, переименовать,
@@ -27,6 +28,10 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const store = getCustomStore();
+    // менять структуру можно только у доступной базы, не у чужой приватной
+    const target = await store.getBase(baseId);
+    const me = await currentEmail();
+    if (!target || !canAccessBase(target, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
     let base;
     switch (action) {
       case 'add':

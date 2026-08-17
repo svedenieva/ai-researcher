@@ -1,5 +1,6 @@
 import { BASES } from '@/lib/datasource/bases';
-import { getCustomStore } from '@/lib/datasource/customStore';
+import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
+import { currentEmail } from '@/lib/current-user';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
 
@@ -16,7 +17,8 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const store = getCustomStore();
     const base = await store.getBase(baseId);
-    if (!base) return Response.json({ error: 'База не найдена' }, { status: 404 });
+    const me = await currentEmail();
+    if (!base || !canAccessBase(base, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
     const reordered = await store.reorderRecords(baseId, order);
     return Response.json({ reordered });
   } catch (e) {

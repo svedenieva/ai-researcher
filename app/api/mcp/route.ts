@@ -1,6 +1,6 @@
 import { getDataSource } from '@/lib/datasource';
 import { BASES } from '@/lib/datasource/bases';
-import { getCustomStore } from '@/lib/datasource/customStore';
+import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
 import { decompose } from '@/lib/research/decompose';
 import type { ColumnDef } from '@/lib/datasource/types';
 // @ts-expect-error — общий текст правил, один на stdio и HTTP
@@ -167,8 +167,8 @@ function mapRow(cols: ColumnDef[], row: unknown): Record<string, unknown> {
 
 async function callTool(name: string, args: Record<string, unknown>, me: string) {
   const store = getCustomStore();
-  // реестр общий: доступ даёт токен, а не владелец базы — так же, как на сайте
-  const visible = async () => store.listBases();
+  // приватная модель: токен → почта; человек видит свои базы, общие и ничейные
+  const visible = async () => store.listBases(me);
 
   switch (name) {
     case 'list_bases': {
@@ -203,7 +203,7 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       const id = String(args.base ?? '');
       if (BUILTIN_IDS.has(id)) return failed('во встроенные базы писать нельзя');
       const base = await store.getBase(id);
-      if (!base) return failed('база не найдена');
+      if (!base || !canAccessBase(base, me)) return failed('база не найдена');
       const rows = Array.isArray(args.rows) ? args.rows.map((r) => mapRow(base.columns, r)).filter((d) => Object.keys(d).length) : [];
       const added = rows.length ? await store.addRecords(id, rows) : 0;
       return text({ added });
@@ -224,7 +224,7 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
         return text({ base: id, total: recs.length, records: recs.slice(0, limit) });
       }
       const base = await store.getBase(id);
-      if (!base) return failed('база не найдена');
+      if (!base || !canAccessBase(base, me)) return failed('база не найдена');
       const recs = (await store.listRecords(id)).filter(match);
       return text({ base: id, total: recs.length, records: recs.slice(0, limit) });
     }
@@ -233,7 +233,7 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       const id = String(args.base ?? '');
       if (BUILTIN_IDS.has(id)) return failed('встроенные базы только для чтения');
       const base = await store.getBase(id);
-      if (!base) return failed('база не найдена');
+      if (!base || !canAccessBase(base, me)) return failed('база не найдена');
       // Метки колонок → ключи, как в create_base и add_rows. Без этого патч
       // вида {"Заметка": "…"} писал ключ «Заметка», а колонка звалась «заметка»
       // — правка не приставала к строке.

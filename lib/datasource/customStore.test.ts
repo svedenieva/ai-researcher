@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { MemoryCustomStore } from './customStore';
+import { MemoryCustomStore, canAccessBase } from './customStore';
 
 function fresh() {
   return new MemoryCustomStore();
@@ -11,7 +11,7 @@ describe('MemoryCustomStore soft-delete visibility', () => {
     const b = await s.createBase({ name: 'Temp', columns: [{ key: 'name', label: 'Название', type: 'text' }] });
     await s.softDeleteBase(b.id);
     expect(await s.getBase(b.id)).toBeNull();
-    expect((await s.listBases()).find((x) => x.id === b.id)).toBeUndefined();
+    expect((await s.listBases(null)).find((x) => x.id === b.id)).toBeUndefined();
   });
 
   it('hides soft-deleted records from listRecords', async () => {
@@ -72,6 +72,39 @@ describe('bin lifecycle', () => {
     expect(res.records).toBe(1);
     expect((await s.listBin()).bases.length).toBe(0);
     expect((await s.listBin()).records.length).toBe(0);
+  });
+});
+
+describe('изоляция баз: private + shared', () => {
+  const col = [{ key: 'name', label: 'N', type: 'text' as const }];
+
+  it('canAccessBase: своя / ничейная / общая — да; чужая приватная — нет', () => {
+    expect(canAccessBase({ owner: 'a@x', shared: false }, 'a@x')).toBe(true);   // своя
+    expect(canAccessBase({ owner: 'a@x', shared: false }, 'b@x')).toBe(false);  // чужая приватная
+    expect(canAccessBase({ owner: null, shared: false }, 'b@x')).toBe(true);    // ничейная (командная)
+    expect(canAccessBase({ owner: 'a@x', shared: true }, 'b@x')).toBe(true);    // явно общая
+    expect(canAccessBase({ owner: 'a@x', shared: false }, null)).toBe(false);   // неавторизован → чужую не видит
+    expect(canAccessBase({ owner: null, shared: false }, null)).toBe(true);     // ничейную видит и аноним
+  });
+
+  it('listBases отдаёт только доступные пользователю базы', async () => {
+    const s = new MemoryCustomStore();
+    await s.createBase({ name: 'Моя', columns: col, owner: 'a@x' });
+    await s.createBase({ name: 'Чужая', columns: col, owner: 'b@x' });
+    await s.createBase({ name: 'Ничейная', columns: col, owner: null });
+    await s.createBase({ name: 'Общая', columns: col, owner: 'b@x', shared: true });
+
+    const forA = (await s.listBases('a@x')).map((b) => b.name).sort();
+    expect(forA).toEqual(['Моя', 'Ничейная', 'Общая']); // «Чужая» скрыта
+    const forB = (await s.listBases('b@x')).map((b) => b.name).sort();
+    expect(forB).toEqual(['Ничейная', 'Общая', 'Чужая']); // «Моя» скрыта
+  });
+
+  it('listAllBases видит всё (для служебных нужд)', async () => {
+    const s = new MemoryCustomStore();
+    await s.createBase({ name: 'Моя', columns: col, owner: 'a@x' });
+    await s.createBase({ name: 'Чужая', columns: col, owner: 'b@x' });
+    expect((await s.listAllBases()).length).toBe(2);
   });
 });
 
