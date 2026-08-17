@@ -132,6 +132,30 @@
 .claudeRunActions .ghost { text-decoration: none; display: inline-flex; align-items: center; }
 .claudeHint { margin: 12px 0 0; font-size: 12px; color: var(--ink-45); line-height: 1.5; }
 
+/* результат исследования, прилетевший в базу запуска */
+.runResults {
+  list-style: none;
+  margin: 10px 0 14px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.runResult {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
+}
+.runName { font-weight: 600; color: var(--ink); }
+.runWhat { color: var(--ink-70); min-width: 0; flex: 1; }
+.runUrl { margin-left: auto; color: var(--sage); text-decoration: none; }
+.runUrl:hover { color: var(--ink); }
+
 /* plan */
 .plan {
   margin-top: 30px;

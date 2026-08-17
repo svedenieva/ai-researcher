@@ -5,9 +5,10 @@ import { researchDeeplinks } from '@/lib/research/deeplink';
 
 export const dynamic = 'force-dynamic';
 
-// Старт исследования по Варианту C: заводим приватную «базу запуска» под текущего
-// пользователя (Claude потом запишет в неё результат своим коннектором) и отдаём
-// deeplink, который откроет собственный Claude пользователя с готовым промптом.
+// Start a research run (Variant C): create a private "run base" owned by the
+// current user (their Claude will later write the result into it via the
+// connector) and return a deeplink that opens the user's own Claude with a
+// ready-made prompt.
 export async function POST(request: Request): Promise<Response> {
   let body: { prompt?: unknown };
   try { body = await request.json(); } catch { return Response.json({ error: 'Некорректный запрос' }, { status: 400 }); }
@@ -17,8 +18,8 @@ export async function POST(request: Request): Promise<Response> {
   const me = await currentEmail();
   const store = getCustomStore();
 
-  // короткая дата в названии — чтобы прогоны не сливались; slug сам добьёт
-  // уникальность суффиксом при совпадении
+  // short date in the name so runs don't collide; the slug adds a numeric
+  // suffix on any remaining clash
   const d = new Date();
   const stamp = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
   const name = `Исследование: ${topic.slice(0, 48)} (${stamp})`;

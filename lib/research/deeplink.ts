@@ -1,17 +1,20 @@
-// Вариант C — исследование на подписке пользователя через deeplink.
-// Сайт не вызывает Claude сам (это запрещено Anthropic для чужой подписки).
-// Вместо этого он открывает СОБСТВЕННЫЙ Claude пользователя по ссылке с готовым
-// промптом: пользователь жмёт Enter, его Claude исследует своими инструментами
-// и коннектором AI-Researcher, а результат СОХРАНЯЕТ в «базу запуска». Сайт
-// потом читает эту базу и показывает результат.
+// Variant C — research on the user's own Claude subscription via a deeplink.
+// The site does NOT call Claude itself (Anthropic forbids third parties from
+// using someone else's subscription). Instead it opens the user's OWN Claude
+// with a ready-made prompt: the user presses Enter, their Claude researches with
+// its own tools and the AI-Researcher connector, and SAVES the result into a
+// "run base". The site then reads that base and shows the result.
 //
-// Формат deeplink — официальный (support.claude.com «Open Claude with a link»):
-// claude://claude.ai/new?q=<промпт> (десктоп) и https://claude.ai/new?q=<промпт>
-// (веб). Промпт ПОДСТАВЛЯЕТСЯ, но не отправляется сам — пользователь жмёт Enter.
-// Лимит q — ~14 000 символов, наша инструкция сильно короче.
+// Deeplink format is official (support.claude.com "Open Claude with a link"):
+// claude://claude.ai/new?q=<prompt> (desktop) and https://claude.ai/new?q=<prompt>
+// (web). The prompt is PREFILLED but not auto-sent — the user presses Enter.
+// The q limit is ~14,000 chars; our instruction is far shorter.
+//
+// NOTE: the instruction text below is user/Claude-facing, so it stays in Russian
+// (the team's language) — only code comments are in English.
 
-/** Инструкция для Claude: исследовать тему и сохранить результат в базу запуска
-    через инструмент коннектора add_rows (поля = REPORT_COLUMNS). */
+/** Instruction for Claude: research the topic and save the result into the run
+    base via the connector's add_rows tool (fields = REPORT_COLUMNS). */
 export function researchInstruction(topic: string, baseId: string): string {
   return (
     `Проведи исследование по теме: "${topic}".\n\n` +
@@ -29,9 +32,9 @@ export function researchInstruction(topic: string, baseId: string): string {
 
 export interface ResearchDeeplinks {
   instruction: string;
-  /** universal-ссылка для веба (открывается в браузере/приложении) */
+  /** universal link for the web (opens in the browser / app) */
   web: string;
-  /** схема для десктоп-приложения Claude */
+  /** URL scheme for the Claude desktop app */
   desktop: string;
 }
 
