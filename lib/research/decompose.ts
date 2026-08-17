@@ -1,5 +1,4 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { modelCandidates, openrouterChat } from './freeModels';
 
 // Декомпозиция запроса на подтемы — общий код для роута /api/research/decompose
 // и для инструмента коннектора research_decompose.
@@ -62,27 +61,7 @@ function parseList(text: string): string[] {
   }
 }
 
-async function openrouterSubtopics(prompt: string): Promise<string[]> {
-  const candidates = await modelCandidates();
-  if (!candidates.length) return [];
-  const result = await openrouterChat(
-    {
-      max_tokens: 1024,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content: `Запрос для исследования: "${prompt}"\n\nВерни ТОЛЬКО JSON-массив строк (подтемы), без текста вокруг.`,
-        },
-      ],
-    },
-    candidates,
-  );
-  if (!result) return [];
-  const text: string =
-    (result.json as { choices?: { message?: { content?: string } }[] })?.choices?.[0]?.message?.content ?? '';
-  return parseList(text);
-}
+
 
 async function claudeSubtopics(prompt: string): Promise<string[]> {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -114,7 +93,7 @@ export async function decompose(prompt: string): Promise<Decomposition> {
   if (!clean) return { prompt: '', subtopics: [], source: 'heuristic' };
 
   const providers: Array<[string, () => Promise<string[]>]> = [];
-  if (process.env.OPENROUTER_API_KEY) providers.push(['openrouter', () => openrouterSubtopics(clean)]);
+
   if (process.env.ANTHROPIC_API_KEY) providers.push(['anthropic', () => claudeSubtopics(clean)]);
 
   for (const [name, run] of providers) {
