@@ -43,6 +43,32 @@ export default function Research() {
 
   const totalCompanies = reportToRows(report ?? []).length;
 
+  // ── Вариант C: исследование в собственном Claude пользователя (deeplink) ──
+  const [starting, setStarting] = useState(false);
+  const [run, setRun] = useState<{ baseId: string; baseName: string; web: string } | null>(null);
+
+  const startClaude = async () => {
+    if (!prompt.trim()) return;
+    setStarting(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/research/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.error ?? 'Не удалось начать исследование');
+      setRun({ baseId: body.baseId, baseName: body.baseName, web: body.web });
+      // открываем СОБСТВЕННЫЙ Claude пользователя с готовым промптом
+      window.open(body.web, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка');
+    } finally {
+      setStarting(false);
+    }
+  };
+
   const openSave = () => {
     setNewName(prompt.trim().slice(0, 40) || 'Исследование');
     setSaved(null);
@@ -203,13 +229,42 @@ export default function Research() {
           <button
             type="button"
             className={styles.primary}
+            onClick={startClaude}
+            disabled={starting || !prompt.trim()}
+            title="Откроется твой Claude с готовым запросом; он исследует и сохранит результат в базу"
+          >
+            {starting ? 'Открываю Claude…' : '🔎 Исследовать в моём Claude'}
+          </button>
+          <button
+            type="button"
+            className={styles.ghost}
             onClick={decompose}
             disabled={loading || !prompt.trim()}
+            title="Разложить запрос на подтемы прямо на сайте (без Claude)"
           >
             {loading ? 'Раскладываю…' : 'Разложить на подтемы'}
           </button>
           {error && <span className={styles.error}>{error}</span>}
         </div>
+
+        {run && (
+          <section className={styles.claudeRun}>
+            <div className={styles.claudeRunTitle}>Открыл твой Claude с запросом</div>
+            <ol className={styles.claudeSteps}>
+              <li>В открывшейся вкладке Claude нажми <b>Enter</b> — запрос уже подставлен.</li>
+              <li>Claude исследует и сохранит результат в базу <b>«{run.baseName}»</b> через коннектор AI-Researcher.</li>
+              <li>Готово — открой базу здесь, чтобы увидеть найденное.</li>
+            </ol>
+            <div className={styles.claudeRunActions}>
+              <a className={styles.primary} href={run.web} target="_blank" rel="noreferrer">Открыть Claude ещё раз</a>
+              <Link className={styles.ghost} href={`/?base=${encodeURIComponent(run.baseId)}`}>Открыть базу на сайте →</Link>
+            </div>
+            <p className={styles.claudeHint}>
+              Нужен подключённый коннектор AI-Researcher в твоём Claude (Настройки → Коннекторы).
+              Исследование идёт на твоей подписке Claude.
+            </p>
+          </section>
+        )}
 
         {subtopics && !confirmed && (
           <section className={styles.plan}>

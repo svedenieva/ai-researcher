@@ -107,6 +107,31 @@
 
 .error { font-size: 13px; color: var(--error); }
 
+/* ── Вариант C: блок «исследование в твоём Claude» ── */
+.claudeRun {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--sage-soft, rgba(120, 160, 140, 0.08));
+}
+.claudeRunTitle { font-weight: 600; font-size: 15px; color: var(--ink); }
+.claudeSteps {
+  margin: 10px 0 14px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-70);
+  line-height: 1.5;
+}
+.claudeRunActions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+/* ссылка-кнопка выглядит как .primary/.ghost, но у <a> убираем подчёркивание */
+.claudeRunActions .primary,
+.claudeRunActions .ghost { text-decoration: none; display: inline-flex; align-items: center; }
+.claudeHint { margin: 12px 0 0; font-size: 12px; color: var(--ink-45); line-height: 1.5; }
+
 /* plan */
 .plan {
   margin-top: 30px;
