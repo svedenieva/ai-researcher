@@ -2,7 +2,7 @@ import { currentEmail } from '@/lib/current-user';
 import { getSiteStore, SitesNotSetUp } from '@/lib/sites/store';
 import { validateUpload, type SiteFile } from '@/lib/sites/site';
 
-// Список сайтов меняется в рантайме, снимок со сборки показывал бы вчерашнее.
+// The list of sites changes at runtime; a build-time snapshot would show yesterday's.
 export const dynamic = 'force-dynamic';
 
 function fail(e: unknown): Response {
@@ -11,8 +11,8 @@ function fail(e: unknown): Response {
   return Response.json({ error: msg }, { status: 500 });
 }
 
-// Реестр общий: все, кто вошёл, видят все сайты. Это осознанно иначе, чем у баз
-// знаний, где записи делятся по владельцам, — сайты складывают для команды.
+// The registry is shared: everyone signed in sees all sites. This is deliberately
+// unlike knowledge bases, where records are split by owner — sites are stored for the team.
 export async function GET(): Promise<Response> {
   try {
     return Response.json({ sites: await getSiteStore().list() });
@@ -21,8 +21,8 @@ export async function GET(): Promise<Response> {
   }
 }
 
-// Заводим запись до загрузки файлов: id нужен, чтобы знать, куда их класть.
-// Счётчики берём из манифеста — это набор, который клиент собирается отправить.
+// We create the record before uploading files: the id is needed to know where to put them.
+// Counts come from the manifest — the set the client is about to send.
 export async function POST(request: Request): Promise<Response> {
   let body: { name?: unknown; client?: unknown; tags?: unknown; note?: unknown; files?: unknown };
   try {
@@ -40,7 +40,7 @@ export async function POST(request: Request): Promise<Response> {
         .filter((f) => f.path)
     : [];
 
-  // те же проверки, что и в браузере: сюда можно прийти и мимо формы
+  // the same checks as in the browser: this endpoint can be reached bypassing the form
   const check = validateUpload(files);
   if (!check.ok) return Response.json({ error: check.error }, { status: 400 });
 

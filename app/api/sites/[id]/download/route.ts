@@ -2,8 +2,8 @@ import { getSiteStore, SitesNotSetUp } from '@/lib/sites/store';
 import { zipEntries } from '@/lib/sites/zip';
 import { bodyFrom } from '@/lib/sites/site';
 
-// Забрать сайт обратно одним архивом. Собираем на лету: держать готовый zip
-// рядом с файлами значило бы поддерживать его в актуальном состоянии.
+// Grab the site back as a single archive. Built on the fly: keeping a ready-made zip
+// next to the files would mean having to keep it up to date.
 export async function GET(
   _request: Request,
   ctx: { params: Promise<{ id: string }> },
@@ -24,8 +24,8 @@ export async function GET(
     }
     const zip = zipEntries(entries);
 
-    // id бывает кириллическим — в заголовок его голым класть нельзя. Даём
-    // ascii-запаску и рядом filename* с процентным кодированием (RFC 5987).
+    // the id can be Cyrillic — it can't go into the header bare. We provide an
+    // ascii fallback plus filename* with percent-encoding (RFC 5987).
     const ascii = id.replace(/[^\x20-\x7e]/g, '_');
     const disposition = `attachment; filename="${ascii}.zip"; filename*=UTF-8''${encodeURIComponent(id)}.zip`;
 

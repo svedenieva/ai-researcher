@@ -8,14 +8,14 @@ const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
 
 export const dynamic = 'force-dynamic';
 
-// Выгрузка текущего среза в CSV.
+// Export the current slice to CSV.
 //
-// Принимает те же параметры, что и /api/records, и переиспользует его же
-// обработчик — поэтому в файл попадает ровно то, что человек видит на экране,
-// со всеми фильтрами и поиском. Это сознательно не так, как у Airtable, где
-// зритель по ссылке жмёт Download CSV и получает записи БЕЗ своих фильтров:
+// Takes the same parameters as /api/records and reuses its handler — so the
+// file contains exactly what the person sees on screen, with all filters and
+// search applied. This is deliberately unlike Airtable, where a viewer on a
+// shared link hits Download CSV and gets records WITHOUT their filters:
 // «the CSV downloaded will NOT take into account any of the filters applied».
-// Расхождение между экраном и файлом — тихая ловушка, повторять её незачем.
+// A mismatch between the screen and the file is a silent trap; no reason to repeat it.
 export async function GET(request: Request): Promise<Response> {
   const res = await records(request);
   if (!res.ok) return res;
@@ -25,15 +25,15 @@ export async function GET(request: Request): Promise<Response> {
     records: Array<Record<string, unknown>>;
   };
 
-  // long-text в сетку не выводится, но в файл идёт: CSV — канал обмена
-  // значениями, а не снимок экрана
+  // long-text isn't shown in the grid but does go into the file: CSV is a
+  // channel for exchanging values, not a screenshot
   const columns = body.columns ?? [];
   const table = {
     headers: columns.map((c) => c.label),
     rows: rowsFor(columns, body.records ?? []),
   };
 
-  // имя файла = название базы, чтобы в загрузках не копились records.csv
+  // filename = base name, so downloads don't pile up as records.csv
   const url = new URL(request.url);
   const baseId = url.searchParams.get('base');
   let name = baseById(baseId).name;
@@ -47,7 +47,7 @@ export async function GET(request: Request): Promise<Response> {
 
   return new Response(csvBody(table), {
     headers: {
-      // charset в типе — чтобы браузер не гадал; BOM внутри для Excel
+      // charset in the type so the browser doesn't guess; BOM inside for Excel
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': attachmentHeader(name),
     },

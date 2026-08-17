@@ -1,10 +1,10 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { slugId, type SiteMeta } from './site';
 
-// Хранилище сайтов: строка-описание в таблице `sites`, сами файлы — в приватном
-// бакете `sites` под ключом <id>/<путь внутри сайта>. Бакет приватный намеренно:
-// файлы отдаёт роут /s/[id], который уже за авторизацией. Публичный бакет открыл
-// бы каждый сайт по прямой ссылке всему интернету.
+// Site storage: a descriptor row in the `sites` table, the files themselves in a
+// private `sites` bucket under the key <id>/<path within the site>. The bucket is
+// private deliberately: the files are served by the /s/[id] route, which is already
+// behind auth. A public bucket would open every site to the whole internet by direct link.
 
 const BUCKET = 'sites';
 
@@ -19,9 +19,9 @@ export interface NewSite {
   owner?: string | null;
 }
 
-// Настройку делают руками в дашборде (см. docs/Гайд — модуль «Сайты»), поэтому
-// «не создан бакет» и «не прогнан SQL» — ожидаемые состояния, а не сбой. Ловим
-// их и подсказываем шаг, вместо того чтобы показывать сырой текст Supabase.
+// Setup is done by hand in the dashboard (see docs/Гайд — the «Сайты» module), so
+// "bucket not created" and "SQL not run" are expected states, not a failure. We
+// catch them and hint the next step instead of showing raw Supabase text.
 export class SitesNotSetUp extends Error {}
 
 function explain(message: string): never {
@@ -93,7 +93,7 @@ export class SiteStore {
   async putFile(id: string, path: string, bytes: Uint8Array, contentType: string): Promise<void> {
     const { error } = await this.client.storage
       .from(BUCKET)
-      // upsert: перезалив того же файла не должен падать на «уже существует»
+      // upsert: re-uploading the same file must not fail with "already exists"
       .upload(`${id}/${path}`, bytes, { contentType, upsert: true });
     if (error) explain(error.message);
   }
@@ -101,14 +101,14 @@ export class SiteStore {
   async readFile(id: string, path: string): Promise<Uint8Array | null> {
     const { data, error } = await this.client.storage.from(BUCKET).download(`${id}/${path}`);
     if (error) {
-      // отсутствие объекта — обычный 404, а не поломка хранилища
+      // a missing object is an ordinary 404, not a storage failure
       if (/not found/i.test(error.message) && !/bucket/i.test(error.message)) return null;
       explain(error.message);
     }
     return data ? new Uint8Array(await data.arrayBuffer()) : null;
   }
 
-  // Storage отдаёт содержимое одной «папки» за раз, поэтому дерево обходим сами.
+  // Storage returns the contents of one "folder" at a time, so we walk the tree ourselves.
   async listFiles(id: string, prefix = ''): Promise<string[]> {
     const dir = prefix ? `${id}/${prefix}` : id;
     const { data, error } = await this.client.storage.from(BUCKET).list(dir, { limit: 1000 });
@@ -116,7 +116,7 @@ export class SiteStore {
     const out: string[] = [];
     for (const item of data ?? []) {
       const rel = prefix ? `${prefix}/${item.name}` : item.name;
-      // у папки нет метаданных объекта — по этому и отличаем
+      // a folder has no object metadata — that's how we tell them apart
       if (item.id === null) out.push(...(await this.listFiles(id, rel)));
       else out.push(rel);
     }

@@ -4,8 +4,8 @@ import { currentEmail } from '@/lib/current-user';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
 
-// ручной порядок строк: клиент шлёт полный список id в нужном порядке,
-// сервер проставляет позиции. Встроенные базы (срезы каталога) — только чтение.
+// manual row order: the client sends the full list of ids in the desired order,
+// the server assigns positions. Built-in bases (catalog slices) are read-only.
 export async function POST(request: Request): Promise<Response> {
   let body: { base?: unknown; order?: unknown };
   try { body = await request.json(); } catch { return Response.json({ error: 'Некорректный запрос' }, { status: 400 }); }

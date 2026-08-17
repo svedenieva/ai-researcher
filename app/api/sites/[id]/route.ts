@@ -1,7 +1,7 @@
 import { getSiteStore, SitesNotSetUp } from '@/lib/sites/store';
 
-// Удаление необратимо: сносим объекты в хранилище и строку. Версий нет, поэтому
-// подтверждение спрашивает интерфейс — здесь уже точка невозврата.
+// Deletion is irreversible: we remove the storage objects and the row. There are
+// no versions, so the UI asks for confirmation — by here it's already the point of no return.
 export async function DELETE(
   _request: Request,
   ctx: { params: Promise<{ id: string }> },

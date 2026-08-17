@@ -6,14 +6,14 @@ import type { CatalogRecord } from '@/lib/datasource/types';
 import type { Finding, RelevantCompany } from '@/lib/research/types';
 import { modelCandidates, openrouterChat } from '@/lib/research/freeModels';
 
-// Шаг 5 — запуск исследования.
+// Step 5 — running the research.
 //
-// Пока MOCK_MODE: настоящий Claude/веб-поиск ещё не подключены, поэтому по
-// каждой подтеме мы собираем отчёт из РЕАЛЬНОГО каталога (412 компаний из
-// Supabase) — находим релевантные записи и строим по ним сводку. Это даёт
-// живой, связанный с данными результат для показа, а структура ответа уже
-// готова под реальный движок: заменяем `mockReport` на вызов Claude+поиска,
-// формат `Finding` остаётся тем же.
+// For now MOCK_MODE: real Claude/web search aren't connected yet, so for each
+// subtopic we build a report from the REAL catalog (412 companies from
+// Supabase) — we find relevant records and construct a summary from them. This
+// gives a live, data-backed result to display, and the response shape is already
+// ready for the real engine: we replace `mockReport` with a Claude+search call,
+// the `Finding` format stays the same.
 
 const STOP = new Set([
   'что', 'такое', 'зачем', 'для', 'как', 'или', 'при', 'это', 'все', 'всё',
@@ -37,9 +37,9 @@ function keywords(text: string): string[] {
   ];
 }
 
-// ── живой движок: веб-поиск + синтез через OpenRouter ────────────
-// Плагин web у OpenRouter ищет сам и возвращает ссылки в annotations,
-// поэтому отдельный ключ поисковика не нужен.
+// ── live engine: web search + synthesis via OpenRouter ───────────
+// OpenRouter's web plugin searches on its own and returns links in annotations,
+// so a separate search-engine key isn't needed.
 
 const SYSTEM = `Ты — аналитик рынка AI-продуктов. По подтеме исследования найди в вебе
 актуальные факты и компании. Отвечай СТРОГО одним JSON-объектом, без текста вокруг:
@@ -88,7 +88,7 @@ async function webReport(
     : [];
   const companies = Array.isArray(parsed.companies) ? parsed.companies : [];
 
-  // ссылки, которыми модель реально пользовалась
+  // links the model actually used
   const annotations = Array.isArray(msg?.annotations) ? msg.annotations : [];
   const sources: Array<{ title: string; url: string }> = [];
   for (const a of annotations) {
@@ -96,7 +96,7 @@ async function webReport(
     if (c?.url) sources.push({ title: c.title || c.url, url: c.url });
   }
 
-  // найденные компании сверяем с каталогом: что уже есть — даём ссылкой на карточку
+  // cross-check found companies against the catalog: existing ones get a link to the card
   const relevant: RelevantCompany[] = [];
   for (const raw of companies.slice(0, 6)) {
     const c = raw as { name?: unknown; what?: unknown; url?: unknown };
@@ -126,7 +126,7 @@ function str(v: CatalogRecord[string]): string | null {
   return typeof v === 'string' && v.trim() ? v : null;
 }
 
-// одна подтема → отчёт, собранный из релевантных записей каталога
+// one subtopic → a report assembled from relevant catalog records
 function mockReport(
   subtopic: string,
   docs: Array<{ record: CatalogRecord; tokens: Set<string> }>,
@@ -219,12 +219,12 @@ export async function POST(request: Request): Promise<Response> {
     ),
   }));
 
-  // Живой движок, если задан ключ: по каждой подтеме веб-поиск + синтез.
-  // Подтемы идут параллельно — иначе десяток последовательных запросов
-  // упирается в таймаут функции. На сбое конкретной подтемы падаем на разбор
-  // из каталога, чтобы отчёт не оставался пустым.
+  // Live engine, if a key is set: web search + synthesis per subtopic.
+  // Subtopics run in parallel — otherwise a dozen sequential requests hit the
+  // function timeout. On a given subtopic's failure we fall back to the
+  // catalog analysis, so the report doesn't stay empty.
   if (process.env.OPENROUTER_API_KEY) {
-    // причина отказа веб-движка, чтобы показать её в интерфейсе, а не гадать
+    // reason the web engine failed, to show it in the UI rather than guess
     let reason: string | null = null;
     const report = await Promise.all(
       subtopics.map(async (sub) => {

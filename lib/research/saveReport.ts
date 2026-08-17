@@ -14,9 +14,9 @@ export interface ReportRow {
   name: string; what: string; url: string; subtopic: string; status: string; sources: string;
 }
 
-// найденные компании по всем подтемам → строки, дедуп по имени (в нижнем
-// регистре). Одна компания из разных подтем сливается: подтемы и источники
-// объединяются; «в каталоге» приоритетнее «новое».
+// companies found across all subtopics → rows, dedup by name (lowercased). One
+// company from different subtopics is merged: subtopics and sources are combined;
+// «в каталоге» takes priority over «новое».
 export function reportToRows(report: Finding[]): ReportRow[] {
   const acc = new Map<string, { row: ReportRow; subs: Set<string>; srcs: Set<string> }>();
   for (const f of report ?? []) {

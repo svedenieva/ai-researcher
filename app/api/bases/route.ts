@@ -3,9 +3,9 @@ import { currentEmail } from '@/lib/current-user';
 import { getCustomStore, canAccessBase, type CustomBase } from '@/lib/datasource/customStore';
 import type { ColumnDef } from '@/lib/datasource/types';
 
-// GET не принимает request, поэтому Next по умолчанию отдал бы снимок,
-// снятый на сборке — список баз «замерзал» бы до следующего деплоя.
-// Базы меняются в рантайме (создаются из UI), поэтому роут динамический.
+// GET takes no request, so by default Next would serve a snapshot taken
+// at build time — the list of bases would "freeze" until the next deploy.
+// Bases change at runtime (created from the UI), so the route is dynamic.
 export const dynamic = 'force-dynamic';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
@@ -18,20 +18,20 @@ interface BaseDTO {
   parent: string | null;
 }
 
-// список всех баз для переключателя: сначала встроенные (срезы каталога),
-// потом пользовательские (из БД). parent → дерево в пикере.
+// list of all bases for the switcher: built-in first (catalog slices),
+// then custom ones (from the DB). parent → tree in the picker.
 export async function GET(): Promise<Response> {
   const builtin: BaseDTO[] = BASES.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: true, parent: null }));
   let custom: BaseDTO[] = [];
   try {
-    // Приватная модель: человек видит свои базы, общие и ничейные (командную
-    // базу знаний). Чужие приватные базы в список не попадают.
+    // Privacy model: a person sees their own bases, shared ones, and ownerless
+    // ones (the team knowledge base). Other people's private bases are excluded.
     const me = await currentEmail();
     const rows = await getCustomStore().listBases(me);
     const visible = new Set([...rows.map((b) => b.id), ...BASES.map((b) => b.id)]);
     custom = rows
-      // база без существующего родителя всплывает на верхний уровень,
-      // иначе потеряется в дереве
+      // a base whose parent no longer exists surfaces at the top level,
+      // otherwise it would get lost in the tree
       .map((b) => ({
         id: b.id,
         name: b.name,
@@ -40,13 +40,13 @@ export async function GET(): Promise<Response> {
         parent: b.parent && visible.has(b.parent) ? b.parent : null,
       }));
   } catch (e) {
-    // если пользовательские базы недоступны (нет таблиц) — показываем хотя бы встроенные
+    // if custom bases are unavailable (no tables) — show at least the built-in ones
     console.error('listBases failed:', e);
   }
   return Response.json({ bases: [...builtin, ...custom] });
 }
 
-// нормализуем колонки из формы в валидные ColumnDef
+// normalize columns from the form into valid ColumnDef
 function normalizeColumns(input: unknown): ColumnDef[] {
   if (!Array.isArray(input)) return [];
   const cols: ColumnDef[] = [];
@@ -71,7 +71,7 @@ function normalizeColumns(input: unknown): ColumnDef[] {
   return cols;
 }
 
-// позиционные строки импорта (row[i] ↔ columns[i]) → объекты по ключам колонок
+// positional import rows (row[i] ↔ columns[i]) → objects keyed by column keys
 function mapRows(columns: ReturnType<typeof normalizeColumns>, rows: unknown): Record<string, unknown>[] {
   if (!Array.isArray(rows)) return [];
   const out: Record<string, unknown>[] = [];
@@ -120,7 +120,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 }
 
-// переименовать / переместить пользовательскую базу
+// rename / move a custom base
 export async function PATCH(request: Request): Promise<Response> {
   let body: { id?: unknown; name?: unknown; parent?: unknown };
   try { body = await request.json(); } catch { return Response.json({ error: 'Некорректный запрос' }, { status: 400 }); }
@@ -128,7 +128,7 @@ export async function PATCH(request: Request): Promise<Response> {
   if (!id || BUILTIN_IDS.has(id)) return Response.json({ error: 'Эту базу нельзя менять' }, { status: 400 });
   const store = getCustomStore();
   const me = await currentEmail();
-  // менять можно только доступную базу (свою/общую/ничейную), не чужую приватную
+  // only an accessible base can be changed (own/shared/ownerless), not someone else's private one
   const target = await store.getBase(id);
   if (!target || !canAccessBase(target, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
   let base = null;
@@ -136,9 +136,9 @@ export async function PATCH(request: Request): Promise<Response> {
   if (body?.parent !== undefined) {
     const newParent = body.parent === null ? null : String(body.parent);
     if (newParent !== null) {
-      // нельзя вложить базу в саму себя или в собственную ветку — иначе
-      // дерево зацикливается, и /api/records при обходе потомков уходит
-      // в бесконечную рекурсию (RangeError на каждом чтении такой базы)
+      // a base can't be nested into itself or its own branch — otherwise
+      // the tree becomes cyclic, and /api/records walking the descendants goes
+      // into infinite recursion (RangeError on every read of such a base)
       const all = await store.listBases(me);
       const kids = new Map<string, string[]>();
       for (const b of all) {
@@ -163,7 +163,7 @@ export async function PATCH(request: Request): Promise<Response> {
   return Response.json({ base });
 }
 
-// удалить / восстановить пользовательскую базу (корзина)
+// delete / restore a custom base (recycle bin)
 export async function DELETE(request: Request): Promise<Response> {
   let body: { id?: unknown; restore?: unknown };
   try { body = await request.json(); } catch { return Response.json({ error: 'Некорректный запрос' }, { status: 400 }); }
@@ -172,14 +172,14 @@ export async function DELETE(request: Request): Promise<Response> {
   const store = getCustomStore();
   const me = await currentEmail();
   if (body?.restore === true) {
-    // восстановить можно только доступную базу из своей корзины
+    // only an accessible base from your own bin can be restored
     const bin = await store.listBin();
     const found = bin.bases.find((b) => b.id === id);
     if (!found || !canAccessBase(found, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
     const okr = await store.restoreBase(id);
     return Response.json({ restored: okr ? id : null });
   }
-  // удалять можно только доступную базу, не чужую приватную
+  // only an accessible base can be deleted, not someone else's private one
   const target = await store.getBase(id);
   if (!target || !canAccessBase(target, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
   const okd = await store.softDeleteBase(id);

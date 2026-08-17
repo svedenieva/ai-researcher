@@ -1,17 +1,18 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-// Декомпозиция запроса на подтемы — общий код для роута /api/research/decompose
-// и для инструмента коннектора research_decompose.
+// Decomposing a query into subtopics — shared code for the /api/research/decompose
+// route and for the connector's research_decompose tool.
 //
-// Раньше коннектор дёргал роут по HTTP сам к себе. На проде это упиралось в
-// защиту приложения: самозапрос без куки сессии получал редирект на /login,
-// а из HTML-страницы входа никаких подтем не вытащить — инструмент молча
-// возвращал пустой список. Теперь логика вызывается напрямую, без сети.
+// The connector used to call the route over HTTP against itself. In production
+// this ran into the app's protection: a self-request without a session cookie got
+// redirected to /login, and no subtopics can be pulled out of the login HTML page —
+// the tool silently returned an empty list. Now the logic is called directly,
+// with no network.
 //
-// Приоритет провайдеров:
-//   1) OpenRouter (OPENROUTER_API_KEY) — один ключ, любые модели;
-//   2) Anthropic напрямую (ANTHROPIC_API_KEY);
-//   3) структурная эвристика — если ключей нет или вызовы упали.
+// Provider priority:
+//   1) OpenRouter (OPENROUTER_API_KEY) — one key, any models;
+//   2) Anthropic directly (ANTHROPIC_API_KEY);
+//   3) structural heuristic — if there are no keys or the calls failed.
 
 const ANTHROPIC_MODEL = process.env.RESEARCH_MODEL || 'claude-opus-5';
 
@@ -43,7 +44,7 @@ function heuristicSubtopics(prompt: string): string[] {
   ];
 }
 
-// вытащить JSON-массив из текста ответа (на случай пояснений вокруг)
+// pull a JSON array out of the response text (in case of surrounding prose)
 function parseList(text: string): string[] {
   const start = text.indexOf('[');
   const end = text.lastIndexOf(']');
@@ -87,7 +88,7 @@ async function claudeSubtopics(prompt: string): Promise<string[]> {
   return parseList(text);
 }
 
-/** Разложить запрос на подтемы; всегда возвращает непустой список. */
+/** Decompose a query into subtopics; always returns a non-empty list. */
 export async function decompose(prompt: string): Promise<Decomposition> {
   const clean = prompt.trim();
   if (!clean) return { prompt: '', subtopics: [], source: 'heuristic' };

@@ -1,15 +1,16 @@
 import { getDataSource } from '@/lib/datasource';
 
-// Сверка подтем с каталогом — без ИИ. Из каждой подтемы берём значимые слова
-// (выкидываем общие/служебные), ищем их в текстах записей каталога и считаем,
-// сколько компаний совпало. Есть совпадения → «уже исследовано», нет → «новое».
+// Matching subtopics against the catalog — no AI. From each subtopic we take
+// the meaningful words (dropping common/stop words), search for them in the
+// catalog record texts, and count how many companies matched. Matches → "already
+// researched", none → "new".
 
 const STOP = new Set([
-  // служебные
+  // stop words
   'что', 'такое', 'зачем', 'для', 'как', 'или', 'при', 'это', 'все', 'всё',
   'есть', 'быть', 'свой', 'наш', 'них', 'под', 'над', 'без', 'про', 'из',
   'по', 'на', 'в', 'и', 'с', 'the', 'and', 'for', 'with',
-  // общие исследовательские (из скелета декомпозиции)
+  // generic research terms (from the decomposition skeleton)
   'обзор', 'ключевые', 'игроки', 'игрок', 'продукты', 'продукт', 'тема', 'теме',
   'темы', 'технологии', 'технология', 'подходы', 'подход', 'рынок', 'размер',
   'динамика', 'тренды', 'тренд', 'ценообразование', 'монетизация', 'риски',

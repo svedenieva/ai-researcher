@@ -20,9 +20,9 @@ function readParams(url: URL): { params: ListParams; q: string | null } {
   }
   if (Object.keys(filters).length) params.filters = filters;
 
-  // одиночный фильтр из первой версии API: фронтенд давно шлёт f=ключ:значение,
-  // но параметр остался в документации и во внешних ссылках — без разбора он
-  // молча отдавал бы нефильтрованный список
+  // single filter from the first API version: the frontend has long sent
+  // f=key:value, but the parameter lingers in the docs and external links —
+  // without parsing it, the route would silently return an unfiltered list
   const filterKey = url.searchParams.get('filterKey');
   const filterValue = url.searchParams.get('filterValue');
   if (filterKey && filterValue) params.filter = { key: filterKey, value: filterValue };
@@ -37,8 +37,8 @@ export async function GET(request: Request): Promise<Response> {
   const baseId = url.searchParams.get('base');
   const { params, q } = readParams(url);
 
-  // Раздел показывает свои записи И всё, что лежит ниже по дереву —
-  // выбор уровня работает как слайс: чем выше уровень, тем шире срез.
+  // A section shows its own records AND everything below it in the tree —
+  // the level selector works like a slice: the higher the level, the wider the cut.
   const SOURCE_COL = {
     key: '__source',
     label: 'Из базы',
@@ -47,19 +47,19 @@ export async function GET(request: Request): Promise<Response> {
     filterable: true,
   };
 
-  // ── пользовательская база (создана из UI) ─────────────────────
+  // ── custom base (created from the UI) ─────────────────────────
   if (baseId && !BUILTIN_IDS.has(baseId)) {
     try {
       const store = getCustomStore();
       const me = await currentEmail();
       const custom = await store.getBase(baseId);
-      // Приватная модель: своя база, общая или ничейная. Чужую приватную базу
-      // читать нельзя — падаем на витрину по умолчанию.
+      // Privacy model: own base, shared, or ownerless. Someone else's private
+      // base can't be read — we fall back to the default showcase.
       if (custom && canAccessBase(custom, me)) {
-        // потомков берём только среди ДОСТУПНЫХ баз: приватная база другого
-        // человека, вложенная в общую, в срез не попадёт
+        // descendants are taken only among ACCESSIBLE bases: another person's
+        // private base nested inside a shared one won't appear in the slice
         const all = await store.listBases(me);
-        // все потомки выбранной базы
+        // all descendants of the selected base
         const kids = new Map<string, string[]>();
         for (const b of all) {
           if (!b.parent) continue;
@@ -90,10 +90,10 @@ export async function GET(request: Request): Promise<Response> {
     } catch (e) {
       console.error('custom base read failed:', e);
     }
-    // не нашли/ошибка — падаем на витрину по умолчанию
+    // not found / error — fall back to the default showcase
   }
 
-  // ── встроенная база (срез каталога продуктов) ─────────────────
+  // ── built-in base (product catalog slice) ────────────────────
   const base = baseById(baseId);
   if (base.section) params.filters = { ...(params.filters ?? {}), section: base.section };
 
@@ -118,11 +118,11 @@ export async function GET(request: Request): Promise<Response> {
   );
   let total = userNarrowed ? (await ds.list(baseParams)).length : records.length;
 
-  // подмешиваем записи пользовательских баз, вложенных в этот раздел
+  // mix in records from custom bases nested under this section
   let merged = records;
   try {
     const store = getCustomStore();
-    // во встроенный раздел подмешиваем только ДОСТУПНЫЕ пользователю базы
+    // mix into the built-in section only bases ACCESSIBLE to the user
     const me = await currentEmail();
     const all = await store.listBases(me);
     const kids = new Map<string, string[]>();
@@ -157,7 +157,7 @@ export async function GET(request: Request): Promise<Response> {
   return Response.json({ columns, records: merged, facets, total, base: base.id, custom: false });
 }
 
-// добавить строку в пользовательскую базу
+// add a row to a custom base
 export async function POST(request: Request): Promise<Response> {
   let body: { base?: unknown; data?: unknown };
   try {
@@ -175,7 +175,7 @@ export async function POST(request: Request): Promise<Response> {
     const store = getCustomStore();
     const base = await store.getBase(baseId);
     const me = await currentEmail();
-    // писать можно в свою/общую/ничейную базу, не в чужую приватную
+    // writing is allowed to own/shared/ownerless bases, not someone else's private one
     if (!base || !canAccessBase(base, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
     const record = await store.addRecord(baseId, data);
     return Response.json({ record });
@@ -185,7 +185,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 }
 
-// обновить одну ячейку строки в пользовательской базе
+// update a single row cell in a custom base
 export async function PATCH(request: Request): Promise<Response> {
   let body: { base?: unknown; id?: unknown; data?: unknown };
   try {
@@ -214,7 +214,7 @@ export async function PATCH(request: Request): Promise<Response> {
   }
 }
 
-// удалить/восстановить строки пользовательской базы (корзина)
+// delete/restore rows of a custom base (recycle bin)
 export async function DELETE(request: Request): Promise<Response> {
   let body: { base?: unknown; ids?: unknown; restore?: unknown };
   try { body = await request.json(); } catch { return Response.json({ error: 'Некорректный запрос' }, { status: 400 }); }

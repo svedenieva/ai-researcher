@@ -38,23 +38,23 @@ export default function BaseTree({
 }: {
   tabs: BaseTab[];
   base: string;
-  /** узел, на котором раскрыть дерево при открытии; по умолчанию — текущая база */
+  /** the node to expand the tree at on open; defaults to the current base */
   focus?: string;
   onPick: (id: string) => void;
   onClose: () => void;
   onCreate: () => void;
-  /** база переименована/удалена — надо перечитать список баз */
+  /** base renamed/deleted — the base list needs to be re-read */
   onMutated?: () => void;
 }) {
   const { roots, byId } = useMemo(() => buildTree(tabs), [tabs]);
   const [query, setQuery] = useState('');
 
-  // Дерево свёрнуто, но путь до открытой базы раскрыт: окно должно показывать,
-  // где ты сейчас находишься, а не встречать плоским списком, в котором
-  // подчинённость направлению не видна.
+  // The tree is collapsed, but the path down to the open base is expanded: the
+  // window should show where you currently are, rather than greeting you with a
+  // flat list in which the direction hierarchy isn't visible.
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     const at = focus ?? base;
-    // раскрываем сам узел и весь путь к нему сверху
+    // expand the node itself and the whole path leading down to it
     const path = new Set<string>([at]);
     let node = byId.get(at);
     while (node?.parent) {
@@ -64,7 +64,7 @@ export default function BaseTree({
     return path;
   });
 
-  // Esc закрывает
+  // Esc closes
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -82,7 +82,7 @@ export default function BaseTree({
     });
 
   const q = query.trim().toLowerCase();
-  // при поиске показываем совпадения и всех их родителей
+  // when searching, show matches and all of their parents
   const matches = useMemo(() => {
     if (!q) return null;
     const keep = new Set<string>();
@@ -121,8 +121,8 @@ export default function BaseTree({
           <button
             type="button"
             className={`${styles.node} ${node.id === base ? styles.nodeActive : ''}`}
-            // как в проводнике: клик по ветке и загружает её таблицу, и раскрывает
-            // её вглубь; окно при этом остаётся открытым
+            // like a file explorer: clicking a branch both loads its table and expands
+            // it further in; the window stays open the whole time
             onClick={() => {
               onPick(node.id);
               if (hasKids && !expanded.has(node.id)) toggle(node.id);
@@ -147,8 +147,8 @@ export default function BaseTree({
                 if (!window.confirm(`Удалить базу «${node.name}» в корзину? Её строки тоже уедут в корзину, вернуть можно оттуда.`)) return;
                 await fetch('/api/bases', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: node.id }) });
                 onMutated?.();
-                // удалили открытую сейчас базу — уходим на родителя (или на
-                // встроенную по умолчанию), иначе экран остаётся на несуществующей базе
+                // we deleted the base that's currently open — go to the parent (or to
+                // the default built-in one), otherwise the screen stays on a base that no longer exists
                 if (node.id === base) onPick(node.parent ?? 'market');
               }}>🗑</button>
             </span>
@@ -159,9 +159,9 @@ export default function BaseTree({
     );
   };
 
-  // Окно выбора базы: выпадает из строки с названием (позиционирует родитель),
-  // но ведёт себя как окно — навигация по дереву его не закрывает, закрыть
-  // можно крестиком, кликом мимо или Esc.
+  // Base picker window: it drops down from the name row (positioned by the parent),
+  // but behaves like a window — navigating the tree doesn't close it; it can be
+  // closed with the cross, a click outside, or Esc.
   return (
     <div className={styles.panel} role="dialog" aria-label="Выбор базы данных">
       <div className={styles.head}>

@@ -1,15 +1,15 @@
 import { decompose } from '@/lib/research/decompose';
 
-// Роут-обёртка над общей логикой декомпозиции (lib/research/decompose).
-// Ту же функцию напрямую зовёт инструмент коннектора research_decompose —
-// без самозапроса по HTTP, который на проде упирался в страницу входа.
+// Route wrapper around the shared decomposition logic (lib/research/decompose).
+// The connector tool research_decompose calls the same function directly —
+// without a self HTTP request, which in production hit the sign-in page.
 export async function POST(request: Request): Promise<Response> {
   let prompt = '';
   try {
     const body = await request.json();
     prompt = typeof body?.prompt === 'string' ? body.prompt : '';
   } catch {
-    /* пустое тело */
+    /* empty body */
   }
 
   if (!prompt.trim()) {

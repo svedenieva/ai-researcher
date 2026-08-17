@@ -2,16 +2,16 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 
-// Избранные источники: пометка записи звёздочкой. Хранится на пользователя
-// (email из сессии), поэтому избранное едет за человеком между устройствами.
-// Таблица: favorites (user_email, base_id, record_id).
+// Favorite sources: starring a record. Stored per user (email from the
+// session), so favorites follow the person across devices.
+// Table: favorites (user_email, base_id, record_id).
 
 export const dynamic = 'force-dynamic';
 
 async function currentEmail(): Promise<string | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anon) return 'local@dev'; // локальная разработка без авторизации
+  if (!url || !anon) return 'local@dev'; // local development without auth
   const store = await cookies();
   const supabase = createServerClient(url, anon, {
     cookies: {
@@ -19,7 +19,7 @@ async function currentEmail(): Promise<string | null> {
         return store.getAll();
       },
       setAll() {
-        /* роут только читает сессию */
+        /* the route only reads the session */
       },
     },
   });
@@ -53,7 +53,7 @@ export async function GET(request: Request): Promise<Response> {
   return Response.json({ favorites: (data ?? []).map((r) => (r as { record_id: string }).record_id) });
 }
 
-// переключить звезду
+// toggle the star
 export async function POST(request: Request): Promise<Response> {
   let body: { base?: unknown; record?: unknown };
   try {

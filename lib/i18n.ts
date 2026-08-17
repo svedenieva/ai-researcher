@@ -1,7 +1,7 @@
 import type { MindSheetStrings } from '@aivocado/mindsheet';
 
-// Три языка интерфейса. Украинский — по умолчанию. Данные (названия, вердикты,
-// заметки) не переводятся — это контент пользователя, только UI.
+// Three interface languages. Ukrainian is the default. Data (names, verdicts,
+// notes) is not translated — that's user content, only the UI is.
 export type Lang = 'uk' | 'ru' | 'en';
 export const LANGS: { id: Lang; short: string }[] = [
   { id: 'uk', short: 'УКР' },
@@ -10,7 +10,7 @@ export const LANGS: { id: Lang; short: string }[] = [
 ];
 export const DEFAULT_LANG: Lang = 'uk';
 
-// ── надписи главной страницы и её компонентов ──────────────────────────────
+// ── labels for the home page and its components ────────────────────────────
 type Tri = Record<Lang, string>;
 type TriFn = Record<Lang, (...a: never[]) => string>;
 
@@ -46,7 +46,7 @@ const UI = {
   create: { uk: 'Створити базу', ru: 'Создать базу', en: 'Create base' },
   createError: { uk: 'Помилка створення', ru: 'Ошибка создания', en: 'Creation error' },
   error: { uk: 'Помилка', ru: 'Ошибка', en: 'Error' },
-  // типы колонок (форма создания базы)
+  // column types (create-base form)
   typeText: { uk: 'Текст', ru: 'Текст', en: 'Text' },
   typeNumber: { uk: 'Число', ru: 'Число', en: 'Number' },
   typeSelect: { uk: 'Вибір', ru: 'Выбор', en: 'Select' },

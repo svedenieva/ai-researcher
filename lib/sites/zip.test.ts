@@ -47,7 +47,7 @@ describe('zip round-trip', () => {
     const res = validateUpload(entries.map((e) => ({ path: e.path, size: e.bytes.length })));
     expect(res.ok).toBe(true);
     if (!res.ok) return;
-    // обёртка my-site срезана, стартовая страница найдена
+    // the my-site wrapper is stripped, the entry page is found
     expect(res.value.entry).toBe('index.html');
     expect(res.value.files.map((f) => f.path)).toEqual(['index.html', 'style.css']);
   });

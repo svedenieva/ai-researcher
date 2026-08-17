@@ -38,7 +38,7 @@ export default function Home() {
   const [total, setTotal] = useState<number>();
   const [facets, setFacets] = useState<Record<string, string[]>>({});
   const [sort, setSort] = useState<ListParams['sort']>(DEFAULT_SORT);
-  // дополнительные уровни группировки (Shift + клик), максимум 2 сверх первого
+  // extra grouping levels (Shift + click), at most 2 beyond the first
   const [extraLevels, setExtraLevels] = useState<NonNullable<ListParams['sort']>[]>([]);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
@@ -48,13 +48,13 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
   const [creating, setCreating] = useState(false);
-  // избранные источники текущей базы
+  // favorite sources of the current base
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   const isCustom = !BUILTIN_IDS.has(base);
 
-  // числовые колонки приводим к числу перед сохранением
+  // numeric columns are coerced to a number before saving
   const coerce = useCallback(
     (key: string, value: string): string | number => {
       const col = columns.find((c) => c.key === key);
@@ -89,9 +89,9 @@ export default function Home() {
 
   const onDeleteRow = useCallback(
     (record: CatalogRecord) => {
-      // строки, подтянутые из вложенных дочерних баз, помечены __source =
-      // отображаемое имя дочерней базы — удалять их можно только там, иначе
-      // DELETE не найдёт запись в текущей базе и молча ничего не удалит
+      // rows pulled in from nested child bases are tagged with __source =
+      // the child base's display name — they can only be deleted there, otherwise
+      // DELETE won't find the record in the current base and silently deletes nothing
       const currentName = tabs.find((t) => t.id === base)?.name;
       const source = record.__source;
       if (source && currentName && source !== currentName) {
@@ -114,12 +114,12 @@ export default function Home() {
       const body = await r.json();
       if (Array.isArray(body.bases) && body.bases.length) setTabs(body.bases);
     } catch {
-      /* оставляем встроенные табы */
+      /* keep the built-in tabs */
     }
   }, []);
 
-  // живое управление колонками — один роут, разные действия; после каждого
-  // перечитываем записи (колонки приходят вместе с ними)
+  // live column management — one route, different actions; after each one
+  // we re-read the records (columns come back together with them)
   const columnAction = useCallback(
     (payload: Record<string, unknown>) => {
       fetch('/api/columns', {
@@ -131,8 +131,8 @@ export default function Home() {
     [base],
   );
 
-  // ручной порядок строк: шлём полный список id в новом порядке, затем
-  // перечитываем (сервер вернёт строки уже по новому порядку)
+  // manual row order: we send the full list of ids in the new order, then
+  // re-read (the server returns the rows already in the new order)
   const reorderRows = useCallback(
     (orderedIds: string[]) => {
       fetch('/api/records/reorder', {
@@ -155,8 +155,8 @@ export default function Home() {
       const [key, dir] = s.split(':');
       if (key) setSort({ key, dir: dir === 'desc' ? 'desc' : 'asc' });
     } else if (b && !BUILTIN_IDS.has(b)) {
-      // пользовательская база без явной сортировки в ссылке — естественный
-      // порядок (иначе стартовый DEFAULT_SORT по «pop» дал бы фантомную группу)
+      // a custom base with no explicit sort in the link — natural
+      // order (otherwise the initial DEFAULT_SORT by "pop" would create a phantom group)
       setSort(undefined);
     }
     const f: Record<string, string> = {};
@@ -207,8 +207,8 @@ export default function Home() {
     setExtraLevels([]);
   }, []);
 
-  // Клик по заголовку — обычная сортировка (первый уровень группировки).
-  // Shift + клик — добавить/переключить дополнительный уровень (всего до 3).
+  // Click on a header — regular sort (the first grouping level).
+  // Shift + click — add/toggle an extra level (up to 3 in total).
   const onSortsChange = useCallback(
     (key: string, additive: boolean) => {
       if (!additive) {
@@ -216,7 +216,7 @@ export default function Home() {
         return;
       }
       setExtraLevels((prev) => {
-        if (sort?.key === key) return prev; // это уже первый уровень
+        if (sort?.key === key) return prev; // this is already the first level
         const i = prev.findIndex((l) => l.key === key);
         if (i >= 0) {
           const next = [...prev];
@@ -229,7 +229,7 @@ export default function Home() {
     [onSortChange, sort],
   );
 
-  // избранное живёт на базу: перезагружаем при смене базы
+  // favorites are per-base: reload when the base changes
   useEffect(() => {
     if (!ready) return;
     fetch(`/api/favorites?base=${encodeURIComponent(base)}`)
@@ -241,14 +241,14 @@ export default function Home() {
   const onToggleFavorite = useCallback(
     (record: CatalogRecord) => {
       const id = String(record.id);
-      // оптимистично — звезда откликается сразу
+      // optimistic — the star responds immediately
       setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
       fetch('/api/favorites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ base, record: id }),
       }).catch(() => {
-        // не вышло — откатываем
+        // it failed — roll back
         setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
       });
     },
@@ -266,21 +266,21 @@ export default function Home() {
     setSearch('');
     setCreating(false);
     setFavoritesOnly(false);
-    // Пользовательские базы открываем в естественном порядке (без сортировки):
-    // так работает ручное перетаскивание строк, и не всплывает фантомная
-    // группа по несуществующей в этих базах колонке «pop». Встроенные срезы
-    // каталога по-прежнему открываются отсортированными по популярности.
+    // Custom bases open in natural order (no sorting): this is what makes
+    // manual row dragging work, and no phantom group pops up over the "pop"
+    // column that doesn't exist in these bases. Built-in catalog slices
+    // still open sorted by popularity.
     setSort(BUILTIN_IDS.has(id) ? DEFAULT_SORT : undefined);
     setExtraLevels([]);
   }, []);
 
 
-  // «только избранные» фильтрует уже загруженные записи
+  // "favorites only" filters the already-loaded records
   const shownRecords = favoritesOnly
     ? records.filter((r) => favorites.includes(String(r.id)))
     : records;
 
-  // Ссылка на выгрузку повторяет запрос за данными — что на экране, то и в файле
+  // The export link mirrors the data request — what's on screen is what's in the file
   const exportHref = (() => {
     const qs = new URLSearchParams();
     if (base !== DEFAULT_BASE) qs.set('base', base);
@@ -308,7 +308,7 @@ export default function Home() {
         />
 
         <div className={styles.headerActions}>
-          {/* название выбранной базы — справа */}
+          {/* name of the selected base — on the right */}
           <span className={styles.currentBase}>
             {tabs.find((t) => t.id === base)?.name ?? ''}
             {!loading && <span className={styles.currentCount}>{records.length}</span>}

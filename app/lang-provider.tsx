@@ -11,9 +11,9 @@ interface Ctx {
 }
 const LangContext = createContext<Ctx>({ lang: DEFAULT_LANG, setLang: () => {} });
 
-// Язык живёт в localStorage (клиентское приложение, без SSR-cookie). Стартуем с
-// украинского и на сервере, и на клиенте — иначе разъедется гидрация; после
-// монтирования подхватываем сохранённый выбор.
+// The language lives in localStorage (client-side app, no SSR cookie). We start
+// with Ukrainian on both the server and the client — otherwise hydration would
+// mismatch; after mounting we pick up the saved choice.
 export function LangProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>(DEFAULT_LANG);
 
@@ -22,7 +22,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored === 'uk' || stored === 'ru' || stored === 'en') setLangState(stored);
     } catch {
-      /* приватный режим — едем на языке по умолчанию */
+      /* private mode — fall back to the default language */
     }
   }, []);
 
@@ -35,7 +35,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
     try {
       window.localStorage.setItem(STORAGE_KEY, l);
     } catch {
-      /* не сохранится — переживём */
+      /* won't persist — we'll live with it */
     }
   };
 

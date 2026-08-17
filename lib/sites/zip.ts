@@ -1,17 +1,17 @@
 import { unzipSync, zipSync } from 'fflate';
 import { isJunk } from './site';
 
-// Работа с архивом. Один и тот же модуль работает и в браузере (распаковать
-// выбранный .zip перед загрузкой), и на сервере (собрать сайт обратно в .zip) —
-// fflate синхронный и не тянет за собой Node-API.
+// Working with the archive. The same module works both in the browser (unpack the
+// chosen .zip before upload) and on the server (repack the site back into a .zip) —
+// fflate is synchronous and doesn't drag in Node APIs.
 
 export interface ZipEntry {
   path: string;
   bytes: Uint8Array;
 }
 
-// Распаковка: записи папок и мусор архиваторов выкидываем сразу, чтобы дальше
-// по конвейеру шли только настоящие файлы.
+// Unpacking: folder entries and archiver junk are dropped right away, so only real
+// files flow further down the pipeline.
 export function unzipEntries(archive: Uint8Array): ZipEntry[] {
   const out: ZipEntry[] = [];
   const files = unzipSync(archive);

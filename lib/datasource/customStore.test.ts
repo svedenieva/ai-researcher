@@ -75,19 +75,19 @@ describe('bin lifecycle', () => {
   });
 });
 
-describe('изоляция баз: private + shared', () => {
+describe('base isolation: private + shared', () => {
   const col = [{ key: 'name', label: 'N', type: 'text' as const }];
 
-  it('canAccessBase: своя / ничейная / общая — да; чужая приватная — нет', () => {
-    expect(canAccessBase({ owner: 'a@x', shared: false }, 'a@x')).toBe(true);   // своя
-    expect(canAccessBase({ owner: 'a@x', shared: false }, 'b@x')).toBe(false);  // чужая приватная
-    expect(canAccessBase({ owner: null, shared: false }, 'b@x')).toBe(true);    // ничейная (командная)
-    expect(canAccessBase({ owner: 'a@x', shared: true }, 'b@x')).toBe(true);    // явно общая
-    expect(canAccessBase({ owner: 'a@x', shared: false }, null)).toBe(false);   // неавторизован → чужую не видит
-    expect(canAccessBase({ owner: null, shared: false }, null)).toBe(true);     // ничейную видит и аноним
+  it('canAccessBase: own / unowned / shared — yes; someone else\'s private — no', () => {
+    expect(canAccessBase({ owner: 'a@x', shared: false }, 'a@x')).toBe(true);   // own
+    expect(canAccessBase({ owner: 'a@x', shared: false }, 'b@x')).toBe(false);  // someone else's private
+    expect(canAccessBase({ owner: null, shared: false }, 'b@x')).toBe(true);    // unowned (team)
+    expect(canAccessBase({ owner: 'a@x', shared: true }, 'b@x')).toBe(true);    // explicitly shared
+    expect(canAccessBase({ owner: 'a@x', shared: false }, null)).toBe(false);   // unauthenticated → cannot see someone else's
+    expect(canAccessBase({ owner: null, shared: false }, null)).toBe(true);     // an anonymous user sees an unowned base too
   });
 
-  it('listBases отдаёт только доступные пользователю базы', async () => {
+  it('listBases returns only the bases available to the user', async () => {
     const s = new MemoryCustomStore();
     await s.createBase({ name: 'Моя', columns: col, owner: 'a@x' });
     await s.createBase({ name: 'Чужая', columns: col, owner: 'b@x' });
@@ -95,12 +95,12 @@ describe('изоляция баз: private + shared', () => {
     await s.createBase({ name: 'Общая', columns: col, owner: 'b@x', shared: true });
 
     const forA = (await s.listBases('a@x')).map((b) => b.name).sort();
-    expect(forA).toEqual(['Моя', 'Ничейная', 'Общая']); // «Чужая» скрыта
+    expect(forA).toEqual(['Моя', 'Ничейная', 'Общая']); // "Чужая" is hidden
     const forB = (await s.listBases('b@x')).map((b) => b.name).sort();
-    expect(forB).toEqual(['Ничейная', 'Общая', 'Чужая']); // «Моя» скрыта
+    expect(forB).toEqual(['Ничейная', 'Общая', 'Чужая']); // "Моя" is hidden
   });
 
-  it('listAllBases видит всё (для служебных нужд)', async () => {
+  it('listAllBases sees everything (for internal needs)', async () => {
     const s = new MemoryCustomStore();
     await s.createBase({ name: 'Моя', columns: col, owner: 'a@x' });
     await s.createBase({ name: 'Чужая', columns: col, owner: 'b@x' });

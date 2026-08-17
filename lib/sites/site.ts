@@ -1,8 +1,8 @@
-// Разбор загружаемого сайта: слаг, срез общей папки, выбор стартовой страницы,
-// проверки и content-type. Всё чистое — без Supabase и без браузера, поэтому
-// одинаково работает и в форме загрузки, и в роутах, и в тестах.
+// Parsing an uploaded site: slug, trimming the common folder, picking the start
+// page, checks, and content-type. All pure — no Supabase and no browser, so it
+// works the same in the upload form, in routes, and in tests.
 
-/** файл сайта: путь относительно корня сайта и размер в байтах */
+/** a site file: path relative to the site root and size in bytes */
 export interface SiteFile {
   path: string;
   size: number;
@@ -31,10 +31,10 @@ const RU_LAT: Record<string, string> = {
   ц: 'c', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
 };
 
-// url-безопасный слаг из названия. В отличие от баз знаний, где id остаётся
-// кириллическим, здесь он ещё и ключ объекта в Storage — а тот принимает
-// только латиницу, цифры и немного пунктуации и на «демо-сайт/index.html»
-// отвечает «Invalid key». Поэтому русские названия транслитерируем.
+// url-safe slug from the name. Unlike knowledge bases, where the id stays
+// Cyrillic, here it's also the object key in Storage — and that accepts only
+// Latin letters, digits, and a little punctuation, and to «демо-сайт/index.html»
+// it replies «Invalid key». So we transliterate Russian names.
 export function slugId(name: string, taken: Set<string>): string {
   const base =
     name
@@ -50,31 +50,32 @@ export function slugId(name: string, taken: Set<string>): string {
   return id;
 }
 
-// Мусор архиваторов и системы. Попадает в zip сам собой, но общей папки с ним
-// не найти — из-за одного __MACOSX/ срез префикса перестал бы срабатывать,
-// и сайт с index.html внутри папки был бы отвергнут «нет index.html».
+// Archiver and system junk. It ends up in the zip on its own, but the common
+// folder can't be found with it around — because of a single __MACOSX/ the prefix
+// trim would stop working, and a site with index.html inside a folder would be
+// rejected with "no index.html".
 export function isJunk(path: string): boolean {
   const parts = path.split('/');
   if (parts.some((p) => p === '__MACOSX' || p === '.DS_Store' || p === 'Thumbs.db')) return true;
-  // пустые сегменты = запись папки, а не файла
+  // empty segments = a folder entry, not a file
   return parts.some((p) => p === '') || path.trim() === '';
 }
 
-// Путь не должен вылезать за пределы своего сайта: ключ в хранилище
-// склеивается как <id>/<path>, и '..' увёл бы запись в чужую папку.
+// The path must not escape its own site: the storage key is glued as <id>/<path>,
+// and '..' would take the entry into someone else's folder.
 export function isSafePath(path: string): boolean {
   if (!path || path.startsWith('/') || path.includes('\\')) return false;
   return !path.split('/').some((p) => p === '..' || p === '.' || p === '');
 }
 
-// Архив обычно завёрнут в одну папку: my-site/index.html. Внутри сайта ссылки
-// относительные, поэтому обёртку срезаем — иначе сайт лёг бы на уровень ниже,
-// чем ожидает его собственная вёрстка. Срезаем ровно один уровень.
+// An archive is usually wrapped in a single folder: my-site/index.html. Inside the
+// site the links are relative, so we trim the wrapper — otherwise the site would
+// land one level lower than its own markup expects. We trim exactly one level.
 export function stripCommonPrefix(paths: string[]): string[] {
   const clean = paths.filter((p) => !isJunk(p));
   if (clean.length === 0) return [];
   const first = clean[0].split('/')[0];
-  // общая папка есть, только если КАЖДЫЙ путь лежит внутри неё
+  // there's a common folder only if EVERY path is inside it
   const wrapped = clean.every((p) => {
     const parts = p.split('/');
     return parts.length > 1 && parts[0] === first;
@@ -82,9 +83,9 @@ export function stripCommonPrefix(paths: string[]): string[] {
   return wrapped ? clean.map((p) => p.slice(first.length + 1)) : clean;
 }
 
-// Стартовая страница: index.html в корне, иначе — единственный html, если он
-// в наборе ровно один. Двусмысленность («какой из трёх html главный?») не
-// разрешаем сами, пусть человек переименует.
+// Start page: index.html at the root, otherwise the single html if there's
+// exactly one in the set. We don't resolve the ambiguity ("which of the three
+// htmls is the main one?") ourselves — let the person rename it.
 export function pickEntry(paths: string[]): string | null {
   if (paths.includes('index.html')) return 'index.html';
   const html = paths.filter((p) => /\.html?$/i.test(p));
@@ -97,11 +98,11 @@ export interface UploadCheck {
   sizeBytes: number;
 }
 
-// Проверки до записи: тяжёлый файл, слишком много файлов, нечего показывать.
-// Возвращаем текст ошибки — его же показываем человеку, без кодов и словарей.
+// Checks before writing: a heavy file, too many files, nothing to show. We return
+// the error text — that same text is shown to the person, without codes or dictionaries.
 export function validateUpload(input: SiteFile[]): { ok: true; value: UploadCheck } | { ok: false; error: string } {
-  // сначала выкидываем мусор, потом срезаем обёртку — так порядок сохраняется
-  // и новые пути ложатся на свои же размеры
+  // first drop the junk, then trim the wrapper — this preserves the order and the
+  // new paths line up with their own sizes
   const kept = input.filter((f) => !isJunk(f.path));
   const paths = stripCommonPrefix(kept.map((f) => f.path));
   const files: SiteFile[] = kept.map((f, i) => ({ path: paths[i], size: f.size }));
@@ -145,16 +146,16 @@ const TYPES: Record<string, string> = {
   txt: 'text/plain; charset=utf-8',
 };
 
-// Тип отдаём по расширению: браузер не станет исполнять css как html, а
-// nosniff в роуте не даст ему угадывать самому.
+// We set the type by extension: the browser won't execute css as html, and
+// nosniff in the route won't let it guess on its own.
 export function contentTypeFor(path: string): string {
   const ext = path.split('.').pop()?.toLowerCase() ?? '';
   return TYPES[ext] ?? 'application/octet-stream';
 }
 
-// Response не принимает Uint8Array по типам (BodyInit ждёт ArrayBuffer или
-// Blob), поэтому отдаём буфер ровно по длине данных — без хвоста, который
-// мог остаться от переиспользованного буфера.
+// Response doesn't accept a Uint8Array by type (BodyInit expects an ArrayBuffer or
+// Blob), so we return a buffer exactly the length of the data — with no tail that
+// could remain from a reused buffer.
 export function bodyFrom(bytes: Uint8Array): ArrayBuffer {
   return bytes.slice().buffer as ArrayBuffer;
 }

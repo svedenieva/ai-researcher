@@ -1,19 +1,19 @@
-// Реестр «баз знаний». Пока каждая база — это срез общего каталога продуктов
-// по разделу (section). «Рынок AI» — весь каталог; остальные три фиксируют
-// section. Это даёт мультибазу и 4 отдельных раздела, которые просил Александр,
-// без разрушения текущих данных. Следующий шаг (цель №1) — базы со своей
-// таблицей и своими колонками, создаваемые из UI; структура под это готова.
+// Registry of "knowledge bases". For now each base is a slice of the shared product
+// catalog by section. «Рынок AI» is the whole catalog; the other three fix a
+// section. This gives the multi-base and 4 separate sections the boss asked for,
+// without breaking the current data. The next step (goal #1) — bases with their own
+// table and their own columns, created from the UI; the structure is ready for it.
 
 export interface BaseDef {
-  /** url-слаг базы */
+  /** url slug of the base */
   id: string;
-  /** название в переключателе и заголовке */
+  /** name in the switcher and the title */
   name: string;
-  /** цвет точки в табе: sage | teal | blue | amber */
+  /** dot color in the tab: sage | teal | blue | amber */
   tone: 'sage' | 'teal' | 'blue' | 'amber';
-  /** фиксированный раздел каталога; null = весь рынок */
+  /** fixed catalog section; null = the whole market */
   section: string | null;
-  /** подзаголовок витрины для этой базы */
+  /** the showcase subheading for this base */
   blurb: string;
 }
 

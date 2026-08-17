@@ -7,7 +7,7 @@ import { formatBytes, isJunk, validateUpload, type SiteMeta } from '@/lib/sites/
 import { unzipEntries } from '@/lib/sites/zip';
 import styles from './sites.module.css';
 
-// файл, готовый к отправке: путь внутри сайта + само содержимое
+// a file ready to be sent: path within the site + the content itself
 interface Picked {
   path: string;
   blob: Blob;
@@ -20,12 +20,12 @@ export default function Sites() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // поиск и разбор
+  // search and parsing
   const [query, setQuery] = useState('');
   const [tag, setTag] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('date');
 
-  // форма загрузки
+  // upload form
   const [picked, setPicked] = useState<Picked[] | null>(null);
   const [entry, setEntry] = useState('');
   const [name, setName] = useState('');
@@ -57,7 +57,7 @@ export default function Sites() {
     load();
   }, [load]);
 
-  // общий разбор для папки и архива: проверяем и запоминаем, что отправим
+  // shared parsing for a folder and an archive: validate and remember what we'll send
   const accept = useCallback((raw: Picked[], fallbackName: string) => {
     const kept = raw.filter((r) => !isJunk(r.path));
     const check = validateUpload(kept.map((r) => ({ path: r.path, size: r.blob.size })));
@@ -66,7 +66,7 @@ export default function Sites() {
       setPickError(check.error);
       return;
     }
-    // validateUpload сохраняет порядок, поэтому новый путь ложится на свой файл
+    // validateUpload preserves order, so each new path lands on its own file
     setPicked(check.value.files.map((f, i) => ({ path: f.path, blob: kept[i].blob })));
     setEntry(check.value.entry);
     setPickError(null);
@@ -76,7 +76,7 @@ export default function Sites() {
   const onFolder = (list: FileList | null) => {
     if (!list?.length) return;
     const raw: Picked[] = Array.from(list).map((f) => ({
-      // webkitRelativePath хранит путь вместе с выбранной папкой
+      // webkitRelativePath stores the path together with the selected folder
       path: f.webkitRelativePath || f.name,
       blob: f,
     }));
@@ -133,7 +133,7 @@ export default function Sites() {
       if (!res.ok) throw new Error(body?.error ?? 'Не удалось создать сайт');
       const id: string = body.site.id;
 
-      // по одному запросу на файл: тело serverless-запроса ограничено ~4,5 МБ
+      // one request per file: the serverless request body is limited to ~4.5 MB
       for (let i = 0; i < picked.length; i++) {
         const form = new FormData();
         form.append('path', picked[i].path);
@@ -172,7 +172,7 @@ export default function Sites() {
     [sites],
   );
 
-  // фильтрация на клиенте: десятки строк, гонять их через сервер незачем
+  // client-side filtering: dozens of rows, no need to push them through the server
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = sites.filter((s) => {
@@ -234,7 +234,7 @@ export default function Sites() {
             {pickError && <span className={styles.error}>{pickError}</span>}
           </div>
 
-          {/* webkitdirectory нет в типах React — отдаём атрибуты как есть */}
+          {/* webkitdirectory isn't in React's types — pass the attributes as-is */}
           <input
             ref={folderInput}
             type="file"

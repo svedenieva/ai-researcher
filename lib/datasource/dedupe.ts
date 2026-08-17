@@ -1,12 +1,12 @@
 import type { CatalogRecord } from './types';
 import { CATALOG_COLUMNS } from './columns';
 
-// В каталоге одна и та же компания местами заведена дважды — с одним сайтом, но
-// разной вертикалью, популярностью и вердиктом. При группировке она попадала в
-// две разные группы и выглядела как две компании. Схлопываем такие записи в одну
-// при чтении: ключ — сайт (иначе имя), из пары остаётся более «сильная» запись
-// по популярности, затем по вердикту, а потерянная вертикаль дописывается к
-// оставшейся, чтобы информация не пропадала.
+// In the catalog the same company is sometimes entered twice — with one site but
+// a different vertical, popularity, and verdict. When grouping, it landed in two
+// different groups and looked like two companies. We collapse such records into one
+// on read: the key is the site (otherwise the name), the "stronger" record of the
+// pair is kept by popularity, then by verdict, and the lost vertical is appended to
+// the survivor so no information is lost.
 
 function rank(key: string, value: unknown): number {
   const col = CATALOG_COLUMNS.find((c) => c.key === key);
@@ -15,8 +15,9 @@ function rank(key: string, value: unknown): number {
   return i === -1 ? col.order.length : i;
 }
 
-// Ключ — только имя. По сайту склеивать нельзя: у части записей в url стоит общая
-// ссылка (тред reddit, betalist), и тогда в одну строку слипаются разные компании.
+// The key is the name only. Joining by site is not allowed: some records have a
+// shared link in url (a reddit thread, betalist), and then different companies
+// would merge into one row.
 function keyOf(r: CatalogRecord): string {
   return String(r.name ?? '').trim().toLowerCase();
 }
@@ -33,15 +34,15 @@ export function dedupeCompanies(records: CatalogRecord[]): CatalogRecord[] {
       order.push(key);
       continue;
     }
-    // сильнее та, что выше по популярности; при равенстве — по вердикту
+    // the stronger one is higher in popularity; on a tie — by verdict
     const better =
       rank('pop', r.pop) - rank('pop', kept.pop) ||
       rank('verdict', r.verdict) - rank('verdict', kept.verdict);
     const winner = better < 0 ? { ...r } : kept;
     const loser = better < 0 ? kept : r;
 
-    // вторую классификацию не теряем, но держим в отдельном поле: если дописать
-    // её в vertical, в фильтрах и группировке появятся склеенные значения
+    // we don't lose the second classification, but keep it in a separate field: if
+    // we appended it to vertical, merged values would appear in filters and grouping
     if (loser.vertical && loser.vertical !== winner.vertical) {
       winner.vertical_alt = String(loser.vertical);
     }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
-// Хранилище подменяем: роут проверяем на маршрутизацию и заголовки, а не на
-// живой Supabase.
+// We stub the store: the route is tested for routing and headers, not against a
+// live Supabase.
 vi.mock('@/lib/sites/store', () => {
   const files: Record<string, string> = {
     'index.html': '<link rel="stylesheet" href="style.css"><h1>Привет</h1>',
@@ -31,8 +31,8 @@ describe('GET /s/[id]/[[...path]]', () => {
   it('sends a bare /s/<id> to the entry page', async () => {
     const res = await call('http://localhost/s/demo', 'demo');
     expect(res.status).toBe(307);
-    // без этого редиректа относительный style.css внутри HTML разрешился бы
-    // в /s/style.css — на уровень выше самого сайта
+    // without this redirect, a relative style.css inside the HTML would resolve
+    // to /s/style.css — a level above the site itself
     expect(res.headers.get('location')).toBe('http://localhost/s/demo/index.html');
   });
 

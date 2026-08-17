@@ -26,20 +26,20 @@ export default function BasePicker({
   base: string;
   onChange: (id: string) => void;
   onCreate: () => void;
-  /** база переименована/удалена — надо перечитать список баз */
+  /** base renamed/deleted — the base list needs to be re-read */
   onMutated?: () => void;
   rootLabel?: string;
 }) {
   const { lang } = useLang();
   const [open, setOpen] = useState(false);
-  // узел, на котором раскрыть дерево: из корневой кнопки — текущая база,
-  // из крошки — сам раздел. Дерево должно выпадать из направления, а не
-  // только из общего корня.
+  // the node to expand the tree at: from the root button — the current base,
+  // from a breadcrumb — the section itself. The tree should drop down from the
+  // direction, not only from the common root.
   const [focus, setFocus] = useState<string | undefined>(undefined);
   const ref = useRef<HTMLDivElement>(null);
   const byId = useMemo(() => new Map(tabs.map((t) => [t.id, t])), [tabs]);
 
-  // путь от верхнего уровня до выбранной базы
+  // path from the top level down to the selected base
   const path = useMemo(() => {
     const out: BaseTab[] = [];
     let cur = byId.get(base);
@@ -50,7 +50,7 @@ export default function BasePicker({
     return out;
   }, [base, byId]);
 
-  // клик вне панели и Esc закрывают дерево
+  // a click outside the panel and Esc close the tree
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
@@ -69,7 +69,7 @@ export default function BasePicker({
 
   return (
     <nav className={styles.crumbs} aria-label={t(lang, 'pathAria')} ref={ref}>
-      {/* единственная точка входа в дерево баз */}
+      {/* the single entry point into the base tree */}
       <button
         type="button"
         className={`${styles.root} ${open ? styles.rootOpen : ''}`}
@@ -88,7 +88,7 @@ export default function BasePicker({
       {path.map((node, i) => (
         <span key={node.id} className={styles.crumbItem}>
           <span className={styles.sep} aria-hidden="true">›</span>
-          {/* клик по названию — просто переход в этот раздел */}
+          {/* click on the name — just navigate into this section */}
           <button
             type="button"
             className={`${styles.crumb} ${i === path.length - 1 ? styles.crumbCurrent : ''}`}
@@ -97,7 +97,7 @@ export default function BasePicker({
           >
             {node.name}
           </button>
-          {/* галочка рядом — дерево, раскрытое на этом разделе */}
+          {/* the caret next to it — the tree expanded at this section */}
           <button
             type="button"
             className={styles.crumbCaret}
@@ -119,7 +119,7 @@ export default function BasePicker({
           tabs={tabs}
           base={base}
           focus={focus}
-          // окно остаётся открытым — по дереву можно ходить сколько нужно
+          // the window stays open — you can browse the tree as long as you need
           onPick={onChange}
           onClose={() => setOpen(false)}
           onCreate={onCreate}

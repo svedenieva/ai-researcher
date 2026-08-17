@@ -15,25 +15,25 @@ interface Check {
 export default function Research() {
   const [prompt, setPrompt] = useState('');
   const [subtopics, setSubtopics] = useState<string[] | null>(null);
-  // откуда подтемы: 'claude' (реальная модель) или 'heuristic' (шаблон)
+  // where the subtopics come from: 'claude' (real model) or 'heuristic' (template)
   const [source, setSource] = useState<'claude' | 'heuristic' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // результаты сверки с каталогом, по индексу подтемы; null = ещё не сверяли / устарело
+  // catalog cross-check results, by subtopic index; null = not checked yet / stale
   const [checks, setChecks] = useState<Check[] | null>(null);
   const [checking, setChecking] = useState(false);
-  // какие подтемы берём в исследование (по индексу)
+  // which subtopics we take into the research (by index)
   const [selected, setSelected] = useState<boolean[]>([]);
   const [confirmed, setConfirmed] = useState(false);
-  // результат запуска исследования (Шаг 5)
+  // result of running the research (Step 5)
   const [report, setReport] = useState<Finding[] | null>(null);
-  // web — всё найдено в вебе, mixed — часть подтем упала на каталог, mock — ключа нет
+  // web — everything found on the web, mixed — some subtopics fell back to the catalog, mock — no key
   const [mode, setMode] = useState<string>("mock");
-  // почему веб-движок не отработал (кредиты, ключ, лимит) — показываем как есть
+  // why the web engine didn't run (credits, key, limit) — shown as-is
   const [reason, setReason] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
 
-  // ── сохранение отчёта в базу ──
+  // ── saving the report to a base ──
   const [saveMode, setSaveMode] = useState<'new' | 'existing'>('new');
   const [newName, setNewName] = useState('');
   const [targetBase, setTargetBase] = useState('');
@@ -164,13 +164,13 @@ export default function Research() {
       if (!res.ok) throw new Error(body?.error ?? 'Ошибка сверки');
       const results: Check[] = body.results ?? [];
       setChecks(results);
-      // Подсказка: «уже есть» снимаем (не дублируем), «новое» оставляем.
+      // Hint: uncheck "already exists" (don't duplicate), keep "new".
       const suggested = (subtopics ?? []).map(
         (s, i) => s.trim() !== '' && (results[i]?.count ?? 0) === 0,
       );
-      // ...но если по каталогу всё уже известно, авто-снятие обнулило бы выбор
-      // и «Далее →» осталась бы навсегда заблокированной без объяснения.
-      // Тогда оставляем всё отмеченным — решает человек, а не тупик.
+      // ...but if the catalog already knows everything, auto-unchecking would zero out the
+      // selection and "Next →" would stay permanently disabled with no explanation.
+      // In that case we leave everything checked — the human decides, not a dead end.
       const anyNew = suggested.some(Boolean);
       setSelected(anyNew ? suggested : (subtopics ?? []).map((s) => s.trim() !== ''));
     } catch (e) {
@@ -204,7 +204,7 @@ export default function Research() {
     }
   };
 
-  // любая правка списка делает прошлую сверку неактуальной
+  // any edit to the list makes the previous cross-check stale
   const editSub = (i: number, value: string) => {
     setSubtopics((prev) => prev!.map((s, j) => (j === i ? value : s)));
     setChecks(null);
@@ -500,7 +500,7 @@ export default function Research() {
                     <div className={styles.relevantRow}>
                       {f.relevant.map((c) =>
                         c.id.startsWith('web:') ? (
-                          // компании ещё нет в каталоге — ведём на её сайт
+                          // the company isn't in the catalog yet — link to its site
                           <a
                             key={c.id}
                             href={c.url ?? '#'}

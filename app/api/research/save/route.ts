@@ -23,7 +23,7 @@ export async function POST(request: Request): Promise<Response> {
     if (target?.mode === 'new') {
       const name = String(target?.name ?? '').trim();
       if (!name) return Response.json({ error: 'Нужно название базы' }, { status: 400 });
-      // новая база — приватная, владелец текущий пользователь
+      // new base — private, owned by the current user
       const base = await store.createBase({ name, columns: REPORT_COLUMNS, owner: me });
       const added = await store.addRecords(base.id, rows as unknown as Record<string, unknown>[]);
       return Response.json({ baseId: base.id, baseName: base.name, added, skipped: 0 });
@@ -33,15 +33,15 @@ export async function POST(request: Request): Promise<Response> {
       const baseId = String(target?.baseId ?? '');
       if (!baseId || BUILTIN_IDS.has(baseId)) return Response.json({ error: 'В эту базу нельзя сохранять' }, { status: 400 });
       let base = await store.getBase(baseId);
-      // сохранять можно только в доступную базу, не в чужую приватную
+      // saving is allowed only to an accessible base, not someone else's private one
       if (!base || !canAccessBase(base, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
 
-      // Сопоставляем REPORT_COLUMNS с колонками целевой базы. Базы, созданные
-      // нашим же save-роутом (mode: 'new'), несут английские ключи 1-в-1 —
-      // но базы, заведённые из приложения/MCP, получают ключ как слаг
-      // русской метки (label «Название» → key «название»). Ищем колонку по
-      // key ИЛИ по label (без учёта регистра); если нет — заводим её, чтобы
-      // ничего не терять и не писать в несуществующие поля.
+      // Map REPORT_COLUMNS onto the target base's columns. Bases created by our
+      // own save route (mode: 'new') carry English keys 1-to-1 — but bases
+      // created from the app/MCP get their key as a slug of the Russian label
+      // (label «Название» → key «название»). We look up a column by key OR by
+      // label (case-insensitively); if it's missing we create it, so nothing is
+      // lost and we don't write into non-existent fields.
       const keyMap: Record<string, string> = {};
       for (const rc of REPORT_COLUMNS) {
         let col = base.columns.find(

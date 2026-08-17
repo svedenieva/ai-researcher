@@ -145,7 +145,7 @@ describe('validateUpload', () => {
 
   it('rejects an empty upload', () => {
     expect(validateUpload([]).ok).toBe(false);
-    // папки без файлов тоже пусты
+    // folders without files are empty too
     expect(validateUpload([f('assets/')]).ok).toBe(false);
   });
 

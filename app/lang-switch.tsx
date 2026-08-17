@@ -4,7 +4,7 @@ import { LANGS, t } from '@/lib/i18n';
 import { useLang } from './lang-provider';
 import styles from './lang-switch.module.css';
 
-// Переключатель языка: сегментами УКР | РУС | ENG. Украинский — базовый.
+// Language switcher: segments УКР | РУС | ENG. Ukrainian is the default.
 export default function LangSwitch() {
   const { lang, setLang } = useLang();
   return (

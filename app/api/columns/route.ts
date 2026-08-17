@@ -3,9 +3,9 @@ import { BASES } from '@/lib/datasource/bases';
 import { currentEmail } from '@/lib/current-user';
 import type { ColumnPatch, NewColumn } from '@/lib/datasource/customStore';
 
-// Живое управление колонками пользовательской базы: добавить, переименовать,
-// сменить тип, удалить, переставить. Встроенные базы (срезы каталога) — только
-// для чтения, их структуру менять нельзя.
+// Live management of a custom base's columns: add, rename, change type,
+// delete, reorder. Built-in bases (catalog slices) are read-only — their
+// structure cannot be changed.
 const BUILTIN = new Set(BASES.map((b) => b.id));
 
 export async function POST(request: Request): Promise<Response> {
@@ -28,7 +28,7 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     const store = getCustomStore();
-    // менять структуру можно только у доступной базы, не у чужой приватной
+    // the structure can only be changed on an accessible base, not someone else's private one
     const target = await store.getBase(baseId);
     const me = await currentEmail();
     if (!target || !canAccessBase(target, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });

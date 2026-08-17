@@ -1,11 +1,11 @@
 import type { CatalogRecord } from './types';
 
-// Раздел каталога выводится из вертикали. Первый черновик разбивки —
-// поменять группировку можно здесь одной строкой (согласовать с Александром).
+// The catalog section is derived from the vertical. First draft of the split —
+// the grouping can be changed here in one line (coordinate with the boss).
 const SECTION_BY_VERTICAL: Record<string, string> = {
-  // IT — разработка / девтулзы
+  // IT — development / devtools
   coding: 'IT',
-  // AI — модели, агенты, генеративка, данные
+  // AI — models, agents, generative, data
   opensource: 'AI',
   video: 'AI',
   design: 'AI',
@@ -15,7 +15,7 @@ const SECTION_BY_VERTICAL: Record<string, string> = {
   'agent-observability': 'AI',
   'agent-infra': 'AI',
   'agent-orchestration': 'AI',
-  // WorkOS — автоматизация бизнес-процессов
+  // WorkOS — business-process automation
   support: 'WorkOS',
   marketing: 'WorkOS',
   sales: 'WorkOS',

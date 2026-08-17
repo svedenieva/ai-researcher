@@ -1,13 +1,13 @@
 import { getSiteStore, SitesNotSetUp } from '@/lib/sites/store';
 import { bodyFrom, contentTypeFor, isSafePath } from '@/lib/sites/site';
 
-// Живая отдача залитого сайта.
+// Live serving of an uploaded site.
 //
-// Ограничение, о котором нужно помнить: работают только ОТНОСИТЕЛЬНЫЕ пути.
-// Сайт лежит по адресу /s/<id>/…, поэтому <link href="/style.css"> уедет в
-// корень домена и не найдётся. HTML на лету не переписываем: разбор чужой
-// разметки регулярками ломается на первом же нестандартном атрибуте, а
-// требование «пути без ведущего слэша» проверяется один раз при сборке сайта.
+// A limitation to keep in mind: only RELATIVE paths work. The site lives at
+// /s/<id>/…, so <link href="/style.css"> goes to the domain root and won't be
+// found. We don't rewrite HTML on the fly: parsing someone else's markup with
+// regexes breaks on the first non-standard attribute, and the "paths without a
+// leading slash" requirement is checked once when the site is built.
 
 export const dynamic = 'force-dynamic';
 
@@ -30,10 +30,10 @@ export async function GET(
     const site = await store.get(id);
     if (!site) return notFound(`Сайт «${id}» не найден`);
 
-    // Голый /s/<id> уводим на стартовую страницу, а не отдаём её здесь же.
-    // Иначе относительный style.css из HTML разрешится в /s/style.css — на
-    // уровень выше сайта. Редирект именно на entry, а не на /s/<id>/: слэш в
-    // конце Next по умолчанию срезает сам, и получилась бы петля редиректов.
+    // A bare /s/<id> is redirected to the entry page rather than served here.
+    // Otherwise a relative style.css from the HTML would resolve to /s/style.css —
+    // one level above the site. We redirect to entry specifically, not to /s/<id>/:
+    // Next strips a trailing slash by default, which would cause a redirect loop.
     if (segments.length === 0) {
       const url = new URL(request.url);
       url.pathname = `/s/${encodeURIComponent(id)}/${site.entry.split('/').map(encodeURIComponent).join('/')}`;
@@ -49,9 +49,9 @@ export async function GET(
     return new Response(bodyFrom(bytes), {
       headers: {
         'Content-Type': contentTypeFor(rel),
-        // тип берём по расширению — пусть браузер не угадывает сам
+        // type is taken from the extension — don't let the browser guess it
         'X-Content-Type-Options': 'nosniff',
-        // сайт можно перезалить под тем же адресом, поэтому кэш только с проверкой
+        // a site can be re-uploaded at the same address, so cache only with revalidation
         'Cache-Control': 'private, no-cache',
       },
     });

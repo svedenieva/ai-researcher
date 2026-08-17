@@ -3,8 +3,8 @@ import { currentEmail } from '@/lib/current-user';
 
 export const dynamic = 'force-dynamic';
 
-// Корзина приватна: человек видит и чистит только доступные ему удалённые базы
-// и строки (свои / общие / ничейные), не чужие приватные.
+// The recycle bin is private: a person sees and empties only the deleted bases
+// and rows accessible to them (own / shared / ownerless), not others' private ones.
 async function accessibleBinFor(me: string | null) {
   const store = getCustomStore();
   const bin = await store.listBin();
@@ -31,7 +31,7 @@ export async function DELETE(request: Request): Promise<Response> {
   const { store, bases, records } = await accessibleBinFor(me);
   const scopeId = typeof body?.baseId === 'string' && body.baseId ? body.baseId : null;
 
-  // ограничиваем область только доступными пользователю id
+  // restrict the scope to only the ids accessible to the user
   const scopedBases = scopeId ? bases.filter((b) => b.id === scopeId) : bases;
   const scopedRecords = scopeId ? records.filter((r) => r.baseId === scopeId) : records;
   if (scopeId && !scopedBases.length && !scopedRecords.length) {
@@ -45,7 +45,7 @@ export async function DELETE(request: Request): Promise<Response> {
     });
   }
 
-  // чистим по каждому доступному id отдельно — чужие корзины не трогаем
+  // empty each accessible id separately — we don't touch other people's bins
   const ids = new Set<string>([...scopedBases.map((b) => b.id), ...scopedRecords.map((r) => r.baseId)]);
   let bCount = 0;
   let rCount = 0;

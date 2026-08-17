@@ -1,22 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 import type { ColumnDef, CatalogRecord } from './types';
 
-// Пользовательские базы (цель №1): логин → создать базу → задать колонки →
-// наполнять строками. Определения баз и их строки хранятся отдельно от каталога
-// продуктов. Два бэкенда с одинаковым интерфейсом:
-//   - Supabase (прод): таблицы `bases` и `base_records`;
-//   - in-memory (лок. разработка): живёт в процессе dev-сервера.
+// User bases (goal #1): log in → create a base → define columns → fill with rows.
+// Base definitions and their rows are stored separately from the product catalog.
+// Two backends with the same interface:
+//   - Supabase (prod): tables `bases` and `base_records`;
+//   - in-memory (local dev): lives in the dev-server process.
 
 export interface CustomBase {
   id: string;
   name: string;
   tone: 'sage' | 'teal' | 'blue' | 'amber';
   columns: ColumnDef[];
-  /** родитель в дереве баз (id базы) или null для верхнего уровня */
+  /** parent in the base tree (base id) or null for the top level */
   parent: string | null;
-  /** кто завёл базу; null — «ничейная» легаси/командная база, видна всем */
+  /** who created the base; null — an "ownerless" legacy/team base, visible to everyone */
   owner: string | null;
-  /** явно помеченная общей — видна всем, даже если у неё есть владелец */
+  /** explicitly marked shared — visible to everyone, even if it has an owner */
   shared: boolean;
 }
 
@@ -29,12 +29,12 @@ export interface NewBase {
   shared?: boolean;
 }
 
-// ── доступ к базе ──────────────────────────────────────────────────────────
-// Приватная модель: человек видит свои базы (owner===me), явно общие (shared) и
-// «ничейные» легаси-базы (owner===null) — это командная база знаний, общая для
-// всех. Новые базы всегда получают владельца, поэтому owner===null = ровно
-// прежние командные базы. Так изоляция работает БЕЗ миграции и без риска, что
-// у команды пропадёт база знаний.
+// ── base access ────────────────────────────────────────────────────────────
+// Private model: a person sees their own bases (owner===me), explicitly shared
+// ones (shared), and "ownerless" legacy bases (owner===null) — the shared team
+// knowledge base, common to everyone. New bases always get an owner, so
+// owner===null = exactly the former team bases. This way isolation works WITHOUT
+// a migration and with no risk of the team losing its knowledge base.
 export function canAccessBase(base: { owner: string | null; shared?: boolean }, me: string | null): boolean {
   return base.owner === null || base.shared === true || (me !== null && base.owner === me);
 }
@@ -45,10 +45,10 @@ export interface BinRecord { baseId: string; baseName: string; record: CatalogRe
 export interface BinContents { bases: CustomBase[]; records: BinRecord[] }
 
 export interface CustomStore {
-  /** базы, доступные пользователю me (свои + общие + ничейные). */
+  /** bases available to user me (own + shared + ownerless). */
   listBases(me: string | null): Promise<CustomBase[]>;
-  /** ВСЕ базы без фильтра доступа — только для служебных нужд (уникальность id,
-      обход дерева). Не отдавать напрямую в UI/MCP. */
+  /** ALL bases with no access filter — only for internal needs (id uniqueness,
+      tree traversal). Do not expose directly to the UI/MCP. */
   listAllBases(): Promise<CustomBase[]>;
   getBase(id: string): Promise<CustomBase | null>;
   createBase(def: NewBase): Promise<CustomBase>;
@@ -56,8 +56,8 @@ export interface CustomStore {
   addRecord(baseId: string, data: Record<string, unknown>): Promise<CatalogRecord>;
   addRecords(baseId: string, rows: Record<string, unknown>[]): Promise<number>;
   updateRecord(baseId: string, id: string, patch: Record<string, unknown>): Promise<CatalogRecord | null>;
-  /** ручной порядок строк: перечисленные id встают в заданном порядке.
-      Возвращает число переставленных строк. */
+  /** manual row order: the listed ids take the given order.
+      Returns the number of rows repositioned. */
   reorderRecords(baseId: string, orderedIds: string[]): Promise<number>;
   renameBase(id: string, name: string): Promise<CustomBase | null>;
   moveBase(id: string, parent: string | null): Promise<CustomBase | null>;
@@ -73,8 +73,8 @@ export interface CustomStore {
   reorderColumns(baseId: string, keys: string[]): Promise<CustomBase | null>;
 }
 
-// Порядок колонок по списку ключей: перечисленные встают в заданном порядке,
-// не упомянутые (на случай рассинхрона) сохраняются в конце в прежнем порядке.
+// Column order by a list of keys: the listed ones take the given order,
+// unmentioned ones (in case of desync) are kept at the end in their prior order.
 export function reorderByKeys(cols: ColumnDef[], keys: string[]): ColumnDef[] {
   const byKey = new Map(cols.map((c) => [c.key, c]));
   const out: ColumnDef[] = [];
@@ -86,8 +86,8 @@ export function reorderByKeys(cols: ColumnDef[], keys: string[]): ColumnDef[] {
   return out;
 }
 
-// новую колонку: label→key (стабильный), type по умолчанию text, filterable
-// не для url/long-text (как в create_base)
+// build a new column: label→key (stable), type defaults to text, filterable
+// not for url/long-text (as in create_base)
 export function normalizeNewColumn(col: NewColumn, existing: ColumnDef[]): ColumnDef {
   const label = String(col.label ?? '').trim();
   let key = label.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '_').replace(/(^_|_$)/g, '') || `col${existing.length}`;
@@ -96,8 +96,8 @@ export function normalizeNewColumn(col: NewColumn, existing: ColumnDef[]): Colum
   const type: ColumnDef['type'] = (['number', 'url', 'long-text', 'select'] as const).includes(col.type as never) ? col.type! : 'text';
   return { key, label, type, sortable: true, filterable: Boolean(col.filterable) && type !== 'long-text' && type !== 'url' };
 }
-// патч колонки: key НЕИЗМЕНЕН; label/type/filterable опционально; filterable
-// пересчитывается под новый тип
+// column patch: key UNCHANGED; label/type/filterable optional; filterable
+// recomputed for the new type
 export function applyColumnPatch(col: ColumnDef, patch: ColumnPatch): ColumnDef {
   const type = patch.type ?? col.type;
   const label = patch.label !== undefined ? String(patch.label).trim() || col.label : col.label;
@@ -107,7 +107,7 @@ export function applyColumnPatch(col: ColumnDef, patch: ColumnPatch): ColumnDef 
 
 const TONES: CustomBase['tone'][] = ['teal', 'blue', 'amber', 'sage'];
 
-// url-безопасный слаг из названия + короткий суффикс (уникальность)
+// url-safe slug from the name + a short suffix (uniqueness)
 function slugId(name: string, taken: Set<string>): string {
   const base =
     name
@@ -177,8 +177,8 @@ export class MemoryCustomStore implements CustomStore {
   async reorderRecords(baseId: string, orderedIds: string[]) {
     const bucket = this.rows[baseId];
     if (!bucket || !orderedIds.length) return 0;
-    // порядок массива и есть порядок выдачи (listRecords отдаёт как лежит):
-    // переставляем по рангу из списка, неупомянутые оседают в конце
+    // the array order is the output order (listRecords returns them as they lie):
+    // reorder by rank from the list, unmentioned ones settle at the end
     const rank = new Map(orderedIds.map((id, i) => [id, i]));
     bucket.sort((a, b) => (rank.get(String(a.id)) ?? 1e9) - (rank.get(String(b.id)) ?? 1e9));
     return orderedIds.filter((id) => bucket.some((r) => String(r.id) === id)).length;
@@ -241,8 +241,8 @@ class SupabaseCustomStore implements CustomStore {
   constructor(url: string, key: string) {
     this.client = createClient(url, key, { auth: { persistSession: false } });
   }
-  // select('*') терпимо к отсутствию колонки parent (до миграции) —
-  // читаем parent опционально
+  // select('*') tolerates a missing parent column (before the migration) —
+  // we read parent optionally
   private norm(row: Record<string, unknown>): CustomBase {
     return {
       id: String(row.id),
@@ -251,8 +251,8 @@ class SupabaseCustomStore implements CustomStore {
       columns: (row.columns as ColumnDef[]) ?? [],
       parent: (row.parent as string) ?? null,
       owner: (row.owner_email as string) ?? null,
-      // колонки shared может ещё не быть в живой БД — тогда undefined→false.
-      // Изоляция всё равно работает: owner===null (легаси/командные) видны всем.
+      // the shared column may not exist yet in the live DB — then undefined→false.
+      // Isolation still works: owner===null (legacy/team) are visible to everyone.
       shared: Boolean(row.shared),
     };
   }
@@ -314,20 +314,20 @@ class SupabaseCustomStore implements CustomStore {
     return data ? this.norm(data as Record<string, unknown>) : null;
   }
   async createBase(def: NewBase): Promise<CustomBase> {
-    // уникальность id — по ВСЕМ базам, не только доступным: id глобальны, два
-    // человека не должны получить одинаковый слаг
+    // id uniqueness — across ALL bases, not just the accessible ones: ids are
+    // global, two people must not get the same slug
     const existing = await this.listAllBases();
     const id = slugId(def.name, new Set(existing.map((b) => b.id)));
     const tone = def.tone ?? TONES[existing.length % TONES.length];
-    // parent включаем в insert только если задан — так создание базы на
-    // верхнем уровне работает даже до миграции колонки parent
+    // include parent in the insert only if set — so creating a base at the top
+    // level works even before the parent-column migration
     const row: Record<string, unknown> = { id, name: def.name, tone, columns: def.columns };
     if (def.parent) row.parent = def.parent;
     if (def.owner) row.owner_email = def.owner;
     if (def.shared) row.shared = true;
     let { error } = await this.client.from('bases').insert(row);
-    // колонок owner_email / shared может ещё не быть (миграция не накатана) —
-    // тогда убираем их и заводим базу без них, вместо того чтобы падать
+    // the owner_email / shared columns may not exist yet (migration not applied) —
+    // then we drop them and create the base without them instead of failing
     if (error && /owner_email|shared/.test(error.message)) {
       delete row.owner_email;
       delete row.shared;
@@ -347,23 +347,23 @@ class SupabaseCustomStore implements CustomStore {
         .order('created_at', { ascending: true }));
     }
     if (error) throw new Error(`Supabase (base_records): ${error.message}`);
-    // ручной порядок хранится в data.__pos (число). Схема без миграций —
-    // поэтому позиция живёт в том же jsonb, а не в отдельной колонке. Строки
-    // без __pos (ещё не переставляли) уходят в конец, сохраняя порядок по
-    // created_at: сортировка стабильная, а выборка уже упорядочена по нему.
+    // the manual order is stored in data.__pos (a number). The schema is
+    // migration-free — so the position lives in the same jsonb, not a separate
+    // column. Rows without __pos (never reordered) go to the end, keeping their
+    // created_at order: the sort is stable, and the query is already ordered by it.
     const rows = (data ?? []).map((r) => r as { id: string; data: Record<string, unknown> });
     const posOf = (d: Record<string, unknown>) =>
       typeof d.__pos === 'number' ? (d.__pos as number) : Number.MAX_SAFE_INTEGER;
     rows.sort((a, b) => posOf(a.data) - posOf(b.data));
     return rows.map(({ id, data: d }) => {
-      // __pos — служебное поле, наружу его не отдаём
+      // __pos is an internal field, we don't expose it outward
       const { __pos: _pos, ...rest } = d;
       return { id, ...rest } as CatalogRecord;
     });
   }
   async reorderRecords(baseId: string, orderedIds: string[]): Promise<number> {
     if (!orderedIds.length) return 0;
-    // читаем текущие строки (id + data), чтобы вписать __pos, не затерев поля
+    // read the current rows (id + data) so we can write __pos without wiping fields
     let { data, error } = await this.client
       .from('base_records').select('id, data').eq('base_id', baseId).is('deleted_at', null);
     if (error && /deleted_at/.test(error.message)) {
@@ -375,11 +375,11 @@ class SupabaseCustomStore implements CustomStore {
     for (const r of data ?? []) {
       const row = r as { id: string; data: Record<string, unknown> };
       const p = rank.get(String(row.id));
-      if (p === undefined) continue; // id не из этого списка — не трогаем
+      if (p === undefined) continue; // id not from this list — leave it alone
       payload.push({ id: row.id, base_id: baseId, data: { ...(row.data ?? {}), __pos: p } });
     }
     if (!payload.length) return 0;
-    // один upsert по id — переставляем всю базу за один запрос (базы небольшие)
+    // one upsert by id — reorder the whole base in a single request (bases are small)
     const { error: upErr } = await this.client.from('base_records').upsert(payload, { onConflict: 'id' });
     if (upErr) throw new Error(`Supabase (base_records): ${upErr.message}`);
     return payload.length;
@@ -437,7 +437,7 @@ class SupabaseCustomStore implements CustomStore {
     const { data: bd, error: be } = await this.client.from('bases').select('*').not('deleted_at', 'is', null);
     if (be) throw new Error(`Supabase (bases): ${be.message}`);
     const bases = (bd ?? []).map((r) => this.norm(r as Record<string, unknown>));
-    // имена всех баз (в т.ч. живых) — для подписи строк в корзине
+    // names of all bases (including live ones) — for labeling rows in the bin
     const { data: allBases } = await this.client.from('bases').select('id, name');
     const nameById = new Map((allBases ?? []).map((b) => [String((b as { id: string }).id), String((b as { name: string }).name)]));
     const { data: rd, error: re } = await this.client.from('base_records').select('id, base_id, data').not('deleted_at', 'is', null);
@@ -449,12 +449,12 @@ class SupabaseCustomStore implements CustomStore {
     return { bases, records };
   }
   async emptyBin(scope?: { baseId?: string }): Promise<{ bases: number; records: number }> {
-    // строки: удаляем помеченные (по base_id, если задан scope)
+    // rows: delete the flagged ones (by base_id if a scope is set)
     let recDel = this.client.from('base_records').delete({ count: 'exact' }).not('deleted_at', 'is', null);
     if (scope?.baseId) recDel = recDel.eq('base_id', scope.baseId);
     const { count: recCount, error: re } = await recDel;
     if (re) throw new Error(`Supabase (base_records): ${re.message}`);
-    // базы: удаляем помеченные; сначала их строки целиком (FK), затем сами базы
+    // bases: delete the flagged ones; first their rows entirely (FK), then the bases themselves
     let bases = 0;
     let binnedBaseQ = this.client.from('bases').select('id').not('deleted_at', 'is', null);
     if (scope?.baseId) binnedBaseQ = binnedBaseQ.eq('id', scope.baseId);
@@ -462,7 +462,7 @@ class SupabaseCustomStore implements CustomStore {
     if (bqe) throw new Error(`Supabase (bases): ${bqe.message}`);
     for (const b of binnedBases ?? []) {
       const id = String((b as { id: string }).id);
-      const { error: ce } = await this.client.from('base_records').delete().eq('base_id', id); // включая живые строки удаляемой базы
+      const { error: ce } = await this.client.from('base_records').delete().eq('base_id', id); // including the live rows of the base being deleted
       if (ce) throw new Error(`Supabase (base_records): ${ce.message}`);
       const { error: de } = await this.client.from('bases').delete().eq('id', id);
       if (de) throw new Error(`Supabase (bases): ${de.message}`);
@@ -486,20 +486,20 @@ class SupabaseCustomStore implements CustomStore {
     const base = await this.getBase(baseId); if (!base) return null;
     const before = base.columns.find((c) => c.key === key);
     const result = await this.writeColumns(baseId, base.columns.map((c) => c.key === key ? applyColumnPatch(c, patch) : c));
-    // Смена типа на число — приводим уже записанные значения: разбираемые
-    // строки становятся числами (чтобы сортировка и итоги работали), а те, что
-    // числом не станут, остаются как есть. Данные не теряем — в отличие от
-    // Airtable (text→attachment очищает); честность про потери держит UI,
-    // предупреждая заранее, сколько значений не подойдёт.
+    // Switching the type to number — coerce the already-stored values: parseable
+    // strings become numbers (so sorting and totals work), while those that won't
+    // become numbers are left as-is. We don't lose data — unlike Airtable
+    // (text→attachment clears it); the UI keeps honesty about the losses by warning
+    // in advance how many values won't fit.
     if (patch.type === 'number' && before && before.type !== 'number') {
       await this.coerceColumnToNumber(baseId, key);
     }
     return result;
   }
-  // проходим строки базы и переписываем значение колонки в число, где выходит
+  // walk the base's rows and rewrite the column's value to a number where possible
   private async coerceColumnToNumber(baseId: string, key: string): Promise<void> {
-    // как в listBases: пробуем с фильтром корзины, а если колонки deleted_at
-    // ещё нет в базе (миграция не прогнана) — берём все строки
+    // as in listBases: try with the bin filter, and if the deleted_at column
+    // isn't in the DB yet (migration not run) — take all rows
     let { data, error } = await this.client
       .from('base_records').select('id, data').eq('base_id', baseId).is('deleted_at', null);
     if (error && /deleted_at/.test(error.message)) {
@@ -527,10 +527,10 @@ class SupabaseCustomStore implements CustomStore {
   }
 }
 
-// один экземпляр на процесс. Держим его на globalThis: в dev каждый роут
-// собирается в свой бандл со своим модульным состоянием, поэтому обычная
-// модульная переменная не шарится между /api/bases и /api/records — и
-// in-memory база «пропадает». globalThis общий на процесс и это чинит.
+// one instance per process. We keep it on globalThis: in dev each route is built
+// into its own bundle with its own module state, so an ordinary module variable
+// isn't shared between /api/bases and /api/records — and the in-memory base
+// "disappears". globalThis is shared across the process and fixes this.
 const g = globalThis as typeof globalThis & { __customStore?: CustomStore };
 
 export function getCustomStore(): CustomStore {

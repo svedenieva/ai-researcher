@@ -1,8 +1,8 @@
 import { getSiteStore, SitesNotSetUp } from '@/lib/sites/store';
 import { contentTypeFor, isSafePath, MAX_FILE_BYTES } from '@/lib/sites/site';
 
-// Один файл за запрос. Пачкой нельзя: serverless-запрос на Vercel не принимает
-// тело больше ~4,5 МБ, а сайт с картинками легко перевалит за это одним куском.
+// One file per request. No batching: a serverless request on Vercel won't accept
+// a body larger than ~4.5 MB, and a site with images easily exceeds that in one chunk.
 export async function POST(
   request: Request,
   ctx: { params: Promise<{ id: string }> },
@@ -21,7 +21,7 @@ export async function POST(
   if (!path || !(file instanceof Blob)) {
     return Response.json({ error: 'Нужны поля path и file' }, { status: 400 });
   }
-  // ключ склеивается как <id>/<path> — '..' увёл бы запись в чужой сайт
+  // the key is joined as <id>/<path> — '..' would divert the write into another site
   if (!isSafePath(path)) return Response.json({ error: `Недопустимый путь: «${path}»` }, { status: 400 });
   if (file.size > MAX_FILE_BYTES) {
     return Response.json({ error: `Файл «${path}» больше 10 МБ` }, { status: 400 });
@@ -29,7 +29,7 @@ export async function POST(
 
   try {
     const store = getSiteStore();
-    // без записи в таблице файл повис бы в хранилище ничьим
+    // without a row in the table the file would hang in storage owned by no one
     if (!(await store.get(id))) return Response.json({ error: 'Сайт не найден' }, { status: 404 });
     const bytes = new Uint8Array(await file.arrayBuffer());
     await store.putFile(id, path, bytes, contentTypeFor(path));

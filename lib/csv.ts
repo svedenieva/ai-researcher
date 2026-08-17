@@ -1,24 +1,24 @@
 import type { ColumnDef } from './datasource/types';
 
-// Выгрузка в CSV строго по RFC 4180 (https://www.rfc-editor.org/rfc/rfc4180).
-// Семь правил спецификации, дословно:
-//   1. записи разделяются переводом строки CRLF;
-//   2. у последней записи перевод строки необязателен;
-//   3. первая строка — заголовки, того же формата, что записи;
-//   4. поля внутри записи разделяются запятыми;
-//   5. поле может быть в двойных кавычках, а может и не быть;
-//   6. поле с переводом строки, кавычкой или запятой ДОЛЖНО быть в кавычках;
-//   7. кавычка внутри поля удваивается.
+// CSV export strictly per RFC 4180 (https://www.rfc-editor.org/rfc/rfc4180).
+// The seven rules of the spec, verbatim:
+//   1. records are separated by a CRLF line break;
+//   2. the last record's line break is optional;
+//   3. the first line is the header, in the same format as the records;
+//   4. fields within a record are separated by commas;
+//   5. a field may or may not be wrapped in double quotes;
+//   6. a field containing a line break, quote, or comma MUST be quoted;
+//   7. a quote inside a field is doubled.
 //
-// Чего CSV не переносит — и это не наш недочёт, а свойство формата, одинаковое
-// у всех семи разобранных систем: типы колонок, связи, вычисляемые значения,
-// оформление. Excel про это пишет прямо: «All formatting, graphics, objects,
-// and other worksheet contents are lost». Поэтому CSV у нас — канал обмена
-// значениями, а не формат хранения базы.
+// What CSV cannot carry — and this is not our shortcoming but a property of the
+// format, the same across all seven systems we surveyed: column types, relations,
+// computed values, formatting. Excel says so plainly: «All formatting, graphics,
+// objects, and other worksheet contents are lost». So for us CSV is a channel for
+// exchanging values, not a storage format for the base.
 
 const NEEDS_QUOTES = /[",\r\n]/;
 
-/** Одно поле по правилам 5–7. */
+/** A single field per rules 5–7. */
 export function csvField(value: unknown): string {
   if (value === null || value === undefined) return '';
   const s = String(value);
@@ -32,9 +32,9 @@ export interface CsvTable {
 }
 
 /**
- * Собирает CSV. Разделитель записей — CRLF (правило 1); завершающего перевода
- * строки нет (правило 2 разрешает обойтись без него, а лишняя пустая строка
- * в конце сбивает часть импортёров).
+ * Assembles the CSV. Records are separated by CRLF (rule 1); there is no
+ * trailing line break (rule 2 allows omitting it, and an extra empty line at
+ * the end trips up some importers).
  */
 export function toCsv(table: CsvTable): string {
   const lines = [table.headers.map(csvField).join(',')];
@@ -42,22 +42,22 @@ export function toCsv(table: CsvTable): string {
   return lines.join('\r\n');
 }
 
-// Excel открывает UTF-8 без BOM в системной кодировке и превращает кириллицу
-// в кракозябры. RFC про кодировку не говорит ничего, так что BOM — осознанное
-// дополнение к спецификации ради того, чтобы файл открывался двойным кликом.
+// Excel opens UTF-8 without a BOM in the system encoding and turns Cyrillic into
+// mojibake. The RFC says nothing about encoding, so the BOM is a deliberate
+// addition to the spec so the file opens with a double-click.
 export const UTF8_BOM = '\ufeff';
 
-/** Таблица → байты файла, готовые к отдаче. */
+/** Table → file bytes, ready to serve. */
 export function csvBytes(table: CsvTable, withBom = true): Uint8Array {
   return new TextEncoder().encode((withBom ? UTF8_BOM : '') + toCsv(table));
 }
 
-// Response по типам не принимает Uint8Array — отдаём буфер ровно по длине.
+// Response doesn't accept a Uint8Array by type — return a buffer of the exact length.
 export function csvBody(table: CsvTable, withBom = true): ArrayBuffer {
   return csvBytes(table, withBom).slice().buffer as ArrayBuffer;
 }
 
-/** Значения записи в порядке колонок; для отсутствующих полей — пусто. */
+/** Record values in column order; empty for missing fields. */
 export function rowsFor(
   columns: Pick<ColumnDef, 'key'>[],
   records: Array<Record<string, unknown>>,
@@ -65,8 +65,8 @@ export function rowsFor(
   return records.map((r) => columns.map((c) => r[c.key] ?? ''));
 }
 
-// Имя файла в заголовке Content-Disposition. Кириллицу голой в заголовок класть
-// нельзя, поэтому ascii-запаска + filename* с процентным кодированием (RFC 5987).
+// File name in the Content-Disposition header. Cyrillic can't go into a header
+// bare, so an ascii fallback + filename* with percent-encoding (RFC 5987).
 export function attachmentHeader(name: string): string {
   const ascii = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
   return `attachment; filename="${ascii}.csv"; filename*=UTF-8''${encodeURIComponent(name)}.csv`;
