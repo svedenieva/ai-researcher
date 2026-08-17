@@ -1,7 +1,7 @@
 import type { CatalogRecord } from './types';
 
 // The catalog section is derived from the vertical. First draft of the split —
-// the grouping can be changed here in one line (coordinate with the boss).
+// the grouping can be changed here in one line.
 const SECTION_BY_VERTICAL: Record<string, string> = {
   // IT — development / devtools
   coding: 'IT',

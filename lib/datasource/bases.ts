@@ -1,6 +1,6 @@
 // Registry of "knowledge bases". For now each base is a slice of the shared product
 // catalog by section. «Рынок AI» is the whole catalog; the other three fix a
-// section. This gives the multi-base and 4 separate sections the boss asked for,
+// section. This gives the multi-base layout and 4 separate sections,
 // without breaking the current data. The next step (goal #1) — bases with their own
 // table and their own columns, created from the UI; the structure is ready for it.
 
