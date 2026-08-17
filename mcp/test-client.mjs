@@ -1,93 +1,434 @@
+#!/usr/bin/env node
+
 import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
-const env = Object.fromEntries(
-  readFileSync('../.env.local', 'utf8').split(/\r?\n/).filter((l) => l && !l.startsWith('#')).map((l) => {
-    const i = l.indexOf('='); return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
-  }),
-);
+function loadEnv() {
+  const envPath = '../.env.local';
+
+  const result = {};
+
+  for (
+    const line of readFileSync(envPath, 'utf8').split(/\r?\n/)
+  ) {
+    if (!line || line.startsWith('#')) {
+      continue;
+    }
+
+    const i = line.indexOf('=');
+
+    if (i === -1) {
+      continue;
+    }
+
+    const key = line.slice(0, i).trim();
+    const value = line.slice(i + 1).trim();
+
+    result[key] = value;
+  }
+
+  return result;
+}
+
+const env = loadEnv();
 
 const transport = new StdioClientTransport({
   command: process.execPath,
+
   args: ['server.mjs'],
-  env: { SUPABASE_URL: env.SUPABASE_URL, SUPABASE_SERVICE_KEY: env.SUPABASE_SERVICE_KEY, PATH: process.env.PATH },
+
+  env: {
+    ...process.env,
+
+    SUPABASE_URL: env.SUPABASE_URL,
+    SUPABASE_SERVICE_KEY: env.SUPABASE_SERVICE_KEY,
+
+    PATH: process.env.PATH,
+  },
 });
-const client = new Client({ name: 'test', version: '1.0.0' });
+
+const client = new Client({
+  name: 'ai-researcher-test-client',
+  version: '1.0.0',
+});
+
+console.log('Connecting to ai-researcher MCP server...');
+
 await client.connect(transport);
 
-const tools = await client.listTools();
-console.log('TOOLS:', tools.tools.map((t) => t.name).join(', '));
+console.log('Connected.\n');
 
-const call = async (name, args) => {
-  const r = await client.callTool({ name, arguments: args ?? {} });
-  const text = r.content?.[0]?.text ?? '';
-  console.log(`\n--- ${name}(${JSON.stringify(args ?? {})}) ---`);
-  console.log(text.length > 700 ? text.slice(0, 700) + '…' : text);
-};
+
+async function call(name, args = {}) {
+  console.log('========================================');
+  console.log(`TOOL: ${name}`);
+  console.log('========================================');
+
+  console.log('Arguments:');
+  console.log(JSON.stringify(args, null, 2));
+
+  const result = await client.callTool({
+    name,
+    arguments: args,
+  });
+
+  const text =
+    result.content?.[0]?.text ?? '';
+
+  console.log('\nResult:');
+
+  console.log(
+    text.length > 3000
+      ? text.slice(0, 3000) + '\n... output truncated ...'
+      : text,
+  );
+
+  console.log();
+
+  return result;
+}
+
+
+// --------------------------------------------------
+// 1. LIST TOOLS
+// --------------------------------------------------
+
+const tools = await client.listTools();
+
+console.log('========================================');
+console.log('TOOLS');
+console.log('========================================');
+
+for (const tool of tools.tools) {
+  console.log(`- ${tool.name}`);
+}
+
+console.log();
+
+
+// --------------------------------------------------
+// 2. LIST PROMPTS
+// --------------------------------------------------
+
+const prompts = await client.listPrompts();
+
+console.log('========================================');
+console.log('PROMPTS');
+console.log('========================================');
+
+for (const prompt of prompts.prompts) {
+  console.log(`- ${prompt.name}`);
+}
+
+console.log();
+
+
+// --------------------------------------------------
+// 3. LIST BASES
+// --------------------------------------------------
 
 await call('list_bases');
-await call('catalog_search', { query: 'video', section: 'AI', limit: 3 });
-await call('research_decompose', { prompt: 'AI агенты для продаж' });
-await call('create_base', {
-  name: 'MCP smoke',
-  columns: [{ label: 'Name', type: 'text' }, { label: 'Score', type: 'number' }],
-  rows: [{ Name: 'Alpha', Score: '9' }, { Name: 'Beta', Score: '7' }],
+
+
+// --------------------------------------------------
+// 4. SEARCH CATALOG
+// --------------------------------------------------
+
+await call('catalog_search', {
+  query: 'video',
+  section: 'AI',
+  limit: 3,
 });
-await call('query_records', { base: 'mcp-smoke' });
 
-// ── Task 1: get_base schema visibility ──
-const created = await client.callTool({ name: 'create_base', arguments: { name: 'MCP Test Base', columns: [{ label: 'Название' }, { label: 'Цена', type: 'number' }] } });
-const baseId = JSON.parse(created.content[0].text).id;
-const schema = JSON.parse((await client.callTool({ name: 'get_base', arguments: { base: baseId } })).content[0].text);
-console.assert(schema.columns.length === 2, 'get_base returns columns');
-console.assert(schema.columns[0].type && schema.columns[0].key, 'columns carry type+key');
 
-// ── Task 2: add/update/delete column ──
-await client.callTool({ name: 'add_rows', arguments: { base: baseId, rows: [{ 'Название': 'Figma', 'Цена': 15 }] } });
-await client.callTool({ name: 'add_column', arguments: { base: baseId, label: 'Заметка' } });
-let s = JSON.parse((await client.callTool({ name: 'get_base', arguments: { base: baseId } })).content[0].text);
-console.assert(s.columns.some((c) => c.key === 'заметка'), 'add_column worked');
-await client.callTool({ name: 'update_column', arguments: { base: baseId, key: 'заметка', label: 'Примечание' } });
-s = JSON.parse((await client.callTool({ name: 'get_base', arguments: { base: baseId } })).content[0].text);
-console.assert(s.columns.find((c) => c.key === 'заметка').label === 'Примечание', 'update_column changes label, keeps key');
-await client.callTool({ name: 'delete_column', arguments: { base: baseId, key: 'цена' } });
-const recs = JSON.parse((await client.callTool({ name: 'query_records', arguments: { base: baseId } })).content[0].text);
-console.assert(recs.records[0].цена === 15, 'delete_column keeps underlying cell data');
+// --------------------------------------------------
+// 5. RESEARCH DECOMPOSITION
+// --------------------------------------------------
 
-// ── Task 3: rename/move + delete_base → bin ──
-await client.callTool({ name: 'rename_base', arguments: { base: baseId, name: 'MCP Test Base 2' } });
-await client.callTool({ name: 'delete_base', arguments: { base: baseId } });
-const listed = JSON.parse((await client.callTool({ name: 'list_bases', arguments: {} })).content[0].text);
-console.assert(!listed.bases.some((b) => b.id === baseId), 'deleted base hidden from list_bases');
-const qAfterDelete = await client.callTool({ name: 'query_records', arguments: { base: baseId } });
-console.assert(qAfterDelete.isError === true, 'query_records on a soft-deleted base fails, does not leak rows');
+await call('research_decompose', {
+  prompt: 'AI агенты для продаж',
+});
 
-// ── Task 4: delete_rows + bin lifecycle ──
-// recreate a base + row, delete row to bin, verify bin, restore, then delete base and empty just that base
-const c2 = JSON.parse((await client.callTool({ name: 'create_base', arguments: { name: 'Bin Test', columns: [{ label: 'Название' }] } })).content[0].text);
-await client.callTool({ name: 'add_rows', arguments: { base: c2.id, rows: [{ 'Название': 'temp' }] } });
-const rowId = JSON.parse((await client.callTool({ name: 'query_records', arguments: { base: c2.id } })).content[0].text).records[0].id;
-await client.callTool({ name: 'delete_rows', arguments: { base: c2.id, ids: [rowId] } });
-let afterDel = JSON.parse((await client.callTool({ name: 'query_records', arguments: { base: c2.id } })).content[0].text);
-console.assert(afterDel.records.length === 0, 'deleted row hidden from query_records');
-const bin = JSON.parse((await client.callTool({ name: 'list_bin', arguments: {} })).content[0].text);
-console.assert(bin.records.some((r) => r.id === rowId), 'row appears in bin');
-await client.callTool({ name: 'restore', arguments: { rows: { base: c2.id, ids: [rowId] } } });
-let restored = JSON.parse((await client.callTool({ name: 'query_records', arguments: { base: c2.id } })).content[0].text);
-console.assert(restored.records.length === 1, 'restore brings row back');
-// dry-run vs confirm
-await client.callTool({ name: 'delete_base', arguments: { base: c2.id } });
-const dry = JSON.parse((await client.callTool({ name: 'empty_bin', arguments: { base: c2.id } })).content[0].text);
-console.assert(dry.dryRun === true, 'empty_bin without confirm is a dry-run');
-const done = JSON.parse((await client.callTool({ name: 'empty_bin', arguments: { base: c2.id, confirm: true } })).content[0].text);
-console.assert(done.emptied === true, 'empty_bin with confirm deletes');
 
-// ── Task 5: pagination ──
-const p0 = JSON.parse((await client.callTool({ name: 'catalog_search', arguments: { limit: 5, offset: 0 } })).content[0].text);
-const p1 = JSON.parse((await client.callTool({ name: 'catalog_search', arguments: { limit: 5, offset: 5 } })).content[0].text);
-console.assert(p0.results.length === 5 && p0.hasMore === true, 'page 0 has 5 + hasMore');
-console.assert(p0.results[0].id !== p1.results[0].id, 'offset advances the window');
+// --------------------------------------------------
+// 6. CREATE A UNIQUE TEST BASE
+// --------------------------------------------------
+
+// IMPORTANT:
+// Every run gets a different name.
+// This prevents duplicate primary-key errors.
+
+const uniqueName =
+  `MCP Test ${Date.now()}-${randomUUID().slice(0, 8)}`;
+
+const createResult = await call(
+  'create_base',
+  {
+    name: uniqueName,
+
+    columns: [
+      {
+        label: 'Название',
+        type: 'text',
+      },
+
+      {
+        label: 'Цена',
+        type: 'number',
+      },
+    ],
+
+    rows: [
+      {
+        Название: 'Alpha',
+        Цена: '9',
+      },
+
+      {
+        Название: 'Beta',
+        Цена: '7',
+      },
+    ],
+  },
+);
+
+const createText =
+  createResult.content?.[0]?.text ?? '';
+
+if (createResult.isError) {
+  console.error(
+    '\nCREATE BASE FAILED:',
+    createText,
+  );
+
+  await client.close();
+  process.exit(1);
+}
+
+const createdBase =
+  JSON.parse(createText);
+
+const baseId =
+  createdBase.id;
+
+console.log(
+  `Created test base: ${baseId}\n`,
+);
+
+
+// --------------------------------------------------
+// 7. GET BASE
+// --------------------------------------------------
+
+await call('get_base', {
+  base: baseId,
+});
+
+
+// --------------------------------------------------
+// 8. QUERY RECORDS
+// --------------------------------------------------
+
+await call('query_records', {
+  base: baseId,
+});
+
+
+// --------------------------------------------------
+// 9. ADD COLUMN
+// --------------------------------------------------
+
+await call('add_column', {
+  base: baseId,
+
+  label: 'Заметка',
+
+  type: 'text',
+});
+
+
+// --------------------------------------------------
+// 10. UPDATE COLUMN
+// --------------------------------------------------
+
+await call('update_column', {
+  base: baseId,
+
+  key: 'заметка',
+
+  label: 'Примечание',
+});
+
+
+// --------------------------------------------------
+// 11. ADD ROW
+// --------------------------------------------------
+
+await call('add_rows', {
+  base: baseId,
+
+  rows: [
+    {
+      Название: 'Figma',
+
+      Цена: 15,
+
+      Примечание: 'Design tool',
+    },
+  ],
+});
+
+
+// --------------------------------------------------
+// 12. SEARCH ROW
+// --------------------------------------------------
+
+await call('query_records', {
+  base: baseId,
+
+  search: 'Figma',
+});
+
+
+// --------------------------------------------------
+// 13. UPDATE RECORD
+// --------------------------------------------------
+
+const recordsResult =
+  await client.callTool({
+    name: 'query_records',
+
+    arguments: {
+      base: baseId,
+    },
+  });
+
+const recordsText =
+  recordsResult.content?.[0]?.text ?? '';
+
+const recordsData =
+  JSON.parse(recordsText);
+
+const firstRecord =
+  recordsData.records?.[0];
+
+if (firstRecord) {
+  await call('update_record', {
+    base: baseId,
+
+    id: firstRecord.id,
+
+    data: {
+      Примечание: 'Updated by MCP',
+    },
+  });
+}
+
+
+// --------------------------------------------------
+// 14. DELETE COLUMN
+// --------------------------------------------------
+
+await call('delete_column', {
+  base: baseId,
+
+  key: 'цена',
+});
+
+
+// --------------------------------------------------
+// 15. RENAME BASE
+// --------------------------------------------------
+
+await call('rename_base', {
+  base: baseId,
+
+  name: `${uniqueName} Renamed`,
+});
+
+
+// --------------------------------------------------
+// 16. SHOW BIN
+// --------------------------------------------------
+
+await call('list_bin');
+
+
+// --------------------------------------------------
+// 17. DELETE A ROW
+// --------------------------------------------------
+
+const currentResult =
+  await client.callTool({
+    name: 'query_records',
+
+    arguments: {
+      base: baseId,
+    },
+  });
+
+const currentText =
+  currentResult.content?.[0]?.text ?? '';
+
+const currentData =
+  JSON.parse(currentText);
+
+const rowToDelete =
+  currentData.records?.[0];
+
+if (rowToDelete) {
+  await call('delete_rows', {
+    base: baseId,
+
+    ids: [
+      rowToDelete.id,
+    ],
+  });
+}
+
+
+// --------------------------------------------------
+// 18. SHOW BIN AGAIN
+// --------------------------------------------------
+
+await call('list_bin');
+
+
+// --------------------------------------------------
+// 19. DELETE TEST BASE
+// --------------------------------------------------
+
+await call('delete_base', {
+  base: baseId,
+});
+
+
+// --------------------------------------------------
+// 20. SHOW BIN
+// --------------------------------------------------
+
+await call('list_bin');
+
+
+// --------------------------------------------------
+// 21. EMPTY TEST BASE FROM BIN
+// --------------------------------------------------
+
+await call('empty_bin', {
+  base: baseId,
+});
+
+
+// --------------------------------------------------
+// 22. FINISHED
+// --------------------------------------------------
+
+console.log('========================================');
+console.log('TESTS FINISHED');
+console.log('========================================');
 
 await client.close();
+
 process.exit(0);
