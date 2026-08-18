@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { BaseTab } from './base-picker';
+import { toneColor } from '@/lib/tone';
 import styles from './base-tree.module.css';
 
 interface TreeNode extends BaseTab {
@@ -9,14 +10,6 @@ interface TreeNode extends BaseTab {
 }
 
 const BUILTIN_ORDER = ['ai', 'it', 'workforce', 'market'];
-
-// the base's tone (teal/blue/amber/sage) → its marker class in the tree
-const TONE_CLASS: Record<string, string> = {
-  sage: styles.toneSage,
-  teal: styles.toneTeal,
-  blue: styles.toneBlue,
-  amber: styles.toneAmber,
-};
 
 function buildTree(tabs: BaseTab[]) {
   const byId = new Map<string, TreeNode>(tabs.map((t) => [t.id, { ...t, children: [] }]));
@@ -129,6 +122,7 @@ export default function BaseTree({
           <button
             type="button"
             className={`${styles.node} ${node.id === base ? styles.nodeActive : ''}`}
+            style={{ ['--tone']: toneColor(node.tone) } as CSSProperties}
             // like a file explorer: clicking a branch both loads its table and expands
             // it further in; the window stays open the whole time
             onClick={() => {
@@ -136,7 +130,7 @@ export default function BaseTree({
               if (hasKids && !expanded.has(node.id)) toggle(node.id);
             }}
           >
-            <span className={`${styles.tone} ${TONE_CLASS[node.tone] ?? styles.toneSage}`} aria-hidden="true" />
+            <span className={styles.tone} aria-hidden="true" />
             <span className={styles.icon} aria-hidden="true">{hasKids ? '📁' : '📄'}</span>
             <span className={styles.name}>{node.name}</span>
             {node.builtin && <span className={styles.tag}>встроенная</span>}

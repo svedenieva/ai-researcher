@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import BaseTree from './base-tree';
 import { useLang } from './lang-provider';
 import { t, tGoTo, tShowInside } from '@/lib/i18n';
+import { toneColor } from '@/lib/tone';
 import styles from './base-picker.module.css';
 
 export interface BaseTab {
@@ -95,6 +96,7 @@ export default function BasePicker({
             onClick={() => onChange(node.id)}
             title={tGoTo(lang, node.name)}
           >
+            <span className={styles.crumbDot} style={{ background: toneColor(node.tone) }} aria-hidden="true" />
             {node.name}
           </button>
           {/* the caret next to it — the tree expanded at this section */}

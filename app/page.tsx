@@ -13,6 +13,7 @@ import CreateBase from './create-base';
 import BasePicker from './base-picker';
 import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
+import { toneColor } from '@/lib/tone';
 import styles from './page.module.css';
 
 const DEFAULT_SORT = { key: 'pop', dir: 'asc' as const };
@@ -312,6 +313,7 @@ export default function Home() {
         <div className={styles.headerActions}>
           {/* name of the selected base — on the right */}
           <span className={styles.currentBase}>
+            <span className={styles.currentDot} style={{ background: toneColor(tabs.find((t) => t.id === base)?.tone) }} aria-hidden="true" />
             {tabs.find((t) => t.id === base)?.name ?? ''}
             {!loading && <span className={styles.currentCount}>{records.length}</span>}
           </span>

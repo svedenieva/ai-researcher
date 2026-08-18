@@ -279,6 +279,13 @@
   white-space: nowrap;
 }
 
+.currentDot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
 .currentCount {
   font-family: var(--font-mono), monospace;
   font-size: 11px;

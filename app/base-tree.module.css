@@ -79,21 +79,17 @@
 .nodeActive {
   background: var(--wash);
   font-weight: 600;
-  box-shadow: inset 2px 0 0 var(--sage);
+  box-shadow: inset 2px 0 0 var(--tone, var(--sage));
 }
 
-/* branch colour marker — the base's tone as a small dot before the icon */
+/* branch colour marker — the base's tone (--tone, set inline) as a small dot */
 .tone {
   flex: none;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--tone-sage);
+  background: var(--tone, var(--tone-sage));
 }
-.toneSage { background: var(--tone-sage); }
-.toneTeal { background: var(--tone-teal); }
-.toneBlue { background: var(--tone-blue); }
-.toneAmber { background: var(--tone-amber); }
 
 .icon { font-size: 13px; flex: none; }
 
