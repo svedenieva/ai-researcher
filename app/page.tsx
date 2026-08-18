@@ -297,6 +297,7 @@ export default function Home() {
       <header className={styles.header}>
         <div className={styles.brand}>
           <span className={styles.mark} aria-hidden="true">AiR</span>
+          <span className={styles.mark} aria-hidden="true">AiS</span>
         </div>
 
         <BasePicker
