@@ -306,6 +306,7 @@ export default function Home() {
           onChange={onBaseChange}
           onCreate={() => setCreating(true)}
           onMutated={loadBases}
+          rootLabel={tr(lang, 'rootFolder')}
         />
 
         <div className={styles.headerActions}>

@@ -29,6 +29,7 @@ const UI = {
   // base-picker.tsx
   pathAria: { uk: 'Шлях до бази', ru: 'Путь к базе', en: 'Base path' },
   chooseBase: { uk: 'Обрати базу даних', ru: 'Выбрать базу данных', en: 'Choose a database' },
+  rootFolder: { uk: 'Папка', ru: 'Папка', en: 'Folder' },
 
   // create-base.tsx
   newBase: { uk: 'Нова база', ru: 'Новая база', en: 'New base' },
