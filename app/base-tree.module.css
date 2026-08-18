@@ -82,6 +82,19 @@
   box-shadow: inset 2px 0 0 var(--sage);
 }
 
+/* branch colour marker — the base's tone as a small dot before the icon */
+.tone {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tone-sage);
+}
+.toneSage { background: var(--tone-sage); }
+.toneTeal { background: var(--tone-teal); }
+.toneBlue { background: var(--tone-blue); }
+.toneAmber { background: var(--tone-amber); }
+
 .icon { font-size: 13px; flex: none; }
 
 .name {

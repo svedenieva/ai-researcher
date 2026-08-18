@@ -10,6 +10,14 @@ interface TreeNode extends BaseTab {
 
 const BUILTIN_ORDER = ['ai', 'it', 'workforce', 'market'];
 
+// the base's tone (teal/blue/amber/sage) → its marker class in the tree
+const TONE_CLASS: Record<string, string> = {
+  sage: styles.toneSage,
+  teal: styles.toneTeal,
+  blue: styles.toneBlue,
+  amber: styles.toneAmber,
+};
+
 function buildTree(tabs: BaseTab[]) {
   const byId = new Map<string, TreeNode>(tabs.map((t) => [t.id, { ...t, children: [] }]));
   const roots: TreeNode[] = [];
@@ -128,6 +136,7 @@ export default function BaseTree({
               if (hasKids && !expanded.has(node.id)) toggle(node.id);
             }}
           >
+            <span className={`${styles.tone} ${TONE_CLASS[node.tone] ?? styles.toneSage}`} aria-hidden="true" />
             <span className={styles.icon} aria-hidden="true">{hasKids ? '📁' : '📄'}</span>
             <span className={styles.name}>{node.name}</span>
             {node.builtin && <span className={styles.tag}>встроенная</span>}

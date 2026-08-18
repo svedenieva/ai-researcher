@@ -30,6 +30,13 @@
   --sage-soft: light-dark(#e3ebe9, #1a2a26);
   --sage-hover: light-dark(#35595c, #a3d3c6);
 
+  /* base "tone" — the accent colour each base carries (teal/blue/amber/sage),
+     shown as the branch marker in the base tree */
+  --tone-sage: light-dark(#3f6b6e, #8fc6b8);
+  --tone-teal: light-dark(#2f8f95, #4fb8c2);
+  --tone-blue: light-dark(#6d7fa0, #86a6d3);
+  --tone-amber: light-dark(#b08c4a, #d3a765);
+
   /* type tints — kept from the reference palette; also used as the
      breakdown-bar segment colors for the catalog's "vertical" facet */
   --type-internal: light-dark(#6d7fa0, #86a6d3);
