@@ -1,6 +1,6 @@
 # Catalog Skill
 
-You are working with the AI-Researcher product/company catalog.
+You are working with the AiS product/company catalog.
 
 ## Goal
 

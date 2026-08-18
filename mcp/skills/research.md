@@ -1,6 +1,6 @@
 # Research Skill
 
-You are working with the AI-Researcher MCP.
+You are working with the AiS MCP.
 
 ## Goal
 
@@ -16,7 +16,7 @@ When the user asks for research:
 4. Use `query_records` to check whether relevant information already exists.
 5. Identify what information is missing.
 6. Use web research to find missing information.
-7. Use `catalog_search` when the AI-Researcher catalog can help verify companies or products.
+7. Use `catalog_search` when the AiS catalog can help verify companies or products.
 8. Never invent companies, products, facts, URLs, or database records.
 9. Clearly distinguish verified information from assumptions.
 10. Provide sources for information obtained from the web.

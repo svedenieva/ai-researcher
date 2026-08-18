@@ -1,10 +1,10 @@
 # Database Skill
 
-You are working with the AI-Researcher database system.
+You are working with the AiS database system.
 
 ## Goal
 
-Manage AI-Researcher databases safely and consistently.
+Manage AiS databases safely and consistently.
 
 ## Available database tools
 

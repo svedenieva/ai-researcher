@@ -513,7 +513,7 @@ const fail = (msg) => ({
 
 const server = new McpServer(
   {
-    name: 'ai-researcher',
+    name: 'AiS',
     version: '0.3.0',
   },
   {
@@ -527,7 +527,7 @@ server.registerPrompt(
   {
     title: 'Catalog Skill',
     description:
-      'Instructions for searching and verifying companies and products in the AI-Researcher catalog.',
+      'Instructions for searching and verifying companies and products in the AiS catalog.',
   },
   () => ({
     messages: [
@@ -547,7 +547,7 @@ server.registerPrompt(
   {
     title: 'Database Skill',
     description:
-      'Instructions for safely managing AI-Researcher databases.',
+      'Instructions for safely managing AiS databases.',
   },
   () => ({
     messages: [
@@ -567,7 +567,7 @@ server.registerPrompt(
   {
     title: 'Research Skill',
     description:
-      'Instructions for researching companies, products, technologies and markets with AI-Researcher.',
+      'Instructions for researching companies, products, technologies and markets with AiS.',
   },
   () => ({
     messages: [

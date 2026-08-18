@@ -644,7 +644,7 @@ export async function POST(request: Request): Promise<Response> {
     return reply({
       protocolVersion: KNOWN.includes(asked) ? asked : KNOWN[0],
       capabilities: { tools: {}, prompts: {} },
-      serverInfo: { name: 'ai-researcher', version: '0.3.0' },
+      serverInfo: { name: 'AiS', version: '0.3.0' },
       instructions: INSTRUCTIONS,
     });
   }
@@ -699,7 +699,7 @@ export async function GET(request: Request): Promise<Response> {
   const me = emailForToken(tokenFrom(request));
   return Response.json(
     {
-      server: 'ai-researcher',
+      server: 'AiS',
       transport: 'http/json-rpc',
       authorized: Boolean(me),
       user: me,
