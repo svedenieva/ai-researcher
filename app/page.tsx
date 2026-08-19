@@ -15,6 +15,8 @@ import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
 import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE, MODE_VALUES } from '@/lib/mode';
+import { apiJson, apiSend } from '@/lib/api';
+import { useToast, useConfirm } from './ui';
 
 // system "mode" column injected into custom bases: a per-record research/reference badge
 const MODE_COLUMN: ColumnDef = {
@@ -47,6 +49,8 @@ const BUILTIN_TABS: BaseTab[] = BASES.map((b) => ({ id: b.id, name: b.name, tone
 export default function Home() {
   const router = useRouter();
   const { lang } = useLang();
+  const toast = useToast();
+  const confirm = useConfirm();
   // logo image with a graceful fallback to the "AiR" monogram if public/logo.png is absent
   const [logoOk, setLogoOk] = useState(true);
   // research/reference mode filter: 'all' | MODE_RESEARCH | MODE_REFERENCE
@@ -83,53 +87,56 @@ export default function Home() {
 
   const onCellEdit = useCallback(
     (record: CatalogRecord, key: string, value: string) => {
-      fetch('/api/records', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base, id: record.id, data: { [key]: coerce(key, value) } }),
-      }).then(() => setRefreshTick((t) => t + 1));
+      apiSend('/api/records', 'PATCH', { base, id: record.id, data: { [key]: coerce(key, value) } })
+        .then(() => setRefreshTick((t) => t + 1))
+        .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось сохранить'));
     },
-    [base, coerce],
+    [base, coerce, toast],
   );
 
   const onAddRow = useCallback(
     (data: Record<string, string>) => {
       const payload: Record<string, string | number> = {};
       for (const [k, v] of Object.entries(data)) if (v !== '') payload[k] = coerce(k, v);
-      fetch('/api/records', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base, data: payload }),
-      }).then(() => setRefreshTick((t) => t + 1));
+      apiSend('/api/records', 'POST', { base, data: payload })
+        .then(() => setRefreshTick((t) => t + 1))
+        .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось добавить строку'));
     },
-    [base, coerce],
+    [base, coerce, toast],
   );
 
   const onDeleteRow = useCallback(
-    (record: CatalogRecord) => {
+    async (record: CatalogRecord) => {
       // rows pulled in from nested child bases are tagged with __source =
       // the child base's display name — they can only be deleted there, otherwise
       // DELETE won't find the record in the current base and silently deletes nothing
       const currentName = tabs.find((t) => t.id === base)?.name;
       const source = record.__source;
       if (source && currentName && source !== currentName) {
-        window.alert(`Эту строку удаляйте в её базе: «${source}»`);
+        toast(`Эту строку удаляйте в её базе: «${source}»`);
         return;
       }
-      if (!window.confirm('Удалить строку в корзину? Её можно вернуть из корзины.')) return;
-      fetch('/api/records', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base, ids: [String(record.id)] }),
-      }).then(() => setRefreshTick((t) => t + 1));
+      const ok = await confirm({
+        title: 'Удалить строку?',
+        message: 'Строка уедет в корзину — вернуть можно оттуда.',
+        confirmLabel: 'Удалить',
+        danger: true,
+      });
+      if (!ok) return;
+      try {
+        await apiSend('/api/records', 'DELETE', { base, ids: [String(record.id)] });
+        setRefreshTick((t) => t + 1);
+        toast('Строка удалена');
+      } catch (e) {
+        toast(e instanceof Error ? e.message : 'Не удалось удалить строку');
+      }
     },
-    [base, tabs],
+    [base, tabs, toast, confirm],
   );
 
   const loadBases = useCallback(async () => {
     try {
-      const r = await fetch('/api/bases');
-      const body = await r.json();
+      const body = await apiJson<{ bases?: BaseTab[] }>('/api/bases');
       if (Array.isArray(body.bases) && body.bases.length) setTabs(body.bases);
     } catch {
       /* keep the built-in tabs */
@@ -140,26 +147,22 @@ export default function Home() {
   // we re-read the records (columns come back together with them)
   const columnAction = useCallback(
     (payload: Record<string, unknown>) => {
-      fetch('/api/columns', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base, ...payload }),
-      }).then(() => setRefreshTick((t) => t + 1));
+      apiSend('/api/columns', 'POST', { base, ...payload })
+        .then(() => setRefreshTick((t) => t + 1))
+        .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось изменить колонку'));
     },
-    [base],
+    [base, toast],
   );
 
   // manual row order: we send the full list of ids in the new order, then
   // re-read (the server returns the rows already in the new order)
   const reorderRows = useCallback(
     (orderedIds: string[]) => {
-      fetch('/api/records/reorder', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base, order: orderedIds }),
-      }).then(() => setRefreshTick((t) => t + 1));
+      apiSend('/api/records/reorder', 'POST', { base, order: orderedIds })
+        .then(() => setRefreshTick((t) => t + 1))
+        .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось изменить порядок'));
     },
-    [base],
+    [base, toast],
   );
 
   useEffect(() => {
@@ -208,16 +211,16 @@ export default function Home() {
     if (search.trim()) { qs.set('q', search.trim()); }
     if (mode !== 'all') qs.set('mode', mode);
     setLoading(true);
-    fetch(`/api/records?${qs.toString()}`)
-      .then((r) => r.json())
+    apiJson<{ columns?: ColumnDef[]; records?: CatalogRecord[]; total?: number; facets?: Record<string, string[]> }>(`/api/records?${qs.toString()}`)
       .then((body) => {
         setColumns(body.columns ?? []);
         setRecords(body.records ?? []);
         setTotal(body.total ?? body.records?.length ?? 0);
         setFacets(body.facets ?? {});
       })
+      .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось загрузить данные'))
       .finally(() => setLoading(false));
-  }, [sort, filters, search, base, ready, refreshTick, mode]);
+  }, [sort, filters, search, base, ready, refreshTick, mode, toast]);
 
   const onSortChange = useCallback((key: string) => {
     setSort((prev) =>

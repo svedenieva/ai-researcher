@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { BaseTab } from './base-picker';
 import { toneColor } from '@/lib/tone';
+import { apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
 import styles from './base-tree.module.css';
 
@@ -62,15 +63,23 @@ export default function BaseTree({
     const name = editValue.trim();
     setEditingId(null);
     if (!name || name === node.name) return;
-    await fetch('/api/bases', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: node.id, name }) });
-    onMutated?.();
-    toast(`Переименовано в «${name}»`);
+    try {
+      await apiSend('/api/bases', 'PATCH', { id: node.id, name });
+      onMutated?.();
+      toast(`Переименовано в «${name}»`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось переименовать');
+    }
   };
 
   const restoreBase = async (id: string) => {
-    await fetch('/api/bases', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, restore: true }) });
-    onMutated?.();
-    toast('Восстановлено');
+    try {
+      await apiSend('/api/bases', 'DELETE', { id, restore: true });
+      onMutated?.();
+      toast('Восстановлено');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось восстановить');
+    }
   };
   const deleteBase = async (node: TreeNode) => {
     const ok = await confirm({
@@ -80,12 +89,16 @@ export default function BaseTree({
       danger: true,
     });
     if (!ok) return;
-    await fetch('/api/bases', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: node.id }) });
-    onMutated?.();
-    // deleted the base that's currently open — fall back to the parent (or the
-    // default built-in one), otherwise the screen sits on a base that's gone
-    if (node.id === base) onPick(node.parent ?? 'market');
-    toast(`База «${node.name}» удалена`, { action: { label: 'Отменить', onClick: () => restoreBase(node.id) } });
+    try {
+      await apiSend('/api/bases', 'DELETE', { id: node.id });
+      onMutated?.();
+      // deleted the base that's currently open — fall back to the parent (or the
+      // default built-in one), otherwise the screen sits on a base that's gone
+      if (node.id === base) onPick(node.parent ?? 'market');
+      toast(`База «${node.name}» удалена`, { action: { label: 'Отменить', onClick: () => restoreBase(node.id) } });
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось удалить базу');
+    }
   };
 
   // The tree is collapsed, but the path down to the open base is expanded: the
