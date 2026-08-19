@@ -76,10 +76,12 @@ export async function GET(request: Request): Promise<Response> {
         walk(baseId);
 
         const nameById = new Map(all.map((b) => [b.id, b.name]));
-        let rows = (await store.listRecords(baseId)).map((r) => ({ [MODE_KEY]: recordMode(r), ...r, __source: custom.name }));
+        // the mode is normalised AFTER the spread so rows written before the
+        // rename show the current label instead of the legacy one
+        let rows = (await store.listRecords(baseId)).map((r) => ({ ...r, [MODE_KEY]: recordMode(r), __source: custom.name }));
         for (const id of descendants) {
           const sub = await store.listRecords(id);
-          rows = rows.concat(sub.map((r) => ({ [MODE_KEY]: recordMode(r), ...r, __source: nameById.get(id) ?? id })));
+          rows = rows.concat(sub.map((r) => ({ ...r, [MODE_KEY]: recordMode(r), __source: nameById.get(id) ?? id })));
         }
 
         // research/reference mode filter: the top switch narrows to one kind
