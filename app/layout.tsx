@@ -2,7 +2,10 @@ import './globals.css';
 import { LangProvider } from './lang-provider';
 import { UiProvider } from './ui';
 
-export const metadata = { title: 'AI-Researcher' };
+export const metadata = {
+  title: 'AiS · AI Researcher',
+  description: 'Базы знаний AiVocado: компании, продукты и исследования в одном месте.',
+};
 
 // Apply the saved theme before the first paint. Without this, a stored
 // light/dark choice only took effect after the user clicked the toggle again
