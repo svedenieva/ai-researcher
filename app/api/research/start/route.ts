@@ -1,7 +1,16 @@
 import { getCustomStore } from '@/lib/datasource/customStore';
 import { currentEmail } from '@/lib/current-user';
-import { REPORT_COLUMNS } from '@/lib/research/saveReport';
 import { researchDeeplinks } from '@/lib/research/deeplink';
+import type { ColumnDef } from '@/lib/datasource/types';
+
+// Minimal seed for a research run base: just a name + a source column. Claude
+// adds the columns that actually fit the question itself (via add_column), per
+// the instruction — so any question gets a topic-shaped table, not a
+// company-shaped one.
+const RUN_SEED_COLUMNS: ColumnDef[] = [
+  { key: 'название', label: 'Название', type: 'text', sortable: true },
+  { key: 'источники', label: 'Источники', type: 'long-text' },
+];
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +34,7 @@ export async function POST(request: Request): Promise<Response> {
   const name = `Исследование: ${topic.slice(0, 48)} (${stamp})`;
 
   try {
-    const base = await store.createBase({ name, columns: REPORT_COLUMNS, owner: me });
+    const base = await store.createBase({ name, columns: RUN_SEED_COLUMNS, owner: me });
     const links = researchDeeplinks(topic, base.id);
     return Response.json({
       baseId: base.id,
