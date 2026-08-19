@@ -91,6 +91,20 @@
   background: var(--tone, var(--tone-sage));
 }
 
+/* inline rename field — sits where the node button was */
+.renameInput {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--sage);
+  border-radius: var(--radius);
+  background: var(--paper);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+}
+.renameInput:focus { outline: none; }
+
 .icon { font-size: 13px; flex: none; }
 
 .name {

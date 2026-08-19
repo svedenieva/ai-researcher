@@ -1,5 +1,6 @@
 import './globals.css';
 import { LangProvider } from './lang-provider';
+import { UiProvider } from './ui';
 
 export const metadata = { title: 'AI-Researcher' };
 
@@ -18,7 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <LangProvider>{children}</LangProvider>
+        <LangProvider>
+          <UiProvider>{children}</UiProvider>
+        </LangProvider>
       </body>
     </html>
   );

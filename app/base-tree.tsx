@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { BaseTab } from './base-picker';
 import { toneColor } from '@/lib/tone';
+import { useToast, useConfirm } from './ui';
 import styles from './base-tree.module.css';
 
 interface TreeNode extends BaseTab {
@@ -49,6 +50,43 @@ export default function BaseTree({
 }) {
   const { roots, byId } = useMemo(() => buildTree(tabs), [tabs]);
   const [query, setQuery] = useState('');
+  const toast = useToast();
+  const confirm = useConfirm();
+  // inline rename: the id of the base being renamed, and its draft name
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const startRename = (node: TreeNode) => { setEditValue(node.name); setEditingId(node.id); };
+  const cancelRename = () => setEditingId(null);
+  const commitRename = async (node: TreeNode) => {
+    const name = editValue.trim();
+    setEditingId(null);
+    if (!name || name === node.name) return;
+    await fetch('/api/bases', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: node.id, name }) });
+    onMutated?.();
+    toast(`Переименовано в «${name}»`);
+  };
+
+  const restoreBase = async (id: string) => {
+    await fetch('/api/bases', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, restore: true }) });
+    onMutated?.();
+    toast('Восстановлено');
+  };
+  const deleteBase = async (node: TreeNode) => {
+    const ok = await confirm({
+      title: `Удалить базу «${node.name}»?`,
+      message: 'База и её строки уедут в корзину — вернуть можно оттуда.',
+      confirmLabel: 'Удалить',
+      danger: true,
+    });
+    if (!ok) return;
+    await fetch('/api/bases', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: node.id }) });
+    onMutated?.();
+    // deleted the base that's currently open — fall back to the parent (or the
+    // default built-in one), otherwise the screen sits on a base that's gone
+    if (node.id === base) onPick(node.parent ?? 'market');
+    toast(`База «${node.name}» удалена`, { action: { label: 'Отменить', onClick: () => restoreBase(node.id) } });
+  };
 
   // The tree is collapsed, but the path down to the open base is expanded: the
   // window should show where you currently are, rather than greeting you with a
@@ -119,41 +157,42 @@ export default function BaseTree({
           ) : (
             <span className={styles.twistGap} />
           )}
-          <button
-            type="button"
-            className={`${styles.node} ${node.id === base ? styles.nodeActive : ''}`}
-            style={{ ['--tone']: toneColor(node.tone) } as CSSProperties}
-            // like a file explorer: clicking a branch both loads its table and expands
-            // it further in; the window stays open the whole time
-            onClick={() => {
-              onPick(node.id);
-              if (hasKids && !expanded.has(node.id)) toggle(node.id);
-            }}
-          >
-            <span className={styles.tone} aria-hidden="true" />
-            <span className={styles.icon} aria-hidden="true">{hasKids ? '📁' : '📄'}</span>
-            <span className={styles.name}>{node.name}</span>
-            {node.builtin && <span className={styles.tag}>встроенная</span>}
-          </button>
-          {!node.builtin && (
+          {editingId === node.id ? (
+            <input
+              className={styles.renameInput}
+              value={editValue}
+              autoFocus
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitRename(node);
+                if (e.key === 'Escape') cancelRename();
+              }}
+              onBlur={() => commitRename(node)}
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Новое название базы"
+            />
+          ) : (
+            <button
+              type="button"
+              className={`${styles.node} ${node.id === base ? styles.nodeActive : ''}`}
+              style={{ ['--tone']: toneColor(node.tone) } as CSSProperties}
+              // like a file explorer: clicking a branch both loads its table and expands
+              // it further in; the window stays open the whole time
+              onClick={() => {
+                onPick(node.id);
+                if (hasKids && !expanded.has(node.id)) toggle(node.id);
+              }}
+            >
+              <span className={styles.tone} aria-hidden="true" />
+              <span className={styles.icon} aria-hidden="true">{hasKids ? '📁' : '📄'}</span>
+              <span className={styles.name}>{node.name}</span>
+              {node.builtin && <span className={styles.tag}>встроенная</span>}
+            </button>
+          )}
+          {!node.builtin && editingId !== node.id && (
             <span className={styles.actions}>
-              <button type="button" title="Переименовать" onClick={async (e) => {
-                e.stopPropagation();
-                const name = window.prompt('Новое название базы:', node.name);
-                if (name && name.trim() && name.trim() !== node.name) {
-                  await fetch('/api/bases', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: node.id, name: name.trim() }) });
-                  onMutated?.();
-                }
-              }}>✏️</button>
-              <button type="button" title="Удалить базу в корзину" onClick={async (e) => {
-                e.stopPropagation();
-                if (!window.confirm(`Удалить базу «${node.name}» в корзину? Её строки тоже уедут в корзину, вернуть можно оттуда.`)) return;
-                await fetch('/api/bases', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: node.id }) });
-                onMutated?.();
-                // we deleted the base that's currently open — go to the parent (or to
-                // the default built-in one), otherwise the screen stays on a base that no longer exists
-                if (node.id === base) onPick(node.parent ?? 'market');
-              }}>🗑</button>
+              <button type="button" title="Переименовать" onClick={(e) => { e.stopPropagation(); startRename(node); }}>✏️</button>
+              <button type="button" title="Удалить базу в корзину" onClick={(e) => { e.stopPropagation(); deleteBase(node); }}>🗑</button>
             </span>
           )}
         </div>
