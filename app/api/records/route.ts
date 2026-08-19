@@ -3,6 +3,7 @@ import { JsonDataSource } from '@/lib/datasource/json';
 import { BASES, baseById } from '@/lib/datasource/bases';
 import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
 import { currentEmail } from '@/lib/current-user';
+import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE, recordMode } from '@/lib/mode';
 import type { ListParams } from '@/lib/datasource/types';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
@@ -75,10 +76,16 @@ export async function GET(request: Request): Promise<Response> {
         walk(baseId);
 
         const nameById = new Map(all.map((b) => [b.id, b.name]));
-        let rows = (await store.listRecords(baseId)).map((r) => ({ ...r, __source: custom.name }));
+        let rows = (await store.listRecords(baseId)).map((r) => ({ [MODE_KEY]: recordMode(r), ...r, __source: custom.name }));
         for (const id of descendants) {
           const sub = await store.listRecords(id);
-          rows = rows.concat(sub.map((r) => ({ ...r, __source: nameById.get(id) ?? id })));
+          rows = rows.concat(sub.map((r) => ({ [MODE_KEY]: recordMode(r), ...r, __source: nameById.get(id) ?? id })));
+        }
+
+        // research/reference mode filter: the top switch narrows to one kind
+        const mode = url.searchParams.get('mode');
+        if (mode === MODE_RESEARCH || mode === MODE_REFERENCE) {
+          rows = rows.filter((r) => recordMode(r) === mode);
         }
 
         const cols = descendants.length ? [...custom.columns, SOURCE_COL] : custom.columns;

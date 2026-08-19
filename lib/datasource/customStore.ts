@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { ColumnDef, CatalogRecord } from './types';
+import { MODE_KEY, MODE_RESEARCH } from '../mode';
 
 // User bases (goal #1): log in → create a base → define columns → fill with rows.
 // Base definitions and their rows are stored separately from the product catalog.
@@ -159,13 +160,13 @@ export class MemoryCustomStore implements CustomStore {
     return (this.rows[baseId] ?? []).filter((r) => !gone.has(r.id));
   }
   async addRecord(baseId: string, data: Record<string, unknown>) {
-    const record = { id: `r${++this.seq}`, ...data } as CatalogRecord;
+    const record = { id: `r${++this.seq}`, [MODE_KEY]: MODE_RESEARCH, ...data } as CatalogRecord;
     (this.rows[baseId] ??= []).push(record);
     return record;
   }
   async addRecords(baseId: string, rows: Record<string, unknown>[]) {
     const bucket = (this.rows[baseId] ??= []);
-    for (const data of rows) bucket.push({ id: `r${++this.seq}`, ...data } as CatalogRecord);
+    for (const data of rows) bucket.push({ id: `r${++this.seq}`, [MODE_KEY]: MODE_RESEARCH, ...data } as CatalogRecord);
     return rows.length;
   }
   async updateRecord(baseId: string, id: string, patch: Record<string, unknown>) {
@@ -405,7 +406,7 @@ class SupabaseCustomStore implements CustomStore {
   async addRecord(baseId: string, data: Record<string, unknown>): Promise<CatalogRecord> {
     const { data: inserted, error } = await this.client
       .from('base_records')
-      .insert({ base_id: baseId, data })
+      .insert({ base_id: baseId, data: { [MODE_KEY]: MODE_RESEARCH, ...data } })
       .select('id, data')
       .single();
     if (error) throw new Error(`Supabase (base_records): ${error.message}`);
@@ -414,7 +415,7 @@ class SupabaseCustomStore implements CustomStore {
   }
   async addRecords(baseId: string, rows: Record<string, unknown>[]): Promise<number> {
     if (!rows.length) return 0;
-    const payload = rows.map((data) => ({ base_id: baseId, data }));
+    const payload = rows.map((data) => ({ base_id: baseId, data: { [MODE_KEY]: MODE_RESEARCH, ...data } }));
     const { error } = await this.client.from('base_records').insert(payload);
     if (error) throw new Error(`Supabase (base_records): ${error.message}`);
     return rows.length;

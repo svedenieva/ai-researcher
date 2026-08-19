@@ -14,6 +14,19 @@ import BasePicker from './base-picker';
 import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
+import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE, MODE_VALUES } from '@/lib/mode';
+
+// system "mode" column injected into custom bases: a per-record research/reference badge
+const MODE_COLUMN: ColumnDef = {
+  key: MODE_KEY,
+  label: 'Режим',
+  type: 'select',
+  sortable: true,
+  filterable: false,
+  badge: true,
+  badgeVariant: { [MODE_RESEARCH]: 'teal', [MODE_REFERENCE]: 'amber' },
+  order: [MODE_RESEARCH, MODE_REFERENCE],
+};
 import styles from './page.module.css';
 
 const DEFAULT_SORT = { key: 'pop', dir: 'asc' as const };
@@ -36,6 +49,8 @@ export default function Home() {
   const { lang } = useLang();
   // logo image with a graceful fallback to the "AiR" monogram if public/logo.png is absent
   const [logoOk, setLogoOk] = useState(true);
+  // research/reference mode filter: 'all' | MODE_RESEARCH | MODE_REFERENCE
+  const [mode, setMode] = useState<string>('all');
   const [columns, setColumns] = useState<ColumnDef[]>([]);
   const [records, setRecords] = useState<CatalogRecord[]>([]);
   const [total, setTotal] = useState<number>();
@@ -191,6 +206,7 @@ export default function Home() {
     if (sort) { qs.set('sortKey', sort.key); qs.set('sortDir', sort.dir); }
     for (const [key, value] of Object.entries(filters)) qs.append('f', `${key}:${value}`);
     if (search.trim()) { qs.set('q', search.trim()); }
+    if (mode !== 'all') qs.set('mode', mode);
     setLoading(true);
     fetch(`/api/records?${qs.toString()}`)
       .then((r) => r.json())
@@ -201,7 +217,7 @@ export default function Home() {
         setFacets(body.facets ?? {});
       })
       .finally(() => setLoading(false));
-  }, [sort, filters, search, base, ready, refreshTick]);
+  }, [sort, filters, search, base, ready, refreshTick, mode]);
 
   const onSortChange = useCallback((key: string) => {
     setSort((prev) =>
@@ -283,6 +299,13 @@ export default function Home() {
     ? records.filter((r) => favorites.includes(String(r.id)))
     : records;
 
+  // inject the system "Режим" column into custom bases: shown as a badge right
+  // after the name column; its select options come from facets
+  const displayColumns = isCustom && columns.length
+    ? [columns[0], MODE_COLUMN, ...columns.slice(1).filter((c) => c.key !== MODE_KEY)]
+    : columns;
+  const displayFacets = isCustom ? { ...facets, [MODE_KEY]: [...MODE_VALUES] } : facets;
+
   // The export link mirrors the data request — what's on screen is what's in the file
   const exportHref = (() => {
     const qs = new URLSearchParams();
@@ -352,16 +375,36 @@ export default function Home() {
           />
         )}
 
+        {isCustom && (
+          <div className={styles.modeSwitch} role="group" aria-label="Режим записей">
+            {[
+              { v: 'all', l: 'Все' },
+              { v: MODE_RESEARCH, l: MODE_RESEARCH },
+              { v: MODE_REFERENCE, l: MODE_REFERENCE },
+            ].map((o) => (
+              <button
+                key={o.v}
+                type="button"
+                className={`${styles.modeSeg} ${mode === o.v ? styles.modeSegOn : ''}`}
+                aria-pressed={mode === o.v}
+                onClick={() => setMode(o.v)}
+              >
+                {o.l}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className={styles.content}>
           <MindSheet
-            columns={columns}
+            columns={displayColumns}
             records={shownRecords}
             total={total}
             loading={loading}
             filtersPosition="left"
             sort={sort}
             filters={filters}
-            filterOptions={facets}
+            filterOptions={displayFacets}
             search={search}
             sorts={sort ? [sort, ...extraLevels] : extraLevels}
             onSortChange={onSortChange}
