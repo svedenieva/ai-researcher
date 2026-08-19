@@ -34,6 +34,8 @@ const BUILTIN_TABS: BaseTab[] = BASES.map((b) => ({ id: b.id, name: b.name, tone
 export default function Home() {
   const router = useRouter();
   const { lang } = useLang();
+  // logo image with a graceful fallback to the "AiR" monogram if public/logo.png is absent
+  const [logoOk, setLogoOk] = useState(true);
   const [columns, setColumns] = useState<ColumnDef[]>([]);
   const [records, setRecords] = useState<CatalogRecord[]>([]);
   const [total, setTotal] = useState<number>();
@@ -297,7 +299,12 @@ export default function Home() {
     <div className={styles.shell}>
       <header className={styles.header}>
         <div className={styles.brand}>
-          <span className={styles.mark} aria-hidden="true">AiR</span>
+          {logoOk ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/logo.png" alt="AiR" className={styles.markImg} onError={() => setLogoOk(false)} />
+          ) : (
+            <span className={styles.mark} aria-hidden="true">AiR</span>
+          )}
           <Link href="/" className={styles.brandName}>AI Researcher</Link>
         </div>
 
