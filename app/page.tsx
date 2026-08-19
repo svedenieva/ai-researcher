@@ -324,7 +324,7 @@ export default function Home() {
         <div className={styles.brand}>
           {logoOk ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src="/logo.png" alt="AiR" className={styles.markImg} onError={() => setLogoOk(false)} />
+            <img src="/logo.jpg" alt="AiVocado" className={styles.markImg} onError={() => setLogoOk(false)} />
           ) : (
             <span className={styles.mark} aria-hidden="true">AiR</span>
           )}

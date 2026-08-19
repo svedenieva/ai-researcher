@@ -48,12 +48,13 @@
   box-shadow: 0 1px 2px rgba(26, 26, 24, 0.18);
 }
 
-/* image logo (public/logo.png) — same footprint as the monogram */
+/* image logo (public/logo.jpg) — same footprint as the monogram */
 .markImg {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 9px;
-  object-fit: contain;
+  object-fit: cover;
+  background: #fff;
   flex: none;
 }
 
