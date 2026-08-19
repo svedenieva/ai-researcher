@@ -5,6 +5,7 @@ import BaseTree from './base-tree';
 import { useLang } from './lang-provider';
 import { t, tGoTo, tShowInside } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
+import { IconFolder } from './icons';
 import styles from './base-picker.module.css';
 
 export interface BaseTab {
@@ -81,7 +82,7 @@ export default function BasePicker({
         aria-expanded={open}
         title={t(lang, 'chooseBase')}
       >
-        <span className={styles.rootIcon} aria-hidden="true">🗂</span>
+        <span className={styles.rootIcon} aria-hidden="true"><IconFolder size={14} /></span>
         {rootLabel}
         <span className={styles.caret} aria-hidden="true">▾</span>
       </button>

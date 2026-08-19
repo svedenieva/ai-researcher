@@ -5,6 +5,7 @@ import type { BaseTab } from './base-picker';
 import { toneColor } from '@/lib/tone';
 import { apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
+import { IconFolder, IconFile, IconPencil, IconTrash } from './icons';
 import styles from './base-tree.module.css';
 
 interface TreeNode extends BaseTab {
@@ -197,15 +198,15 @@ export default function BaseTree({
               }}
             >
               <span className={styles.tone} aria-hidden="true" />
-              <span className={styles.icon} aria-hidden="true">{hasKids ? '📁' : '📄'}</span>
+              <span className={styles.icon} aria-hidden="true">{hasKids ? <IconFolder size={14} /> : <IconFile size={14} />}</span>
               <span className={styles.name}>{node.name}</span>
               {node.builtin && <span className={styles.tag}>встроенная</span>}
             </button>
           )}
           {!node.builtin && editingId !== node.id && (
             <span className={styles.actions}>
-              <button type="button" title="Переименовать" onClick={(e) => { e.stopPropagation(); startRename(node); }}>✏️</button>
-              <button type="button" title="Удалить базу в корзину" onClick={(e) => { e.stopPropagation(); deleteBase(node); }}>🗑</button>
+              <button type="button" title="Переименовать" onClick={(e) => { e.stopPropagation(); startRename(node); }}><IconPencil size={14} /></button>
+              <button type="button" title="Удалить базу в корзину" onClick={(e) => { e.stopPropagation(); deleteBase(node); }}><IconTrash size={14} /></button>
             </span>
           )}
         </div>

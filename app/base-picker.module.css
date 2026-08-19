@@ -24,7 +24,7 @@
 }
 .root:hover { border-color: var(--sage); }
 
-.rootIcon { font-size: 12px; }
+.rootIcon { display: inline-flex; align-items: center; }
 
 .crumbItem {
   display: inline-flex;

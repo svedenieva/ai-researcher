@@ -105,7 +105,7 @@
 }
 .renameInput:focus { outline: none; }
 
-.icon { font-size: 13px; flex: none; }
+.icon { display: inline-flex; align-items: center; color: var(--ink-45); flex: none; }
 
 .name {
   min-width: 0;
@@ -195,5 +195,6 @@
 
 .actions { display: inline-flex; gap: 4px; margin-left: auto; opacity: 0; transition: opacity .1s; }
 .row:hover .actions { opacity: .8; }
-.actions button { border: 0; background: none; cursor: pointer; font-size: 12px; }
+.actions button { display: inline-flex; align-items: center; border: 0; background: none; cursor: pointer; color: var(--ink-45); }
+.actions button:hover { color: var(--ink); }
 .actions button:hover { opacity: 1; }
