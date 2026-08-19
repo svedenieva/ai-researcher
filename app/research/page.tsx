@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ThemeToggle from '../theme-toggle';
+import { IconSearch, IconCheck, IconFlask } from '../icons';
 import styles from './research.module.css';
 
 export default function Research() {
@@ -94,7 +95,7 @@ export default function Research() {
             disabled={starting || !prompt.trim()}
             title="Откроется твой Claude с готовым запросом; он исследует и сохранит результат в базу"
           >
-            {starting ? 'Открываю Claude…' : '🔎 Исследовать в моём Claude'}
+            {starting ? 'Открываю Claude…' : <><IconSearch size={15} /> Исследовать в моём Claude</>}
           </button>
           {error && <span className={styles.error}>{error}</span>}
         </div>
@@ -104,7 +105,7 @@ export default function Research() {
             {runRows ? (
               /* the result arrived in the base — show it right here */
               <>
-                <div className={styles.claudeRunTitle}>✅ Готово — найдено {runRows.length}</div>
+                <div className={styles.claudeRunTitle}><IconCheck size={16} /> Готово — найдено {runRows.length}</div>
                 <ul className={styles.runResults}>
                   {runRows.slice(0, 40).map((r, i) => (
                     <li key={i} className={styles.runResult}>
@@ -135,7 +136,7 @@ export default function Research() {
             ) : (
               /* waiting for Claude to write the result */
               <>
-                <div className={styles.claudeRunTitle}>⏳ Жду результат от Claude…</div>
+                <div className={styles.claudeRunTitle}><IconFlask size={16} /> Жду результат от Claude…</div>
                 <ol className={styles.claudeSteps}>
                   <li>В открывшейся вкладке Claude нажми <b>Enter</b> — запрос уже подставлен.</li>
                   <li>Claude исследует и сохранит результат в базу <b>«{run.baseName}»</b> через коннектор AiS.</li>
