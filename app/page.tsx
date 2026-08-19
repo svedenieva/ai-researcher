@@ -17,7 +17,7 @@ import { toneColor } from '@/lib/tone';
 import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE, MODE_VALUES } from '@/lib/mode';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
-import { IconDownload, IconArchive } from './icons';
+import { IconDownload } from './icons';
 
 // system "mode" column injected into custom bases: a per-record research/reference badge
 const MODE_COLUMN: ColumnDef = {
@@ -359,7 +359,7 @@ export default function Home() {
             <IconDownload size={14} /> CSV
           </a>
           <Link href="/sites" className={styles.navLink}>{tr(lang, 'sites')}</Link>
-          <Link href="/bin" className={styles.navLink}><IconArchive size={14} /> {tr(lang, 'trash')}</Link>
+          <Link href="/bin" className={styles.navLink}>{tr(lang, 'trash')}</Link>
           <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>
           <LangSwitch />
           <ThemeToggle />
