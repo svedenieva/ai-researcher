@@ -1,18 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-// Decomposing a query into subtopics — shared code for the /api/research/decompose
-// route and for the connector's research_decompose tool.
-//
-// The connector used to call the route over HTTP against itself. In production
-// this ran into the app's protection: a self-request without a session cookie got
-// redirected to /login, and no subtopics can be pulled out of the login HTML page —
-// the tool silently returned an empty list. Now the logic is called directly,
-// with no network.
+// Decomposing a query into subtopics — used by the connector's research_decompose
+// tool. Called directly (no HTTP self-request).
 //
 // Provider priority:
-//   1) OpenRouter (OPENROUTER_API_KEY) — one key, any models;
-//   2) Anthropic directly (ANTHROPIC_API_KEY);
-//   3) structural heuristic — if there are no keys or the calls failed.
+//   1) Anthropic (ANTHROPIC_API_KEY);
+//   2) structural heuristic — if there's no key or the call failed.
 
 const ANTHROPIC_MODEL = process.env.RESEARCH_MODEL || 'claude-opus-5';
 
