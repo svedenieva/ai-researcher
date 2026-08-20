@@ -4,6 +4,14 @@ import { withSections } from './section';
 import { dedupeCompanies } from './dedupe';
 import type { CatalogRecord, ColumnDef, DataSource, ListParams } from './types';
 
+// The catalog (products) is large and changes rarely, yet /api/records re-reads
+// it on every filter / sort / search / base change. Cache the full fetch briefly
+// so rapid grid interactions on a warm instance don't re-download the whole table.
+// Custom bases are NOT cached — they're small and edited live, so they must stay
+// fresh (this cache lives only in SupabaseDataSource, which serves the catalog).
+const catalogCache = new Map<string, { rows: CatalogRecord[]; at: number }>();
+const CATALOG_TTL_MS = 60_000;
+
 // Reads the catalog from a Supabase table. Rows are stored as { id, data },
 // where `data` is the full record. Sort/filter/search/facets reuse the same
 // in-memory logic as JsonDataSource (the catalog is small), so the behaviour
@@ -21,9 +29,13 @@ export class SupabaseDataSource implements DataSource {
   }
 
   private async fetchAll(): Promise<CatalogRecord[]> {
+    const cached = catalogCache.get(this.table);
+    if (cached && Date.now() - cached.at < CATALOG_TTL_MS) return cached.rows;
     const { data, error } = await this.client.from(this.table).select('data');
     if (error) throw new Error(`Supabase (${this.table}): ${error.message}`);
-    return dedupeCompanies(withSections((data ?? []).map((row) => (row as { data: CatalogRecord }).data)));
+    const rows = dedupeCompanies(withSections((data ?? []).map((row) => (row as { data: CatalogRecord }).data)));
+    catalogCache.set(this.table, { rows, at: Date.now() });
+    return rows;
   }
 
   async columns(): Promise<ColumnDef[]> {
