@@ -5,6 +5,8 @@ import { parseTable, inferType } from '@/lib/parseTable';
 import type { ColumnType } from '@/lib/datasource/types';
 import { useLang } from './lang-provider';
 import { t, tImportN, tColumnN } from '@/lib/i18n';
+import { apiSend } from '@/lib/api';
+import { useToast } from './ui';
 import styles from './forms.module.css';
 
 interface ColDraft {
@@ -23,6 +25,7 @@ export default function CreateBase({
   parents?: { id: string; name: string }[];
 }) {
   const { lang } = useLang();
+  const toast = useToast();
   const TYPE_LABELS: Record<ColumnType, string> = {
     text: t(lang, 'typeText'),
     number: t(lang, 'typeNumber'),
@@ -36,7 +39,6 @@ export default function CreateBase({
   const [cols, setCols] = useState<ColDraft[]>(() => [{ label: t(lang, 'defaultColName'), type: 'text', filterable: false }]);
   const [raw, setRaw] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // ── manual columns ──
   const setCol = (i: number, patch: Partial<ColDraft>) =>
@@ -65,23 +67,16 @@ export default function CreateBase({
     const columns = mode === 'manual' ? cols.filter((c) => c.label.trim()) : importCols;
     if (!name.trim() || !columns.length) return;
     setBusy(true);
-    setError(null);
     try {
-      const res = await fetch('/api/bases', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          columns,
-          parent: parent || undefined,
-          rows: mode === 'import' ? parsed.rows : undefined,
-        }),
+      const body = await apiSend<{ base: { id: string } }>('/api/bases', 'POST', {
+        name: name.trim(),
+        columns,
+        parent: parent || undefined,
+        rows: mode === 'import' ? parsed.rows : undefined,
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body?.error ?? t(lang, 'createError'));
       onCreated(body.base.id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : t(lang, 'error'));
+      toast(e instanceof Error ? e.message : t(lang, 'error'));
     } finally {
       setBusy(false);
     }
@@ -228,7 +223,6 @@ export default function CreateBase({
               : t(lang, 'create')}
         </button>
       </div>
-      {error && <p className={styles.error}>{error}</p>}
     </section>
   );
 }

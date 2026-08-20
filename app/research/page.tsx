@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ThemeToggle from '../theme-toggle';
 import { IconSearch, IconCheck, IconFlask } from '../icons';
+import { apiJson, apiSend } from '@/lib/api';
+import { useToast } from '../ui';
 import styles from './research.module.css';
 
 export default function Research() {
+  const toast = useToast();
   const [prompt, setPrompt] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   // ── Variant C: research on the user's own Claude via a deeplink ──
   const [starting, setStarting] = useState(false);
@@ -27,11 +29,10 @@ export default function Research() {
     const poll = async () => {
       while (!stop) {
         try {
-          const r = await fetch(`/api/records?base=${encodeURIComponent(run.baseId)}`);
-          const b = await r.json();
+          const b = await apiJson<{ records?: Array<Record<string, unknown>> }>(`/api/records?base=${encodeURIComponent(run.baseId)}`);
           if (stop) return;
           if (Array.isArray(b.records) && b.records.length) { setRunRows(b.records); return; }
-        } catch { /* network blip — retry */ }
+        } catch { /* poll error — swallow and retry, a toast here would spam */ }
         if (Date.now() - started > 5 * 60 * 1000) { if (!stop) setRunTimedOut(true); return; }
         await new Promise((res) => setTimeout(res, 4000));
       }
@@ -43,20 +44,13 @@ export default function Research() {
   const startClaude = async () => {
     if (!prompt.trim()) return;
     setStarting(true);
-    setError(null);
     try {
-      const res = await fetch('/api/research/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body?.error ?? 'Не удалось начать исследование');
+      const body = await apiSend<{ baseId: string; baseName: string; web: string }>('/api/research/start', 'POST', { prompt });
       setRun({ baseId: body.baseId, baseName: body.baseName, web: body.web });
       // open the user's OWN Claude with the ready-made prompt
       window.open(body.web, '_blank', 'noopener,noreferrer');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
+      toast(e instanceof Error ? e.message : 'Не удалось начать исследование');
     } finally {
       setStarting(false);
     }
@@ -97,7 +91,6 @@ export default function Research() {
           >
             {starting ? 'Открываю Claude…' : <><IconSearch size={15} /> Исследовать в моём Claude</>}
           </button>
-          {error && <span className={styles.error}>{error}</span>}
         </div>
 
         {run && (

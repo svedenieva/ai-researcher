@@ -5,6 +5,8 @@ import Link from 'next/link';
 import ThemeToggle from '../theme-toggle';
 import { formatBytes, isJunk, validateUpload, type SiteMeta } from '@/lib/sites/site';
 import { unzipEntries } from '@/lib/sites/zip';
+import { apiJson, apiSend } from '@/lib/api';
+import { useToast } from '../ui';
 import styles from './sites.module.css';
 
 // a file ready to be sent: path within the site + the content itself
@@ -16,9 +18,9 @@ interface Picked {
 type SortKey = 'date' | 'name';
 
 export default function Sites() {
+  const toast = useToast();
   const [sites, setSites] = useState<SiteMeta[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // search and parsing
   const [query, setQuery] = useState('');
@@ -41,17 +43,14 @@ export default function Sites() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/sites');
-      const body = await res.json();
-      if (!res.ok) throw new Error(body?.error ?? 'Не удалось загрузить список');
+      const body = await apiJson<{ sites?: SiteMeta[] }>('/api/sites');
       setSites(body.sites ?? []);
-      setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
+      toast(e instanceof Error ? e.message : 'Ошибка');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     load();
@@ -118,37 +117,28 @@ export default function Sites() {
     setPickError(null);
     setProgress({ done: 0, total: picked.length });
     try {
-      const res = await fetch('/api/sites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          client: client.trim(),
-          note: note.trim(),
-          tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
-          files: picked.map((p) => ({ path: p.path, size: p.blob.size })),
-        }),
+      const body = await apiSend<{ site: { id: string } }>('/api/sites', 'POST', {
+        name: name.trim(),
+        client: client.trim(),
+        note: note.trim(),
+        tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+        files: picked.map((p) => ({ path: p.path, size: p.blob.size })),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body?.error ?? 'Не удалось создать сайт');
-      const id: string = body.site.id;
+      const id = body.site.id;
 
       // one request per file: the serverless request body is limited to ~4.5 MB
       for (let i = 0; i < picked.length; i++) {
         const form = new FormData();
         form.append('path', picked[i].path);
         form.append('file', picked[i].blob, picked[i].path.split('/').pop() ?? 'file');
-        const up = await fetch(`/api/sites/${encodeURIComponent(id)}/files`, { method: 'POST', body: form });
-        if (!up.ok) {
-          const err = await up.json().catch(() => ({}));
-          throw new Error(err?.error ?? `Не удалось записать «${picked[i].path}»`);
-        }
+        // FormData body — no Content-Type header, the browser sets the multipart boundary
+        await apiJson(`/api/sites/${encodeURIComponent(id)}/files`, { method: 'POST', body: form });
         setProgress({ done: i + 1, total: picked.length });
       }
       reset();
       await load();
     } catch (e) {
-      setPickError(e instanceof Error ? e.message : 'Ошибка загрузки');
+      toast(e instanceof Error ? e.message : 'Ошибка загрузки');
       setProgress(null);
     }
   };
@@ -156,14 +146,10 @@ export default function Sites() {
   const remove = async (site: SiteMeta) => {
     if (!confirm(`Удалить «${site.name}» вместе со всеми файлами? Восстановить будет неоткуда.`)) return;
     try {
-      const res = await fetch(`/api/sites/${encodeURIComponent(site.id)}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error ?? 'Не удалось удалить');
-      }
+      await apiJson(`/api/sites/${encodeURIComponent(site.id)}`, { method: 'DELETE' });
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка удаления');
+      toast(e instanceof Error ? e.message : 'Ошибка удаления');
     }
   };
 
@@ -310,8 +296,6 @@ export default function Sites() {
             {shown.length === sites.length ? `${sites.length} сайтов` : `показано ${shown.length} из ${sites.length}`}
           </span>
         </div>
-
-        {error && <p className={styles.error}>{error}</p>}
 
         {loading ? (
           <p className={styles.empty}>Загружаю…</p>

@@ -255,27 +255,26 @@ export default function Home() {
   // favorites are per-base: reload when the base changes
   useEffect(() => {
     if (!ready) return;
-    fetch(`/api/favorites?base=${encodeURIComponent(base)}`)
-      .then((r) => r.json())
+    apiJson<{ favorites?: string[] }>(`/api/favorites?base=${encodeURIComponent(base)}`)
       .then((b) => setFavorites(Array.isArray(b.favorites) ? b.favorites : []))
-      .catch(() => setFavorites([]));
-  }, [base, ready]);
+      .catch((e) => {
+        setFavorites([]);
+        toast(e instanceof Error ? e.message : 'Не удалось загрузить избранное');
+      });
+  }, [base, ready, toast]);
 
   const onToggleFavorite = useCallback(
     (record: CatalogRecord) => {
       const id = String(record.id);
       // optimistic — the star responds immediately
       setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-      fetch('/api/favorites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base, record: id }),
-      }).catch(() => {
+      apiSend('/api/favorites', 'POST', { base, record: id }).catch((e) => {
         // it failed — roll back
         setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+        toast(e instanceof Error ? e.message : 'Не удалось сохранить избранное');
       });
     },
-    [base],
+    [base, toast],
   );
 
   const onSortReset = useCallback(() => {
