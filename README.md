@@ -9,7 +9,7 @@ Production: **https://ai-reesearcher.vercel.app**
 ## Features
 
 - **Bases as a tree** — each base has its own columns and rows; bases nest inside one another via a `parent`. Four built-in bases are read-only catalog slices (`market`, `ai`, `it`, `workforce`); user bases are fully editable.
-- **Spreadsheet grid** (`@aivocado/mindsheet`) — click-to-edit cells, an add-row line, coloured status badges (click a badge to filter), rubber/manual column widths, up-to-3-level sort with auto-grouping and per-group aggregates, drag-to-reorder rows, a record card for long fields, per-base view settings, and row virtualization.
+- **Spreadsheet grid** (`@aivocado/mindsheet`) — click-to-edit cells, an add-row line, coloured status badges (click a badge to filter), rubber/manual column widths, up-to-3-level sort with auto-grouping and per-group aggregates, drag-to-reorder rows, a record card for long fields, and per-base view settings.
 - **Full CRUD + recycle bin** — add / rename / retype / delete / reorder columns; rename / move / delete bases; delete rows. Every delete goes to a **bin** (`/bin`); only "empty bin" is permanent (confirm-gated). Column key is immutable, so cell data is never lost on a column edit.
 - **Catalog** — hundreds of companies in Supabase, filterable by section (AI / IT / WorkOS), vertical, region, verdict, popularity; per-company detail page; CSV export (RFC 4180) of exactly what's on screen.
 - **Import** — build a base from Google Sheets / CSV / TSV paste; columns are derived from the header row.
