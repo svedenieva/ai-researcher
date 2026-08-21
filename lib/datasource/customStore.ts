@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { ColumnDef, CatalogRecord } from './types';
-import { MODE_KEY, MODE_RESEARCH } from '../mode';
+import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE } from '../mode';
 
 // User bases (goal #1): log in → create a base → define columns → fill with rows.
 // Base definitions and their rows are stored separately from the product catalog.
@@ -100,6 +100,29 @@ export function normalizeNewColumn(col: NewColumn, existing: ColumnDef[]): Colum
   const type: ColumnDef['type'] = (['number', 'url', 'long-text', 'select'] as const).includes(col.type as never) ? col.type! : 'text';
   return { key, label, type, sortable: true, filterable: Boolean(col.filterable) && type !== 'long-text' && type !== 'url' };
 }
+// Fields the server owns. They must never arrive from the caller.
+//   id       — the row's identity. It used to be overridable because the object
+//              was built as { id, ...data }: a caller-supplied data.id won, two
+//              rows could share an id, and every later update/delete/restore
+//              addressed the wrong one.
+//   __pos    — manual sort position, written only by reorderRecords.
+//   __source — the originating base name, computed on read for nested views.
+// __mode is deliberately NOT here: it is the user-facing "Режим" column and a
+// person toggles it in the grid. It is validated instead — see below.
+const SERVER_OWNED = new Set(['id', '__pos', '__source']);
+
+export function sanitizeRecordData(data: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (SERVER_OWNED.has(k)) continue;
+    // an unknown mode would sit in storage as garbage; recordMode() masks it on
+    // read, so the bug would stay invisible until an export or a raw query
+    if (k === MODE_KEY && v !== MODE_RESEARCH && v !== MODE_REFERENCE) continue;
+    out[k] = v;
+  }
+  return out;
+}
+
 // column patch: key UNCHANGED; label/type/filterable optional; filterable
 // recomputed for the new type
 export function applyColumnPatch(col: ColumnDef, patch: ColumnPatch): ColumnDef {
@@ -164,19 +187,19 @@ export class MemoryCustomStore implements CustomStore {
     return (this.rows[baseId] ?? []).filter((r) => !gone.has(r.id));
   }
   async addRecord(baseId: string, data: Record<string, unknown>) {
-    const record = { id: `r${++this.seq}`, [MODE_KEY]: MODE_RESEARCH, ...data } as CatalogRecord;
+    const record = { id: `r${++this.seq}`, [MODE_KEY]: MODE_RESEARCH, ...sanitizeRecordData(data) } as CatalogRecord;
     (this.rows[baseId] ??= []).push(record);
     return record;
   }
   async addRecords(baseId: string, rows: Record<string, unknown>[]) {
     const bucket = (this.rows[baseId] ??= []);
-    for (const data of rows) bucket.push({ id: `r${++this.seq}`, [MODE_KEY]: MODE_RESEARCH, ...data } as CatalogRecord);
+    for (const data of rows) bucket.push({ id: `r${++this.seq}`, [MODE_KEY]: MODE_RESEARCH, ...sanitizeRecordData(data) } as CatalogRecord);
     return rows.length;
   }
   async updateRecord(baseId: string, id: string, patch: Record<string, unknown>) {
     const row = (this.rows[baseId] ?? []).find((r) => r.id === id);
     if (!row) return null;
-    Object.assign(row, patch);
+    Object.assign(row, sanitizeRecordData(patch));
     return row;
   }
   async reorderRecords(baseId: string, orderedIds: string[]) {
@@ -411,7 +434,7 @@ class SupabaseCustomStore implements CustomStore {
   async addRecord(baseId: string, data: Record<string, unknown>): Promise<CatalogRecord> {
     const { data: inserted, error } = await this.client
       .from('base_records')
-      .insert({ base_id: baseId, data: { [MODE_KEY]: MODE_RESEARCH, ...data } })
+      .insert({ base_id: baseId, data: { [MODE_KEY]: MODE_RESEARCH, ...sanitizeRecordData(data) } })
       .select('id, data')
       .single();
     if (error) throw new Error(`Supabase (base_records): ${error.message}`);
@@ -420,7 +443,7 @@ class SupabaseCustomStore implements CustomStore {
   }
   async addRecords(baseId: string, rows: Record<string, unknown>[]): Promise<number> {
     if (!rows.length) return 0;
-    const payload = rows.map((data) => ({ base_id: baseId, data: { [MODE_KEY]: MODE_RESEARCH, ...data } }));
+    const payload = rows.map((data) => ({ base_id: baseId, data: { [MODE_KEY]: MODE_RESEARCH, ...sanitizeRecordData(data) } }));
     const { error } = await this.client.from('base_records').insert(payload);
     if (error) throw new Error(`Supabase (base_records): ${error.message}`);
     return rows.length;
@@ -434,7 +457,7 @@ class SupabaseCustomStore implements CustomStore {
       .maybeSingle();
     if (readErr) throw new Error(`Supabase (base_records): ${readErr.message}`);
     if (!cur) return null;
-    const merged = { ...((cur as { data: Record<string, unknown> }).data ?? {}), ...patch };
+    const merged = { ...((cur as { data: Record<string, unknown> }).data ?? {}), ...sanitizeRecordData(patch) };
     const { error } = await this.client.from('base_records').update({ data: merged }).eq('id', id);
     if (error) throw new Error(`Supabase (base_records): ${error.message}`);
     return { id, ...merged } as CatalogRecord;
