@@ -435,6 +435,7 @@ export default function Home() {
             recordCard
             viewKey={base}
             strings={mindsheetStrings(lang)}
+            accent={toneColor(tabs.find((t) => t.id === base)?.tone)}
           />
         </div>
       </main>
