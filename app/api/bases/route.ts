@@ -3,6 +3,7 @@ import { currentEmail } from '@/lib/current-user';
 import { getCustomStore, canAccessBase, RESERVED_COLUMN_KEYS, type CustomBase } from '@/lib/datasource/customStore';
 import type { ColumnDef } from '@/lib/datasource/types';
 import { checkName, checkPayload, checkRowCount } from '@/lib/limits';
+import { publicError } from '@/lib/errors';
 
 // GET takes no request, so by default Next would serve a snapshot taken
 // at build time — the list of bases would "freeze" until the next deploy.
@@ -133,8 +134,7 @@ export async function POST(request: Request): Promise<Response> {
     const imported = rows.length ? await store.addRecords(base.id, rows) : 0;
     return Response.json({ base, imported });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Ошибка создания базы';
-    return Response.json({ error: msg }, { status: 500 });
+    return Response.json({ error: publicError(e, 'Не удалось создать базу', 'createBase failed') }, { status: 500 });
   }
 }
 

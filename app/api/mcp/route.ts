@@ -8,6 +8,7 @@ import { emailForToken } from '@/lib/mcp/tokens';
 import { decompose } from '@/lib/research/decompose';
 import type { ColumnDef } from '@/lib/datasource/types';
 import { checkPayloadEn, checkRowCountEn } from '@/lib/limits';
+import { publicError } from '@/lib/errors';
 // @ts-expect-error — shared rules text, one copy for stdio and HTTP
 import { INSTRUCTIONS } from '@/lib/mcp/instructions.mjs';
 
@@ -675,7 +676,7 @@ export async function POST(request: Request): Promise<Response> {
     try {
       return reply(await callTool(name, args, me));
     } catch (e) {
-      return reply(failed(e instanceof Error ? e.message : 'tool call failed'));
+      return reply(failed(publicError(e, 'tool call failed', `mcp tool ${name} failed`)));
     }
   }
 

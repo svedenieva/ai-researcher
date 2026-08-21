@@ -2,6 +2,7 @@ import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
 import { BASES } from '@/lib/datasource/bases';
 import { currentEmail } from '@/lib/current-user';
 import type { ColumnPatch, NewColumn } from '@/lib/datasource/customStore';
+import { publicError } from '@/lib/errors';
 
 // Live management of a custom base's columns: add, rename, change type,
 // delete, reorder. Built-in bases (catalog slices) are read-only — their
@@ -55,7 +56,6 @@ export async function POST(request: Request): Promise<Response> {
     if (!base) return Response.json({ error: 'База не найдена' }, { status: 404 });
     return Response.json({ base });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Ошибка изменения колонок';
-    return Response.json({ error: msg }, { status: 500 });
+    return Response.json({ error: publicError(e, 'Не удалось изменить колонки', 'columns change failed') }, { status: 500 });
   }
 }

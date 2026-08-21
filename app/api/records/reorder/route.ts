@@ -1,6 +1,7 @@
 import { BASES } from '@/lib/datasource/bases';
 import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
 import { currentEmail } from '@/lib/current-user';
+import { publicError } from '@/lib/errors';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
 
@@ -22,7 +23,6 @@ export async function POST(request: Request): Promise<Response> {
     const reordered = await store.reorderRecords(baseId, order);
     return Response.json({ reordered });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Ошибка изменения порядка';
-    return Response.json({ error: msg }, { status: 500 });
+    return Response.json({ error: publicError(e, 'Не удалось изменить порядок', 'reorderRecords failed') }, { status: 500 });
   }
 }

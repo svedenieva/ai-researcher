@@ -1,14 +1,14 @@
 import { currentEmail } from '@/lib/current-user';
 import { getSiteStore, SitesNotSetUp } from '@/lib/sites/store';
 import { validateUpload, type SiteFile } from '@/lib/sites/site';
+import { publicError } from '@/lib/errors';
 
 // The list of sites changes at runtime; a build-time snapshot would show yesterday's.
 export const dynamic = 'force-dynamic';
 
 function fail(e: unknown): Response {
   if (e instanceof SitesNotSetUp) return Response.json({ error: e.message }, { status: 503 });
-  const msg = e instanceof Error ? e.message : 'Ошибка хранилища сайтов';
-  return Response.json({ error: msg }, { status: 500 });
+  return Response.json({ error: publicError(e, 'Не удалось получить список сайтов', 'sites store failed') }, { status: 500 });
 }
 
 // The registry is shared: everyone signed in sees all sites. This is deliberately

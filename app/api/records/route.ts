@@ -8,6 +8,7 @@ import { descendantsOf } from '@/lib/datasource/tree';
 import type { ListParams } from '@/lib/datasource/types';
 import { isSafeUrlValue } from '@/lib/safe-url';
 import { checkPayload } from '@/lib/limits';
+import { publicError } from '@/lib/errors';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
 
@@ -205,8 +206,7 @@ export async function POST(request: Request): Promise<Response> {
     const record = await store.addRecord(baseId, data);
     return Response.json({ record });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Ошибка добавления строки';
-    return Response.json({ error: msg }, { status: 500 });
+    return Response.json({ error: publicError(e, 'Не удалось добавить строку', 'addRecord failed') }, { status: 500 });
   }
 }
 
@@ -239,8 +239,7 @@ export async function PATCH(request: Request): Promise<Response> {
     if (!record) return Response.json({ error: 'Строка не найдена' }, { status: 404 });
     return Response.json({ record });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Ошибка обновления';
-    return Response.json({ error: msg }, { status: 500 });
+    return Response.json({ error: publicError(e, 'Не удалось обновить строку', 'updateRecord failed') }, { status: 500 });
   }
 }
 
