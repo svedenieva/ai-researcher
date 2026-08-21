@@ -4,6 +4,7 @@ import { BASES, baseById } from '@/lib/datasource/bases';
 import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
 import { currentEmail } from '@/lib/current-user';
 import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE, recordMode } from '@/lib/mode';
+import { descendantsOf } from '@/lib/datasource/tree';
 import type { ListParams } from '@/lib/datasource/types';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
@@ -79,20 +80,7 @@ export async function GET(request: Request): Promise<Response> {
         // descendants are taken only among ACCESSIBLE bases: another person's
         // private base nested inside a shared one won't appear in the slice
         const all = await store.listBases(me);
-        // all descendants of the selected base
-        const kids = new Map<string, string[]>();
-        for (const b of all) {
-          if (!b.parent) continue;
-          kids.set(b.parent, [...(kids.get(b.parent) ?? []), b.id]);
-        }
-        const descendants: string[] = [];
-        const walk = (id: string) => {
-          for (const child of kids.get(id) ?? []) {
-            descendants.push(child);
-            walk(child);
-          }
-        };
-        walk(baseId);
+        const descendants = descendantsOf(all, baseId);
 
         const nameById = new Map(all.map((b) => [b.id, b.name]));
         // the mode is normalised AFTER the spread so rows written before the
@@ -157,19 +145,7 @@ export async function GET(request: Request): Promise<Response> {
     // mix into the built-in section only bases ACCESSIBLE to the user
     const me = await currentEmail();
     const all = await store.listBases(me);
-    const kids = new Map<string, string[]>();
-    for (const b of all) {
-      if (!b.parent) continue;
-      kids.set(b.parent, [...(kids.get(b.parent) ?? []), b.id]);
-    }
-    const descendants: string[] = [];
-    const walk = (id: string) => {
-      for (const child of kids.get(id) ?? []) {
-        descendants.push(child);
-        walk(child);
-      }
-    };
-    walk(base.id);
+    const descendants = descendantsOf(all, base.id);
 
     if (descendants.length) {
       const nameById = new Map(all.map((b) => [b.id, b.name]));

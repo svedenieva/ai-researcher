@@ -17,7 +17,13 @@ export function parseTokens(raw = process.env.MCP_TOKENS ?? ''): TokenEntry[] {
     if (i === -1) continue;
     const token = pair.slice(0, i).trim();
     const email = pair.slice(i + 1).trim();
-    if (token && email) out.push({ token, email });
+    if (!token || !email) continue;
+    // Split on the FIRST colon, so a token that itself contains one would turn
+    // into a shorter, still-working key ("a:b:me@x" → token "a"). Anything whose
+    // second half isn't a plain address is malformed: drop the whole entry
+    // rather than quietly authenticating a prefix.
+    if (email.includes(':')) continue;
+    out.push({ token, email });
   }
   return out;
 }
