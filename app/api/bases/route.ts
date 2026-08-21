@@ -157,7 +157,12 @@ export async function PATCH(request: Request): Promise<Response> {
       // a base can't be nested into itself or its own branch — otherwise
       // the tree becomes cyclic, and /api/records walking the descendants goes
       // into infinite recursion (RangeError on every read of such a base)
-      const all = await store.listBases(me);
+      //
+      // the cycle check must see EVERY base, not just the ones visible to the
+      // mover: a link through someone else's private base is invisible here but
+      // very much real in the tree, and the resulting cycle makes /api/records
+      // recurse until RangeError on every read of that branch
+      const all = await store.listAllBases();
       const kids = new Map<string, string[]>();
       for (const b of all) {
         if (!b.parent) continue;

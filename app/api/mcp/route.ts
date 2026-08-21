@@ -298,6 +298,17 @@ async function requireBase(
   return { base };
 }
 
+// A parent must exist AND be reachable by the caller. Without the access half,
+// a base could be filed under someone else's private node: its rows then show
+// up in that person's merged view, and the invisible link is the middle piece
+// of the cycle that makes /api/records recurse forever.
+async function badParent(store: CustomStore, parent: string, me: string | null): Promise<string | null> {
+  if (BUILTIN_IDS.has(parent)) return null;
+  const base = await store.getBase(parent);
+  if (!base || !canAccessBase(base, me)) return `no base with id ${parent}`;
+  return null;
+}
+
 // Would assigning `parent` to `id` create a cycle in the base tree? Walks the
 // parent chain from `parent` up; built-in bases are always valid roots.
 async function wouldCreateCycle(store: CustomStore, id: string, parent: string): Promise<boolean> {
@@ -358,6 +369,10 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       if (!nm) return failed('name is required');
       if (!cols.length) return failed('at least one column is required');
       const parent = typeof args.parent === 'string' && args.parent ? args.parent : null;
+      if (parent) {
+        const bad = await badParent(store, parent, me);
+        if (bad) return failed(bad);
+      }
       // Validate the rows before the base is created — otherwise a rejected
       // import still leaves a real, permanent, empty base behind.
       const rows = Array.isArray(args.rows) ? args.rows.map((r) => mapRow(cols, r)).filter((d) => Object.keys(d).length) : [];
@@ -429,10 +444,8 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       const parent = args.parent === null || args.parent === undefined ? null : String(args.parent);
       if (parent) {
         if (parent === id) return failed('a base cannot be its own parent');
-        if (!BUILTIN_IDS.has(parent)) {
-          const parentBase = await store.getBase(parent);
-          if (!parentBase) return failed(`no base with id ${parent}`);
-        }
+        const bad = await badParent(store, parent, me);
+        if (bad) return failed(bad);
         if (await wouldCreateCycle(store, id, parent)) return failed('moving the base would create a parent cycle');
       }
       const updated = await store.moveBase(id, parent);
