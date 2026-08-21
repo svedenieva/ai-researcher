@@ -2,6 +2,7 @@ import { getDataSource } from '@/lib/datasource';
 import { BASES } from '@/lib/datasource/bases';
 import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
 import type { CustomBase, CustomStore } from '@/lib/datasource/customStore';
+import { accessibleBinFor, binHasBase, canRestoreRows, emptyScope, scopeBin } from '@/lib/datasource/binAccess';
 import { decompose } from '@/lib/research/decompose';
 import type { ColumnDef } from '@/lib/datasource/types';
 // @ts-expect-error — shared rules text, one copy for stdio and HTTP
@@ -503,8 +504,12 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       return rec ? text(rec) : failed('row not found');
     }
 
+    // The bin tools below are access-scoped exactly like the web bin: a token
+    // sees and destroys only its own / shared / ownerless trash. They used to
+    // call the store directly, which meant any token could read every
+    // teammate's deleted base names and permanently wipe the whole team's bin.
     case 'list_bin': {
-      const bin = await store.listBin();
+      const bin = await accessibleBinFor(me);
       return text({
         bases: bin.bases.map((b) => ({ id: b.id, name: b.name })),
         records: bin.records.map((r) => ({
@@ -518,10 +523,13 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
     case 'restore': {
       const rowsArg = args.rows as { base?: unknown; ids?: unknown } | undefined;
       if (!args.base && !rowsArg) return failed('specify base or rows');
+      const bin = await accessibleBinFor(me);
       const restored: { base?: string; rows?: number } = {};
 
       if (typeof args.base === 'string' && args.base) {
         if (BUILTIN_IDS.has(args.base)) return failed('built-in bases cannot be restored');
+        // not in YOUR bin — indistinguishable from "doesn't exist", on purpose
+        if (!binHasBase(bin, args.base)) return failed('base not found in trash');
         const ok = await store.restoreBase(args.base);
         if (!ok) return failed('base not found in trash');
         restored.base = args.base;
@@ -531,6 +539,7 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
         const base = typeof rowsArg.base === 'string' ? rowsArg.base : '';
         const ids = Array.isArray(rowsArg.ids) ? rowsArg.ids.map(String) : [];
         if (!base || !ids.length) return failed('rows needs base and ids');
+        if (!(await canRestoreRows(bin, me, base))) return failed('base not found');
         restored.rows = await store.restoreRecords(base, ids);
       }
 
@@ -539,20 +548,21 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
 
     case 'empty_bin': {
       const confirm = Boolean(args.confirm);
-      const scopeId = typeof args.base === 'string' && args.base ? args.base : undefined;
-      const bin = await store.listBin();
-      const scopedBases = scopeId ? bin.bases.filter((b) => b.id === scopeId) : bin.bases;
-      const scopedRecords = scopeId ? bin.records.filter((r) => r.baseId === scopeId) : bin.records;
+      const scopeId = typeof args.base === 'string' && args.base ? args.base : null;
+      const bin = await accessibleBinFor(me);
+      const scoped = scopeBin(bin, scopeId);
+      if (scopeId && !scoped.bases.length && !scoped.records.length) return failed('base not found in trash');
 
       if (!confirm) {
         return text({
           dryRun: true,
-          wouldDelete: { baseCount: scopedBases.length, records: scopedRecords.length },
+          wouldDelete: { baseCount: scoped.bases.length, records: scoped.records.length },
           hint: 'call again with confirm:true to delete permanently',
         });
       }
 
-      const result = await store.emptyBin(scopeId ? { baseId: scopeId } : undefined);
+      // one accessible base id at a time — never a blanket wipe of the table
+      const result = await emptyScope(store, scoped);
       return text({ emptied: true, ...result });
     }
 
