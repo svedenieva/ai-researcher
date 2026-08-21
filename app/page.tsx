@@ -15,6 +15,7 @@ import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
 import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE, MODE_VALUES } from '@/lib/mode';
+import { recordsQuery } from '@/lib/records-query';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
 import { IconDownload } from './icons';
@@ -205,14 +206,9 @@ export default function Home() {
 
   useEffect(() => {
     if (!ready) return;
-    const qs = new URLSearchParams();
-    if (base !== DEFAULT_BASE) qs.set('base', base);
-    if (sort) { qs.set('sortKey', sort.key); qs.set('sortDir', sort.dir); }
-    for (const [key, value] of Object.entries(filters)) qs.append('f', `${key}:${value}`);
-    if (search.trim()) { qs.set('q', search.trim()); }
-    if (mode !== 'all') qs.set('mode', mode);
+    const qs = recordsQuery({ base, sort, filters, search, mode });
     setLoading(true);
-    apiJson<{ columns?: ColumnDef[]; records?: CatalogRecord[]; total?: number; facets?: Record<string, string[]> }>(`/api/records?${qs.toString()}`)
+    apiJson<{ columns?: ColumnDef[]; records?: CatalogRecord[]; total?: number; facets?: Record<string, string[]> }>(`/api/records?${qs}`)
       .then((body) => {
         setColumns(body.columns ?? []);
         setRecords(body.records ?? []);
@@ -309,16 +305,10 @@ export default function Home() {
     : columns;
   const displayFacets = isCustom ? { ...facets, [MODE_KEY]: [...MODE_VALUES] } : facets;
 
-  // The export link mirrors the data request — what's on screen is what's in the file
-  const exportHref = (() => {
-    const qs = new URLSearchParams();
-    if (base !== DEFAULT_BASE) qs.set('base', base);
-    if (sort) { qs.set('sortKey', sort.key); qs.set('sortDir', sort.dir); }
-    for (const [key, value] of Object.entries(filters)) qs.append('f', `${key}:${value}`);
-    if (search.trim()) qs.set('q', search.trim());
-    const s = qs.toString();
-    return `/api/records/export${s ? `?${s}` : ''}`;
-  })();
+  // The export link mirrors the data request — same builder, so the file can't
+  // describe a different slice than the screen
+  const exportQs = recordsQuery({ base, sort, filters, search, mode });
+  const exportHref = `/api/records/export${exportQs ? `?${exportQs}` : ''}`;
 
 
   return (

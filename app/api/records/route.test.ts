@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { GET, DELETE } from './route';
 import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
 import { getCustomStore } from '@/lib/datasource/customStore';
+import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE } from '@/lib/mode';
 
 function call(url: string) {
   return GET(new Request(url));
@@ -84,6 +85,34 @@ describe('GET /api/records', () => {
     );
     const body = await res.json();
     expect(body.facets.region).toEqual(expect.arrayContaining(['EU', 'US']));
+  });
+});
+
+describe('GET /api/records — research/reference mode', () => {
+  // a base with one row of each kind; the flag is absent on the first row,
+  // which is exactly how older rows look — they must count as drafts
+  async function seedModeBase() {
+    const store = getCustomStore();
+    const base = await store.createBase({ name: 'ModeTest', columns: [{ key: 'name', label: 'N', type: 'text' }] });
+    await store.addRecord(base.id, { name: 'черновик' });
+    await store.addRecord(base.id, { name: 'проверено', [MODE_KEY]: MODE_REFERENCE });
+    return base;
+  }
+
+  it('tags every row with a mode, defaulting to draft', async () => {
+    const base = await seedModeBase();
+    const body = await (await call(`http://localhost/api/records?base=${base.id}`)).json();
+    expect(body.records.length).toBe(2);
+    const byName = Object.fromEntries(body.records.map((r: Record<string, string>) => [r.name, r[MODE_KEY]]));
+    expect(byName['черновик']).toBe(MODE_RESEARCH);
+    expect(byName['проверено']).toBe(MODE_REFERENCE);
+  });
+
+  it('narrows the base to the requested mode', async () => {
+    const base = await seedModeBase();
+    const u = `http://localhost/api/records?base=${base.id}&mode=${encodeURIComponent(MODE_REFERENCE)}`;
+    const body = await (await call(u)).json();
+    expect(body.records.map((r: { name: string }) => r.name)).toEqual(['проверено']);
   });
 });
 
