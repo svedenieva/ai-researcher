@@ -14,23 +14,12 @@ import BasePicker from './base-picker';
 import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
-import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE, MODE_VALUES } from '@/lib/mode';
+import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE, MODE_VALUES, withModeColumn } from '@/lib/mode';
 import { recordsQuery } from '@/lib/records-query';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
 import { IconDownload } from './icons';
 
-// system "mode" column injected into custom bases: a per-record research/reference badge
-const MODE_COLUMN: ColumnDef = {
-  key: MODE_KEY,
-  label: 'Режим',
-  type: 'select',
-  sortable: true,
-  filterable: false,
-  badge: true,
-  badgeVariant: { [MODE_RESEARCH]: 'teal', [MODE_REFERENCE]: 'amber' },
-  order: [MODE_RESEARCH, MODE_REFERENCE],
-};
 import styles from './page.module.css';
 
 const DEFAULT_SORT = { key: 'pop', dir: 'asc' as const };
@@ -300,9 +289,7 @@ export default function Home() {
 
   // inject the system "Режим" column into custom bases: shown as a badge right
   // after the name column; its select options come from facets
-  const displayColumns = isCustom && columns.length
-    ? [columns[0], MODE_COLUMN, ...columns.slice(1).filter((c) => c.key !== MODE_KEY)]
-    : columns;
+  const displayColumns = isCustom ? withModeColumn(columns) : columns;
   const displayFacets = isCustom ? { ...facets, [MODE_KEY]: [...MODE_VALUES] } : facets;
 
   // The export link mirrors the data request — same builder, so the file can't

@@ -25,6 +25,14 @@ describe('GET /api/records/export', () => {
     expect(csv).toContain('проверено');
   });
 
+  it('carries the mode column the grid shows', async () => {
+    const base = await seedBase();
+    const csv = await (await GET(new Request(`http://localhost/api/records/export?base=${base.id}`))).text();
+    const [header] = csv.split('\n');
+    expect(header).toContain('Режим');
+    expect(csv).toContain(MODE_REFERENCE);
+  });
+
   it('honours the mode filter', async () => {
     const base = await seedBase();
     const url = `http://localhost/api/records/export?base=${base.id}&mode=${encodeURIComponent(MODE_REFERENCE)}`;

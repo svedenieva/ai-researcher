@@ -2,6 +2,7 @@ import { GET as records } from '../route';
 import { attachmentHeader, csvBody, rowsFor } from '@/lib/csv';
 import { BASES, baseById } from '@/lib/datasource/bases';
 import { getCustomStore } from '@/lib/datasource/customStore';
+import { withModeColumn } from '@/lib/mode';
 import type { ColumnDef } from '@/lib/datasource/types';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
@@ -23,11 +24,14 @@ export async function GET(request: Request): Promise<Response> {
   const body = (await res.json()) as {
     columns: ColumnDef[];
     records: Array<Record<string, unknown>>;
+    custom?: boolean;
   };
 
   // long-text isn't shown in the grid but does go into the file: CSV is a
-  // channel for exchanging values, not a screenshot
-  const columns = body.columns ?? [];
+  // channel for exchanging values, not a screenshot.
+  // The "Режим" column is the mirror case — the grid injects it into custom
+  // bases, and the records already carry the value, so the file carries it too.
+  const columns = body.custom ? withModeColumn(body.columns ?? []) : body.columns ?? [];
   const table = {
     headers: columns.map((c) => c.label),
     rows: rowsFor(columns, body.records ?? []),
