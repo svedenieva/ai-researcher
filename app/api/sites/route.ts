@@ -58,6 +58,7 @@ export async function POST(request: Request): Promise<Response> {
       fileCount: check.value.files.length,
       sizeBytes: check.value.sizeBytes,
       owner: await currentEmail(),
+      files: check.value.files,
     });
     return Response.json({ site, files: check.value.files });
   } catch (e) {

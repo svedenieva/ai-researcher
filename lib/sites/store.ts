@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { slugId, type SiteMeta } from './site';
+import { slugId, type SiteFile, type SiteMeta } from './site';
 
 // Site storage: a descriptor row in the `sites` table, the files themselves in a
 // private `sites` bucket under the key <id>/<path within the site>. The bucket is
@@ -17,6 +17,9 @@ export interface NewSite {
   fileCount: number;
   sizeBytes: number;
   owner?: string | null;
+  // the validated manifest — stored so the per-file upload route can check
+  // each incoming path against what was actually agreed at creation time
+  files: SiteFile[];
 }
 
 // Setup is done by hand in the dashboard (see docs/Гайд — the «Сайты» module), so
@@ -46,6 +49,9 @@ function toMeta(row: Record<string, unknown>): SiteMeta {
     sizeBytes: Number(row.size_bytes ?? 0),
     owner: (row.owner as string) ?? null,
     createdAt: String(row.created_at ?? ''),
+    // a row created before this column existed has no manifest — treated as
+    // empty rather than crashing, but that means it accepts no file uploads
+    files: (row.files as SiteFile[]) ?? [],
   };
 }
 
@@ -84,6 +90,7 @@ export class SiteStore {
       file_count: def.fileCount,
       size_bytes: def.sizeBytes,
       owner: def.owner ?? null,
+      files: def.files,
     };
     const { data, error } = await this.client.from('sites').insert(row).select('*').single();
     if (error) explain(error.message);

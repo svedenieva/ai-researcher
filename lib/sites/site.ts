@@ -19,10 +19,16 @@ export interface SiteMeta {
   sizeBytes: number;
   owner: string | null;
   createdAt: string;
+  // the manifest agreed at upload time — the per-file upload route checks
+  // every path against it, so a legacy row without one has nothing to accept
+  files: SiteFile[];
 }
 
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export const MAX_FILES = 200;
+// Per-file and per-count ceilings existed; the sum did not, so 200 files of
+// exactly 10 MB each passed as 2 GB in one upload.
+export const MAX_TOTAL_BYTES = 100 * 1024 * 1024;
 
 const RU_LAT: Record<string, string> = {
   а: 'a', б: 'b', в: 'v', г: 'g', ґ: 'g', д: 'd', е: 'e', ё: 'e', є: 'ye',
@@ -104,6 +110,12 @@ export function validateUpload(input: SiteFile[]): { ok: true; value: UploadChec
   // first drop the junk, then trim the wrapper — this preserves the order and the
   // new paths line up with their own sizes
   const kept = input.filter((f) => !isJunk(f.path));
+  // check the paths as uploaded, before the wrapper folder is trimmed: a set
+  // that all starts with '..' looks "wrapped" to stripCommonPrefix, which then
+  // silently rewrites the intent instead of refusing it
+  const rawUnsafe = kept.find((f) => !isSafePath(f.path));
+  if (rawUnsafe) return { ok: false, error: `Недопустимый путь: «${rawUnsafe.path}»` };
+
   const paths = stripCommonPrefix(kept.map((f) => f.path));
   const files: SiteFile[] = kept.map((f, i) => ({ path: paths[i], size: f.size }));
 
@@ -118,6 +130,12 @@ export function validateUpload(input: SiteFile[]): { ok: true; value: UploadChec
   }
   const unsafe = files.find((f) => !isSafePath(f.path));
   if (unsafe) return { ok: false, error: `Недопустимый путь: «${unsafe.path}»` };
+
+  const total = files.reduce((s, f) => s + f.size, 0);
+  if (total > MAX_TOTAL_BYTES) {
+    const mb = (total / 1024 / 1024).toFixed(0);
+    return { ok: false, error: `Сайт весит ${mb} МБ — больше ${MAX_TOTAL_BYTES / 1024 / 1024} МБ` };
+  }
 
   const entry = pickEntry(files.map((f) => f.path));
   if (!entry) {
