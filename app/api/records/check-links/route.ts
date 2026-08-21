@@ -21,18 +21,18 @@ export async function POST(request: Request): Promise<Response> {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: 'Некорректный запрос' }, { status: 400 });
+    return Response.json({ error: 'Malformed request' }, { status: 400 });
   }
   const baseId = String(body?.base ?? '');
   if (!baseId || BUILTIN_IDS.has(baseId)) {
-    return Response.json({ error: 'Проверять можно только свои базы' }, { status: 400 });
+    return Response.json({ error: 'Only your own bases can be checked' }, { status: 400 });
   }
 
   const store = getCustomStore();
   const me = await currentEmail();
   const base = await store.getBase(baseId);
   if (!base || !canAccessBase(base, me)) {
-    return Response.json({ error: 'База не найдена или нет доступа' }, { status: 404 });
+    return Response.json({ error: 'Base not found, or no access' }, { status: 404 });
   }
 
   try {
@@ -73,6 +73,6 @@ export async function POST(request: Request): Promise<Response> {
     });
   } catch (e) {
     console.error('link check failed:', e);
-    return Response.json({ error: 'Не удалось проверить ссылки' }, { status: 500 });
+    return Response.json({ error: 'Could not check the links' }, { status: 500 });
   }
 }

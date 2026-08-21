@@ -13,25 +13,25 @@ export async function POST(
   try {
     form = await request.formData();
   } catch {
-    return Response.json({ error: 'Ожидается multipart/form-data' }, { status: 400 });
+    return Response.json({ error: 'multipart/form-data expected' }, { status: 400 });
   }
 
   const path = String(form.get('path') ?? '');
   const file = form.get('file');
   if (!path || !(file instanceof Blob)) {
-    return Response.json({ error: 'Нужны поля path и file' }, { status: 400 });
+    return Response.json({ error: 'The path and file fields are required' }, { status: 400 });
   }
   // the key is joined as <id>/<path> — '..' would divert the write into another site
-  if (!isSafePath(path)) return Response.json({ error: `Недопустимый путь: «${path}»` }, { status: 400 });
+  if (!isSafePath(path)) return Response.json({ error: `Invalid path: "${path}"` }, { status: 400 });
   if (file.size > MAX_FILE_BYTES) {
-    return Response.json({ error: `Файл «${path}» больше 10 МБ` }, { status: 400 });
+    return Response.json({ error: `File "${path}" is larger than 10 MB` }, { status: 400 });
   }
 
   try {
     const store = getSiteStore();
     // without a row in the table the file would hang in storage owned by no one
     const site = await store.get(id);
-    if (!site) return Response.json({ error: 'Сайт не найден' }, { status: 404 });
+    if (!site) return Response.json({ error: 'Site not found' }, { status: 404 });
     // The manifest is the contract agreed at validateUpload time. Accepting a
     // path outside it turned this route into unbounded storage: MAX_FILES and
     // the total-size ceiling were both bypassed one request at a time.
@@ -44,7 +44,7 @@ export async function POST(
     // always uploads against a freshly created row that does have a manifest,
     // so this does not block any live flow; it is not meant as a backfill path.
     if (!(site.files ?? []).some((f) => f.path === path)) {
-      return Response.json({ error: `Файла «${path}» нет в составе сайта` }, { status: 400 });
+      return Response.json({ error: `File "${path}" is not part of this site` }, { status: 400 });
     }
     const bytes = new Uint8Array(await file.arrayBuffer());
     await store.putFile(id, path, bytes, contentTypeFor(path));

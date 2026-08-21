@@ -20,7 +20,7 @@ export async function DELETE(request: Request): Promise<Response> {
   // restrict the scope to only the ids accessible to the user
   const scoped = scopeBin(bin, scopeId);
   if (scopeId && !scoped.bases.length && !scoped.records.length) {
-    return Response.json({ error: 'Нет доступа к этой базе' }, { status: 404 });
+    return Response.json({ error: 'No access to this base' }, { status: 404 });
   }
 
   if (body?.confirm !== true) {

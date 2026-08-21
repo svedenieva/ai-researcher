@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 // is marked no-store so it doesn't sit in a shared cache.
 export async function GET(request: Request): Promise<Response> {
   const me = await currentEmail();
-  if (!me) return Response.json({ error: 'Не удалось определить пользователя' }, { status: 401 });
+  if (!me) return Response.json({ error: 'Could not identify the user' }, { status: 401 });
 
   const token = tokenForEmail(me);
   const endpoint = `${new URL(request.url).origin}/api/mcp`;

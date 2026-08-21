@@ -19,21 +19,21 @@ function depthOf(value: unknown, level = 0): number {
 
 /** Null when the row is acceptable, otherwise the message to send back. */
 export function checkPayload(data: Record<string, unknown>): string | null {
-  if (depthOf(data) > MAX_DEPTH) return 'Слишком глубокая вложенность значения';
+  if (depthOf(data) > MAX_DEPTH) return 'The value is nested too deeply';
   for (const [key, value] of Object.entries(data)) {
     if (typeof value === 'string' && value.length > MAX_CELL_CHARS) {
-      return `Значение в поле «${key}» длиннее ${MAX_CELL_CHARS} символов`;
+      return `The value in field "${key}" is longer than ${MAX_CELL_CHARS} characters`;
     }
   }
   return null;
 }
 
 export function checkRowCount(n: number): string | null {
-  return n > MAX_ROWS_PER_REQUEST ? `За один раз можно добавить не больше ${MAX_ROWS_PER_REQUEST} строк` : null;
+  return n > MAX_ROWS_PER_REQUEST ? `At most ${MAX_ROWS_PER_REQUEST} rows can be added at once` : null;
 }
 
 export function checkName(name: string): string | null {
-  return name.length > MAX_NAME_CHARS ? `Название длиннее ${MAX_NAME_CHARS} символов` : null;
+  return name.length > MAX_NAME_CHARS ? `The name is longer than ${MAX_NAME_CHARS} characters` : null;
 }
 
 // English mirrors of checkPayload/checkRowCount for the MCP tool responses —

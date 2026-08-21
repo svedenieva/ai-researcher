@@ -22,17 +22,17 @@ export interface NewSite {
   files: SiteFile[];
 }
 
-// Setup is done by hand in the dashboard (see docs/Гайд — the «Сайты» module), so
+// Setup is done by hand in the Supabase dashboard (create the bucket, run the SQL), so
 // "bucket not created" and "SQL not run" are expected states, not a failure. We
 // catch them and hint the next step instead of showing raw Supabase text.
 export class SitesNotSetUp extends Error {}
 
 function explain(message: string): never {
   if (/bucket not found/i.test(message)) {
-    throw new SitesNotSetUp('Хранилище не настроено: в Supabase нет приватного бакета «sites»');
+    throw new SitesNotSetUp('Storage is not set up: Supabase has no private "sites" bucket');
   }
   if (/relation .*sites.* does not exist|could not find the table/i.test(message)) {
-    throw new SitesNotSetUp('Таблица «sites» не создана: прогоните SQL из supabase/schema.sql');
+    throw new SitesNotSetUp('The "sites" table does not exist: run the SQL from supabase/schema.sql');
   }
   throw new Error(message);
 }
@@ -157,7 +157,7 @@ export function getSiteStore(): SiteStore {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) {
-    throw new SitesNotSetUp('Не заданы SUPABASE_URL и SUPABASE_SERVICE_KEY — сайты хранить негде');
+    throw new SitesNotSetUp('SUPABASE_URL and SUPABASE_SERVICE_KEY are unset - there is nowhere to store sites');
   }
   g.__siteStore = new SiteStore(url, key);
   return g.__siteStore;

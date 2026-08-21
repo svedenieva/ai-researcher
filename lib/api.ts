@@ -15,7 +15,7 @@ export async function apiJson<T = unknown>(input: RequestInfo | URL, init?: Requ
   try {
     res = await fetch(input, init);
   } catch {
-    throw new ApiError('Нет соединения с сервером', 0);
+    throw new ApiError('No connection to the server', 0);
   }
 
   // An expired session makes the middleware redirect even /api calls to /login;
@@ -24,7 +24,7 @@ export async function apiJson<T = unknown>(input: RequestInfo | URL, init?: Requ
   // dies on the next property access — the user saw a raw
   // "Cannot read properties of null" instead of "sign in again".
   if (res.redirected && new URL(res.url).pathname.startsWith('/login')) {
-    throw new ApiError('Сессия истекла — войдите заново', 401);
+    throw new ApiError('Your session expired - sign in again', 401);
   }
 
   let body: unknown = null;
@@ -35,7 +35,7 @@ export async function apiJson<T = unknown>(input: RequestInfo | URL, init?: Requ
   }
   if (!res.ok) {
     const msg = (body as { error?: string } | null)?.error;
-    throw new ApiError(msg || `Ошибка сервера (${res.status})`, res.status);
+    throw new ApiError(msg || `Server error (${res.status})`, res.status);
   }
   return body as T;
 }

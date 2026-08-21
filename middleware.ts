@@ -7,24 +7,25 @@ import { isAllowed } from '@/lib/supabase-auth';
 //     whose email passes isAllowed().
 //   - Not configured on a deployment (VERCEL): fail closed (no open data).
 //   - Not configured locally: open, for development.
-// /api/mcp проверяет личный токен сам, поэтому сессия ему не нужна — иначе
-// внешний клиент вместо ответа получал бы редирект на страницу входа.
+// /api/mcp checks its own personal token, so it needs no session: otherwise
+// an external client would get a redirect to the sign-in page instead of an answer.
 //
-// /.well-known/ здесь по той же причине, но с другим следствием. Клиент MCP
-// перед подключением ищет описание авторизации (oauth-protected-resource и
-// подобные). Своего OAuth у нас нет — авторизация по личному токену, и
-// правильный ответ на эти адреса «нет такого», то есть 404. Под защитой
-// middleware они отдавали 307 на /login, а редирект клиент читает как «сервер
-// всё-таки просит OAuth» и уходит выполнять несуществующий обмен вместо того,
-// чтобы просто использовать токен. Ничего секретного по этим адресам не лежит.
+// /.well-known/ is here for the same reason but with a different consequence.
+// Before connecting, an MCP client looks for an authorization description
+// (oauth-protected-resource and friends). We have no OAuth of our own -
+// authorization is by personal token - so the correct answer at those paths is
+// "no such thing", i.e. 404. Behind the middleware they answered 307 to /login,
+// and a client reads that redirect as "the server does want OAuth after all",
+// then goes off to perform an exchange that does not exist instead of simply
+// using its token. Nothing secret is served at those paths.
 const PUBLIC_PATHS = ['/login', '/auth/callback', '/api/mcp', '/.well-known/'];
 
-// Не найдя описания в /.well-known/, клиент MCP идёт в адреса OAuth по
-// умолчанию — /register, /authorize, /token в корне. Под общей защитой они
-// отвечали редиректом на /login, то есть на живую страницу входа Google, и
-// клиент докладывал «couldn't register with sign-in service»: он решил, что
-// служба входа есть, просто регистрация не удалась. Правильный ответ здесь —
-// «не поддерживается», чтобы клиент бросил OAuth и работал по токену.
+// Having found no description under /.well-known/, an MCP client falls back to
+// the default OAuth paths - /register, /authorize, /token at the root. Behind the
+// blanket guard those answered with a redirect to /login - a real Google sign-in
+// page - and the client reported "couldn't register with sign-in service": it
+// concluded a sign-in service exists and registration merely failed. The right
+// answer here is "not supported", so the client drops OAuth and uses its token.
 const OAUTH_STUBS = ['/register', '/authorize', '/token'];
 
 function oauthNotSupported(): NextResponse {

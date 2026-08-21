@@ -125,7 +125,7 @@ describe('validateUpload', () => {
     expect(res.ok).toBe(false);
     if (res.ok) return;
     expect(res.error).toContain('video.mp4');
-    expect(res.error).toContain('10 МБ');
+    expect(res.error).toContain('10 MB');
   });
 
   it('rejects more than the file-count limit', () => {

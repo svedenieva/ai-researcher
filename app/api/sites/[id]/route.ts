@@ -10,7 +10,7 @@ export async function DELETE(
   try {
     const store = getSiteStore();
     const site = await store.get(id);
-    if (!site) return Response.json({ error: 'Сайт не найден' }, { status: 404 });
+    if (!site) return Response.json({ error: 'Site not found' }, { status: 404 });
     await store.remove(id);
     return Response.json({ ok: true, id });
   } catch (e) {

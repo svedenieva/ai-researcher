@@ -1,26 +1,26 @@
 -- ─────────────────────────────────────────────────────────────
---  Таблица каталога для AI-Researcher.
---  Применить: Supabase → SQL Editor → вставить и Run.
---  Одна строка = одна компания. Все поля лежат в jsonb `data`,
---  поэтому добавление новых колонок не требует миграций.
+--  Catalog table for AI-Researcher.
+--  To apply: Supabase -> SQL Editor -> paste and Run.
+--  One row = one company. Every field lives in the jsonb `data` column,
+--  so adding a new field needs no migration.
 -- ─────────────────────────────────────────────────────────────
 create table if not exists products (
   id   text primary key,
   data jsonb not null
 );
 
--- Сервер ходит под service_role-ключом и обходит RLS.
--- Если позже откроете доступ из браузера под anon-ключом —
--- включите RLS и добавьте политику на чтение:
+-- The server uses the service_role key and bypasses RLS.
+-- If browser access under the anon key is ever opened up,
+-- turn RLS on and add a read policy:
 --   alter table products enable row level security;
 --   create policy "read products" on products for select using (true);
 
 -- ─────────────────────────────────────────────────────────────
---  Раздел «Сайты»: реестр статических сайтов.
---  Файлы лежат в Storage, в ПРИВАТНОМ бакете `sites`,
---  под ключом <id>/<путь внутри сайта>. Бакет заводится руками:
---  Storage → New bucket → имя sites → Public выключить.
---  Здесь только описание сайта, не его содержимое.
+--  The Sites module: a registry of static sites.
+--  Files live in Storage, in the PRIVATE `sites` bucket,
+--  keyed <id>/<path inside the site>. The bucket is created by hand:
+--  Storage -> New bucket -> name it sites -> leave Public off.
+--  This table holds the site's description only, never its contents.
 -- ─────────────────────────────────────────────────────────────
 create table if not exists sites (
   id          text primary key,          -- слаг из названия, при совпадении суффикс -2
@@ -35,20 +35,20 @@ create table if not exists sites (
   created_at  timestamptz not null default now()
 );
 
--- манифест, согласованный при создании: список путей, из которых сайт
--- реально состоит. Дозагрузка одного файла (POST .../files) сверяется
--- с ним — иначе лимиты выше (MAX_FILES, суммарный объём) можно было обойти,
--- докладывая файлы по одному в уже существующий сайт.
+-- The manifest agreed at creation: the list of paths the site actually
+-- consists of. A single-file upload (POST .../files) is checked against
+-- it; without that, the ceilings above (MAX_FILES, total size) could be
+-- bypassed one file at a time into an already-existing site.
 alter table sites add column if not exists files jsonb not null default '[]';
 
--- Реестр общий: владелец записан для отображения, а не для ограничения
--- доступа. Все, кто прошёл вход, видят все сайты — в отличие от таблицы
--- `bases`, где записи делятся по владельцам.
+-- The registry is shared: the owner is recorded for display, not to
+-- restrict access. Everyone signed in sees every site, unlike the `bases`
+-- table, whose rows are partitioned by owner.
 
 -- ─────────────────────────────────────────────────────────────
---  Пользовательские базы (цель №1) и их строки.
---  Раньше создавались руками в консоли; здесь — канонический DDL.
---  jsonb `columns`/`data` — схема без миграций; deleted_at — корзина.
+--  User bases (goal #1) and their rows.
+--  These used to be created by hand in the console; this is the canonical DDL.
+--  jsonb `columns`/`data` = schema without migrations; deleted_at = recycle bin.
 -- ─────────────────────────────────────────────────────────────
 create table if not exists bases (
   id          text primary key,
@@ -66,7 +66,7 @@ create table if not exists base_records (
   created_at timestamptz not null default now()
 );
 
--- корзина: delete → выставляет deleted_at; restore → null; empty → реальный DELETE
+-- recycle bin: delete sets deleted_at; restore clears it; empty is a real DELETE
 alter table bases        add column if not exists deleted_at timestamptz;
 alter table base_records add column if not exists deleted_at timestamptz;
 create index if not exists bases_deleted_at_idx        on bases (deleted_at);

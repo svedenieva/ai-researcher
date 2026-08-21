@@ -17,14 +17,14 @@ export async function POST(request: Request): Promise<Response> {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: 'Некорректный запрос' }, { status: 400 });
+    return Response.json({ error: 'Malformed request' }, { status: 400 });
   }
 
   const baseId = String(body?.base ?? '');
   const action = String(body?.action ?? '');
-  if (!baseId) return Response.json({ error: 'Не указана база' }, { status: 400 });
+  if (!baseId) return Response.json({ error: 'No base specified' }, { status: 400 });
   if (BUILTIN.has(baseId)) {
-    return Response.json({ error: 'Встроенные базы менять нельзя' }, { status: 400 });
+    return Response.json({ error: 'Built-in bases cannot be changed' }, { status: 400 });
   }
 
   try {
@@ -32,7 +32,7 @@ export async function POST(request: Request): Promise<Response> {
     // the structure can only be changed on an accessible base, not someone else's private one
     const target = await store.getBase(baseId);
     const me = await currentEmail();
-    if (!target || !canAccessBase(target, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
+    if (!target || !canAccessBase(target, me)) return Response.json({ error: 'Base not found' }, { status: 404 });
     let base;
     switch (action) {
       case 'add':
@@ -51,11 +51,11 @@ export async function POST(request: Request): Promise<Response> {
         );
         break;
       default:
-        return Response.json({ error: `Неизвестное действие: ${action}` }, { status: 400 });
+        return Response.json({ error: `Unknown action: ${action}` }, { status: 400 });
     }
-    if (!base) return Response.json({ error: 'База не найдена' }, { status: 404 });
+    if (!base) return Response.json({ error: 'Base not found' }, { status: 404 });
     return Response.json({ base });
   } catch (e) {
-    return Response.json({ error: publicError(e, 'Не удалось изменить колонки', 'columns change failed') }, { status: 500 });
+    return Response.json({ error: publicError(e, 'Could not change the columns', 'columns change failed') }, { status: 500 });
   }
 }

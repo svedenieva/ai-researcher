@@ -102,15 +102,15 @@ export async function POST(request: Request): Promise<Response> {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: 'Некорректный запрос' }, { status: 400 });
+    return Response.json({ error: 'Malformed request' }, { status: 400 });
   }
   const name = String(body?.name ?? '').trim();
-  if (!name) return Response.json({ error: 'Нужно название базы' }, { status: 400 });
+  if (!name) return Response.json({ error: 'A base name is required' }, { status: 400 });
   const longName = checkName(name);
   if (longName) return Response.json({ error: longName }, { status: 400 });
 
   const columns = normalizeColumns(body?.columns);
-  if (!columns.length) return Response.json({ error: 'Добавьте хотя бы одну колонку' }, { status: 400 });
+  if (!columns.length) return Response.json({ error: 'Add at least one column' }, { status: 400 });
 
   // Validate the rows before the base is created — otherwise a rejected
   // import still leaves a real, permanent, empty base behind.
@@ -134,21 +134,21 @@ export async function POST(request: Request): Promise<Response> {
     const imported = rows.length ? await store.addRecords(base.id, rows) : 0;
     return Response.json({ base, imported });
   } catch (e) {
-    return Response.json({ error: publicError(e, 'Не удалось создать базу', 'createBase failed') }, { status: 500 });
+    return Response.json({ error: publicError(e, 'Could not create the base', 'createBase failed') }, { status: 500 });
   }
 }
 
 // rename / move a custom base
 export async function PATCH(request: Request): Promise<Response> {
   let body: { id?: unknown; name?: unknown; parent?: unknown };
-  try { body = await request.json(); } catch { return Response.json({ error: 'Некорректный запрос' }, { status: 400 }); }
+  try { body = await request.json(); } catch { return Response.json({ error: 'Malformed request' }, { status: 400 }); }
   const id = String(body?.id ?? '');
-  if (!id || BUILTIN_IDS.has(id)) return Response.json({ error: 'Эту базу нельзя менять' }, { status: 400 });
+  if (!id || BUILTIN_IDS.has(id)) return Response.json({ error: 'This base cannot be changed' }, { status: 400 });
   const store = getCustomStore();
   const me = await currentEmail();
   // only an accessible base can be changed (own/shared/ownerless), not someone else's private one
   const target = await store.getBase(id);
-  if (!target || !canAccessBase(target, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
+  if (!target || !canAccessBase(target, me)) return Response.json({ error: 'Base not found' }, { status: 404 });
   let base = null;
   if (typeof body?.name === 'string' && body.name.trim()) base = await store.renameBase(id, body.name.trim());
   if (body?.parent !== undefined) {
@@ -177,34 +177,34 @@ export async function PATCH(request: Request): Promise<Response> {
       };
       walk(id);
       if (newParent === id || descendants.has(newParent)) {
-        return Response.json({ error: 'Нельзя вложить базу в саму себя или в свою же ветку' }, { status: 400 });
+        return Response.json({ error: 'A base cannot be nested inside itself or its own branch' }, { status: 400 });
       }
     }
     base = await store.moveBase(id, newParent);
   }
-  if (!base) return Response.json({ error: 'База не найдена' }, { status: 404 });
+  if (!base) return Response.json({ error: 'Base not found' }, { status: 404 });
   return Response.json({ base });
 }
 
 // delete / restore a custom base (recycle bin)
 export async function DELETE(request: Request): Promise<Response> {
   let body: { id?: unknown; restore?: unknown };
-  try { body = await request.json(); } catch { return Response.json({ error: 'Некорректный запрос' }, { status: 400 }); }
+  try { body = await request.json(); } catch { return Response.json({ error: 'Malformed request' }, { status: 400 }); }
   const id = String(body?.id ?? '');
-  if (!id || BUILTIN_IDS.has(id)) return Response.json({ error: 'Эту базу нельзя удалить' }, { status: 400 });
+  if (!id || BUILTIN_IDS.has(id)) return Response.json({ error: 'This base cannot be deleted' }, { status: 400 });
   const store = getCustomStore();
   const me = await currentEmail();
   if (body?.restore === true) {
     // only an accessible base from your own bin can be restored
     const bin = await store.listBin();
     const found = bin.bases.find((b) => b.id === id);
-    if (!found || !canAccessBase(found, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
+    if (!found || !canAccessBase(found, me)) return Response.json({ error: 'Base not found' }, { status: 404 });
     const okr = await store.restoreBase(id);
     return Response.json({ restored: okr ? id : null });
   }
   // only an accessible base can be deleted, not someone else's private one
   const target = await store.getBase(id);
-  if (!target || !canAccessBase(target, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
+  if (!target || !canAccessBase(target, me)) return Response.json({ error: 'Base not found' }, { status: 404 });
   const okd = await store.softDeleteBase(id);
   return Response.json({ deleted: okd ? id : null });
 }

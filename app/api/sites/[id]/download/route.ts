@@ -12,10 +12,10 @@ export async function GET(
   try {
     const store = getSiteStore();
     const site = await store.get(id);
-    if (!site) return Response.json({ error: 'Сайт не найден' }, { status: 404 });
+    if (!site) return Response.json({ error: 'Site not found' }, { status: 404 });
 
     const paths = await store.listFiles(id);
-    if (!paths.length) return Response.json({ error: 'У сайта нет файлов' }, { status: 404 });
+    if (!paths.length) return Response.json({ error: 'The site has no files' }, { status: 404 });
 
     const entries = [];
     for (const path of paths) {
@@ -38,7 +38,7 @@ export async function GET(
     });
   } catch (e) {
     if (e instanceof SitesNotSetUp) return Response.json({ error: e.message }, { status: 503 });
-    const msg = e instanceof Error ? e.message : 'Не удалось собрать архив';
+    const msg = e instanceof Error ? e.message : 'Could not build the archive';
     return Response.json({ error: msg }, { status: 500 });
   }
 }

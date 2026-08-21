@@ -10,12 +10,12 @@ import Anthropic from '@anthropic-ai/sdk';
 const ANTHROPIC_MODEL = process.env.RESEARCH_MODEL || 'claude-opus-5';
 
 const SYSTEM_PROMPT =
-  'Ты — старший аналитик рынка AI-продуктов. Тебе дают исследовательский ' +
-  'запрос, ты раскладываешь его на 8–10 конкретных, взаимно не пересекающихся, ' +
-  'проверяемых подтем на русском языке. Каждая подтема — короткая формулировка ' +
-  '(до ~8 слов), пригодная для отдельного поиска. Покрой: игроков/продукты, ' +
-  'технологии, рынок и тренды, монетизацию, риски, кейсы. Не добавляй нумерацию ' +
-  'и пояснений.';
+  'You are a senior analyst of the AI product market. Given a research query, ' +
+  'break it into 8-10 concrete, mutually non-overlapping, checkable subtopics, ' +
+  'written in the LANGUAGE OF THE QUERY. Each subtopic is a short phrase ' +
+  '(about 8 words at most) that stands on its own as a search. Cover: players ' +
+  'and products, technology, market and trends, monetisation, risks, case ' +
+  'studies. Add no numbering and no explanations.';
 
 export interface Decomposition {
   prompt: string;
@@ -24,16 +24,16 @@ export interface Decomposition {
 }
 
 function heuristicSubtopics(prompt: string): string[] {
-  const topic = prompt.trim().replace(/\s+/g, ' ').slice(0, 80) || 'тема';
+  const topic = prompt.trim().replace(/\s+/g, ' ').slice(0, 80) || 'topic';
   return [
-    `Обзор: что такое «${topic}» и зачем`,
-    `Ключевые игроки и продукты: ${topic}`,
-    `Технологии и подходы: ${topic}`,
-    `Рынок, динамика и тренды: ${topic}`,
-    `Ценообразование и монетизация: ${topic}`,
-    `Риски и ограничения: ${topic}`,
-    `Лучшие практики и кейсы: ${topic}`,
-    `Источники и эксперты: ${topic}`,
+    `Overview: what "${topic}" is and why it matters`,
+    `Key players and products: ${topic}`,
+    `Technology and approaches: ${topic}`,
+    `Market, momentum and trends: ${topic}`,
+    `Pricing and monetisation: ${topic}`,
+    `Risks and limitations: ${topic}`,
+    `Best practices and case studies: ${topic}`,
+    `Sources and experts: ${topic}`,
   ];
 }
 
@@ -66,7 +66,7 @@ async function claudeSubtopics(prompt: string): Promise<string[]> {
     messages: [
       {
         role: 'user',
-        content: `Запрос для исследования: "${prompt}"\n\nВерни ТОЛЬКО JSON-массив строк (подтемы), без текста вокруг.`,
+        content: `Research query: "${prompt}"\n\nReturn ONLY a JSON array of strings (the subtopics), with no surrounding text.`,
       },
       { role: 'assistant', content: '[' },
     ],

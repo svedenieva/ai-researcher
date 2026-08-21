@@ -59,15 +59,15 @@ export async function POST(request: Request): Promise<Response> {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: 'Некорректный запрос' }, { status: 400 });
+    return Response.json({ error: 'Malformed request' }, { status: 400 });
   }
   const base = String(body?.base ?? '');
   const record = String(body?.record ?? '');
-  if (!base || !record) return Response.json({ error: 'Нужны base и record' }, { status: 400 });
+  if (!base || !record) return Response.json({ error: 'base and record are required' }, { status: 400 });
 
   const email = await currentEmail();
   const db = admin();
-  if (!email || !db) return Response.json({ error: 'Нет доступа' }, { status: 401 });
+  if (!email || !db) return Response.json({ error: 'No access' }, { status: 401 });
 
   const { data: existing } = await db
     .from('favorites')

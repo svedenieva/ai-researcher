@@ -39,7 +39,7 @@ const RU_LAT: Record<string, string> = {
 
 // url-safe slug from the name. Unlike knowledge bases, where the id stays
 // Cyrillic, here it's also the object key in Storage — and that accepts only
-// Latin letters, digits, and a little punctuation, and to «демо-сайт/index.html»
+// Latin letters, digits and a little punctuation, so a Cyrillic folder name
 // it replies «Invalid key». So we transliterate Russian names.
 export function slugId(name: string, taken: Set<string>): string {
   const base =
@@ -117,29 +117,29 @@ export function validateUpload(input: SiteFile[]): { ok: true; value: UploadChec
   // that all starts with '..' looks "wrapped" to stripCommonPrefix, which then
   // silently rewrites the intent instead of refusing it
   const rawUnsafe = kept.find((f) => !isSafePath(f.path));
-  if (rawUnsafe) return { ok: false, error: `Недопустимый путь: «${rawUnsafe.path}»` };
+  if (rawUnsafe) return { ok: false, error: `Invalid path: "${rawUnsafe.path}"` };
 
   const paths = stripCommonPrefix(kept.map((f) => f.path));
   const files: SiteFile[] = kept.map((f, i) => ({ path: paths[i], size: f.size }));
 
-  if (files.length === 0) return { ok: false, error: 'В загрузке нет файлов' };
+  if (files.length === 0) return { ok: false, error: 'The upload contains no files' };
   if (files.length > MAX_FILES) {
-    return { ok: false, error: `Слишком много файлов: ${files.length}. Максимум ${MAX_FILES}` };
+    return { ok: false, error: `Too many files: ${files.length}. The maximum is ${MAX_FILES}` };
   }
   const heavy = files.find((f) => f.size > MAX_FILE_BYTES);
   if (heavy) {
     const mb = (heavy.size / 1024 / 1024).toFixed(1);
-    return { ok: false, error: `Файл «${heavy.path}» весит ${mb} МБ — больше 10 МБ` };
+    return { ok: false, error: `File "${heavy.path}" is ${mb} MB - over the 10 MB limit` };
   }
   const total = files.reduce((s, f) => s + f.size, 0);
   if (total > MAX_TOTAL_BYTES) {
     const mb = (total / 1024 / 1024).toFixed(0);
-    return { ok: false, error: `Сайт весит ${mb} МБ — больше ${MAX_TOTAL_BYTES / 1024 / 1024} МБ` };
+    return { ok: false, error: `The site is ${mb} MB - over the ${MAX_TOTAL_BYTES / 1024 / 1024} MB limit` };
   }
 
   const entry = pickEntry(files.map((f) => f.path));
   if (!entry) {
-    return { ok: false, error: 'Нет index.html в корне сайта — непонятно, что открывать' };
+    return { ok: false, error: 'No index.html at the site root - there is nothing to open' };
   }
   return { ok: true, value: { files, entry, sizeBytes: files.reduce((s, f) => s + f.size, 0) } };
 }
@@ -179,7 +179,7 @@ export function bodyFrom(bytes: Uint8Array): ArrayBuffer {
 }
 
 export function formatBytes(n: number): string {
-  if (n < 1024) return `${n} Б`;
-  if (n < 1024 * 1024) return `${Math.round(n / 1024)} КБ`;
-  return `${(n / 1024 / 1024).toFixed(1)} МБ`;
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }

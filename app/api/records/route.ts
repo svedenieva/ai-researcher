@@ -78,13 +78,13 @@ export async function GET(request: Request): Promise<Response> {
       custom = await store.getBase(baseId);
     } catch (e) {
       console.error('custom base read failed:', e);
-      return Response.json({ error: 'Не удалось прочитать базу' }, { status: 500 });
+      return Response.json({ error: 'Could not read the base' }, { status: 500 });
     }
 
     // Missing and forbidden answer identically on purpose: confirming that a
     // guessed id names a real private base is itself a leak.
     if (!custom || !canAccessBase(custom, me)) {
-      return Response.json({ error: 'База не найдена или нет доступа' }, { status: 404 });
+      return Response.json({ error: 'Base not found, or no access' }, { status: 404 });
     }
 
     try {
@@ -117,7 +117,7 @@ export async function GET(request: Request): Promise<Response> {
       }
     } catch (e) {
       console.error('custom base read failed:', e);
-      return Response.json({ error: 'Не удалось прочитать базу' }, { status: 500 });
+      return Response.json({ error: 'Could not read the base' }, { status: 500 });
     }
   }
 
@@ -172,7 +172,7 @@ export async function GET(request: Request): Promise<Response> {
     }
   } catch (e) {
     console.error('nested bases merge failed:', e);
-    warning = 'Вложенные базы не загрузились — показан только каталог';
+    warning = 'Nested bases failed to load - showing the catalog only';
   }
 
   return Response.json({ columns, records: merged, facets, total, base: base.id, custom: false, warning });
@@ -184,11 +184,11 @@ export async function POST(request: Request): Promise<Response> {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: 'Некорректный запрос' }, { status: 400 });
+    return Response.json({ error: 'Malformed request' }, { status: 400 });
   }
   const baseId = String(body?.base ?? '');
   if (!baseId || BUILTIN_IDS.has(baseId)) {
-    return Response.json({ error: 'В эту базу нельзя добавлять строки' }, { status: 400 });
+    return Response.json({ error: 'Rows cannot be added to this base' }, { status: 400 });
   }
   const data = body?.data && typeof body.data === 'object' ? (body.data as Record<string, unknown>) : {};
   const tooBig = checkPayload(data);
@@ -199,14 +199,14 @@ export async function POST(request: Request): Promise<Response> {
     const base = await store.getBase(baseId);
     const me = await currentEmail();
     // writing is allowed to own/shared/ownerless bases, not someone else's private one
-    if (!base || !canAccessBase(base, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
+    if (!base || !canAccessBase(base, me)) return Response.json({ error: 'Base not found' }, { status: 404 });
     if (badUrlCell(base.columns, data)) {
-      return Response.json({ error: 'В колонку-ссылку можно записать только http, https, mailto или tel' }, { status: 400 });
+      return Response.json({ error: 'A url column accepts only http, https, mailto or tel' }, { status: 400 });
     }
     const record = await store.addRecord(baseId, data);
     return Response.json({ record });
   } catch (e) {
-    return Response.json({ error: publicError(e, 'Не удалось добавить строку', 'addRecord failed') }, { status: 500 });
+    return Response.json({ error: publicError(e, 'Could not add the row', 'addRecord failed') }, { status: 500 });
   }
 }
 
@@ -216,12 +216,12 @@ export async function PATCH(request: Request): Promise<Response> {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: 'Некорректный запрос' }, { status: 400 });
+    return Response.json({ error: 'Malformed request' }, { status: 400 });
   }
   const baseId = String(body?.base ?? '');
   const id = String(body?.id ?? '');
   if (!baseId || BUILTIN_IDS.has(baseId) || !id) {
-    return Response.json({ error: 'Нельзя редактировать эту строку' }, { status: 400 });
+    return Response.json({ error: 'This row cannot be edited' }, { status: 400 });
   }
   const patch = body?.data && typeof body.data === 'object' ? (body.data as Record<string, unknown>) : {};
   const tooBig = checkPayload(patch);
@@ -231,31 +231,31 @@ export async function PATCH(request: Request): Promise<Response> {
     const store = getCustomStore();
     const base = await store.getBase(baseId);
     const me = await currentEmail();
-    if (!base || !canAccessBase(base, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
+    if (!base || !canAccessBase(base, me)) return Response.json({ error: 'Base not found' }, { status: 404 });
     if (badUrlCell(base.columns, patch)) {
-      return Response.json({ error: 'В колонку-ссылку можно записать только http, https, mailto или tel' }, { status: 400 });
+      return Response.json({ error: 'A url column accepts only http, https, mailto or tel' }, { status: 400 });
     }
     const record = await store.updateRecord(baseId, id, patch);
-    if (!record) return Response.json({ error: 'Строка не найдена' }, { status: 404 });
+    if (!record) return Response.json({ error: 'Row not found' }, { status: 404 });
     return Response.json({ record });
   } catch (e) {
-    return Response.json({ error: publicError(e, 'Не удалось обновить строку', 'updateRecord failed') }, { status: 500 });
+    return Response.json({ error: publicError(e, 'Could not update the row', 'updateRecord failed') }, { status: 500 });
   }
 }
 
 // delete/restore rows of a custom base (recycle bin)
 export async function DELETE(request: Request): Promise<Response> {
   let body: { base?: unknown; ids?: unknown; restore?: unknown };
-  try { body = await request.json(); } catch { return Response.json({ error: 'Некорректный запрос' }, { status: 400 }); }
+  try { body = await request.json(); } catch { return Response.json({ error: 'Malformed request' }, { status: 400 }); }
   const baseId = String(body?.base ?? '');
   const ids = Array.isArray(body?.ids) ? body.ids.map(String) : [];
   if (!baseId || BUILTIN_IDS.has(baseId) || !ids.length) {
-    return Response.json({ error: 'Нельзя удалить эти строки' }, { status: 400 });
+    return Response.json({ error: 'These rows cannot be deleted' }, { status: 400 });
   }
   const store = getCustomStore();
   const base = await store.getBase(baseId);
   const me = await currentEmail();
-  if (!base || !canAccessBase(base, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
+  if (!base || !canAccessBase(base, me)) return Response.json({ error: 'Base not found' }, { status: 404 });
   if (body?.restore === true) {
     const restored = await store.restoreRecords(baseId, ids);
     return Response.json({ restored });

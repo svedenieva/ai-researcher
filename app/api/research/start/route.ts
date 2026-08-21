@@ -11,9 +11,9 @@ export const dynamic = 'force-dynamic';
 // ready-made prompt.
 export async function POST(request: Request): Promise<Response> {
   let body: { prompt?: unknown };
-  try { body = await request.json(); } catch { return Response.json({ error: 'Некорректный запрос' }, { status: 400 }); }
+  try { body = await request.json(); } catch { return Response.json({ error: 'Malformed request' }, { status: 400 }); }
   const topic = String(body?.prompt ?? '').trim();
-  if (!topic) return Response.json({ error: 'Пустой запрос' }, { status: 400 });
+  if (!topic) return Response.json({ error: 'Empty query' }, { status: 400 });
 
   const me = await currentEmail();
   const store = getCustomStore();
@@ -36,7 +36,7 @@ export async function POST(request: Request): Promise<Response> {
       instruction: links.instruction,
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Не удалось создать базу запуска';
+    const msg = e instanceof Error ? e.message : 'Could not create the run base';
     return Response.json({ error: msg }, { status: 500 });
   }
 }

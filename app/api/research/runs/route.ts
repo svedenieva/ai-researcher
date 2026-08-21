@@ -33,6 +33,6 @@ export async function POST(): Promise<Response> {
   try {
     return Response.json({ moved: await tidyRuns(me) });
   } catch (e) {
-    return Response.json({ error: e instanceof Error ? e.message : 'Не удалось прибрать запуски' }, { status: 500 });
+    return Response.json({ error: e instanceof Error ? e.message : 'Could not tidy the runs' }, { status: 500 });
   }
 }

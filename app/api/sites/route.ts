@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 function fail(e: unknown): Response {
   if (e instanceof SitesNotSetUp) return Response.json({ error: e.message }, { status: 503 });
-  return Response.json({ error: publicError(e, 'Не удалось получить список сайтов', 'sites store failed') }, { status: 500 });
+  return Response.json({ error: publicError(e, 'Could not list the sites', 'sites store failed') }, { status: 500 });
 }
 
 // The registry is shared: everyone signed in sees all sites. This is deliberately
@@ -28,7 +28,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: 'Некорректный запрос' }, { status: 400 });
+    return Response.json({ error: 'Malformed request' }, { status: 400 });
   }
 
   const name = String(body?.name ?? '').trim();

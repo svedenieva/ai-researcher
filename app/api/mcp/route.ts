@@ -489,8 +489,14 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
 
     case 'query_records': {
       const id = String(args.base ?? '');
-      const limit = Number(args.limit ?? 50);
-      const offset = Number(args.offset ?? 0);
+      // Number('abc') is NaN, and NaN survives slice() as 0 while still failing
+      // every comparison — the caller got an empty page with hasMore: true and
+      // paginated forever. A negative offset reads to slice() as "from the end".
+      const MAX_PAGE = 500;
+      const rawLimit = Number(args.limit ?? 50);
+      const rawOffset = Number(args.offset ?? 0);
+      const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(Math.trunc(rawLimit), 1), MAX_PAGE) : 50;
+      const offset = Number.isFinite(rawOffset) ? Math.max(Math.trunc(rawOffset), 0) : 0;
       const q = String(args.search ?? '').trim().toLowerCase();
       const match = (r: Record<string, unknown>) =>
         !q ||
