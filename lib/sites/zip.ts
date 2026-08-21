@@ -1,5 +1,5 @@
 import { unzipSync, zipSync } from 'fflate';
-import { isJunk } from './site';
+import { isJunk, isSafePath } from './site';
 
 // Working with the archive. The same module works both in the browser (unpack the
 // chosen .zip before upload) and on the server (repack the site back into a .zip) —
@@ -17,6 +17,10 @@ export function unzipEntries(archive: Uint8Array): ZipEntry[] {
   const files = unzipSync(archive);
   for (const [path, bytes] of Object.entries(files)) {
     if (path.endsWith('/') || isJunk(path)) continue;
+    // zip-slip: an entry named ../../etc/x escapes wherever it is written. The
+    // server's validateUpload catches it today, but this function is exported
+    // and already called server-side — the next caller won't have that cover.
+    if (!isSafePath(path)) continue;
     out.push({ path, bytes });
   }
   return out;
