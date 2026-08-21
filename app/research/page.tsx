@@ -117,11 +117,12 @@ export default function Research() {
               <>
                 <div className={styles.claudeRunTitle}>Пока пусто</div>
                 <p className={styles.claudeHint}>
-                  Проверь, что в Claude ты нажал <b>Enter</b> и что коннектор AiS подключён
-                  (Настройки → Коннекторы). Как Claude сохранит результат — нажми «Проверить снова».
+                  Проверь, что в Claude ты нажал <b>Enter</b> и что коннектор AiS подключён.
+                  Как Claude сохранит результат — нажми «Проверить снова».
                 </p>
                 <div className={styles.claudeRunActions}>
                   <button type="button" className={styles.primary} onClick={() => setRecheck((n) => n + 1)}>Проверить снова</button>
+                  <Link className={styles.ghost} href="/connect">Как подключить коннектор →</Link>
                   <a className={styles.ghost} href={run.web} target="_blank" rel="noreferrer">Открыть Claude ещё раз</a>
                   <Link className={styles.ghost} href={`/?base=${encodeURIComponent(run.baseId)}`}>Открыть базу на сайте →</Link>
                 </div>
@@ -139,7 +140,10 @@ export default function Research() {
                   <a className={styles.primary} href={run.web} target="_blank" rel="noreferrer">Открыть Claude ещё раз</a>
                   <Link className={styles.ghost} href={`/?base=${encodeURIComponent(run.baseId)}`}>Открыть базу на сайте →</Link>
                 </div>
-                <p className={styles.claudeHint}>Нужен подключённый коннектор AiS в твоём Claude. Исследование идёт на твоей подписке.</p>
+                <p className={styles.claudeHint}>
+                  Нужен подключённый коннектор AiS в твоём Claude — <Link href="/connect">как подключить</Link>.
+                  Исследование идёт на твоей подписке.
+                </p>
               </>
             )}
           </section>

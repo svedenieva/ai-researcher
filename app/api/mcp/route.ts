@@ -3,6 +3,8 @@ import { BASES } from '@/lib/datasource/bases';
 import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
 import type { CustomBase, CustomStore } from '@/lib/datasource/customStore';
 import { accessibleBinFor, binHasBase, canRestoreRows, emptyScope, scopeBin } from '@/lib/datasource/binAccess';
+// MCP_TOKENS = "token:email,…" — parsed in one place, shared with /api/connect
+import { emailForToken } from '@/lib/mcp/tokens';
 import { decompose } from '@/lib/research/decompose';
 import type { ColumnDef } from '@/lib/datasource/types';
 // @ts-expect-error — shared rules text, one copy for stdio and HTTP
@@ -17,18 +19,6 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
-
-// MCP_TOKENS = "token:email,token2:email2"
-function emailForToken(token: string | null): string | null {
-  if (!token) return null;
-  const map = process.env.MCP_TOKENS ?? '';
-  for (const pair of map.split(',')) {
-    const i = pair.indexOf(':');
-    if (i === -1) continue;
-    if (pair.slice(0, i).trim() === token) return pair.slice(i + 1).trim();
-  }
-  return null;
-}
 
 // Prefer the Authorization: Bearer header; fall back to ?token= for clients
 // that can't set custom headers.
