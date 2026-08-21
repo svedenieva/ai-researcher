@@ -4,6 +4,8 @@ import { researchInstruction, researchDeeplinks } from './deeplink';
 describe('research deeplink (Variant C)', () => {
   it('the instruction contains the topic and the launch base id, and asks for add_rows', () => {
     const ins = researchInstruction('AI для видеомонтажа', 'иссл-123');
+    // the prose is English, but the answer must come back in the question's language
+    expect(ins).toContain('in the language of the question');
     expect(ins).toContain('AI для видеомонтажа');
     expect(ins).toContain('иссл-123');
     expect(ins).toContain('add_rows');
@@ -29,9 +31,12 @@ describe('research deeplink (Variant C)', () => {
   // gets expensive again and stops happening.
   it('demands a primary source AND a verbatim quote for every row', () => {
     const ins = researchInstruction('тема', 'b');
-    expect(ins).toContain('первоисточник');
-    expect(ins).toMatch(/ДОСЛОВНАЯ цитата/);
-    expect(ins).toContain('Не можешь привести цитату — не добавляй строку');
+    expect(ins).toContain('primary source');
+    expect(ins).toMatch(/VERBATIM quote/);
+    expect(ins).toContain('If you cannot quote it, do not add the row');
+    // the column names stay verbatim even though the prose is English — they are
+    // the real labels of the seeded columns, and Claude matches rows on them
     expect(ins).toContain('«Цитата»');
+    expect(ins).toContain('«Источники»');
   });
 });

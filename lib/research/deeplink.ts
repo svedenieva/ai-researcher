@@ -10,35 +10,53 @@
 // (web). The prompt is PREFILLED but not auto-sent — the user presses Enter.
 // The q limit is ~14,000 chars; our instruction is far shorter.
 //
-// NOTE: the instruction text below is user/Claude-facing, so it stays in Russian
-// (the team's language) — only code comments are in English.
+// NOTE: the instruction below is written in English, but it opens by telling
+// Claude to answer in the language of the QUESTION — so a Russian question
+// still comes back in Russian. The column names it references stay verbatim
+// («Название», «Цитата», «Источники»): they are the real labels of the seeded
+// columns, and Claude matches rows against them. Translating those here would
+// make Claude create a second, English set of columns instead of filling ours.
 
-/** Instruction for Claude: research ANY question (not just companies) — search
+/** Instruction for Claude (English text, answer in the question's language):
+    research ANY question (not just companies) — search
     our own bases first, then the web; save a topic-shaped table into the run
     base (Claude picks the columns itself via add_column); then give a written
     summary. Answers in the language of the question. */
 export function researchInstruction(topic: string, baseId: string): string {
   return (
-    `Исследуй вопрос: "${topic}". Отвечай и оформляй результат на языке вопроса.\n\n` +
-    `1. Разбери вопрос на 5–10 ключевых аспектов — по смыслу вопроса, не по шаблону ` +
-    `(это НЕ обязательно «компании»).\n\n` +
-    `2. Ищи в таком порядке:\n` +
-    `   а) Сначала — в наших данных: инструменты коннектора list_bases, query_records ` +
-    `и catalog_search — найди уже собранное по теме и переиспользуй.\n` +
-    `   б) Потом добери недостающее своим веб-поиском. Только реальные факты с ` +
-    `источниками — ничего не выдумывай; нет надёжного источника — так и напиши, пункт пропусти.\n` +
-    `   в) На каждую строку — прямая ссылка на первоисточник и ДОСЛОВНАЯ цитата из него ` +
-    `(одно-два предложения), подтверждающая именно то, что написано в строке. Цитата должна ` +
-    `находиться поиском по странице. Не можешь привести цитату — не добавляй строку.\n\n` +
-    `3. Сохрани результат ТАБЛИЦЕЙ в базу base="${baseId}":\n` +
-    `   • Сам определи 3–6 колонок, которые точнее всего описывают ответ на ЭТОТ вопрос, ` +
-    `и добавь их инструментом add_column (в базе уже есть «Название», «Цитата» и «Источники» — ` +
-    `используй их и добавь недостающие). Колонки «Цитата» и «Источники» удалять нельзя ` +
-    `и оставлять пустыми тоже — это то, по чему человек проверяет строку.\n` +
-    `   • Заполни строки инструментом add_rows: одна строка = один объект/факт/пункт ` +
-    `по смыслу вопроса; значения — по ключам колонок.\n\n` +
-    `4. После таблицы дай связный разбор: 1–3 абзаца с выводами и ссылками на ` +
-    `первоисточники (разбор остаётся в этом чате, на сайт уедет таблица).`
+    `Research this question: "${topic}". Answer and label the result in the language of the question.
+
+` +
+    `1. Break the question down into 5–10 key aspects — led by what the question actually asks, ` +
+    `not by a template (it is NOT necessarily about "companies").
+
+` +
+    `2. Search in this order:
+` +
+    `   a) Our own data first: the connector tools list_bases, query_records and catalog_search — ` +
+    `find what has already been collected on the topic and reuse it.
+` +
+    `   b) Then fill the gaps with your own web search. Real, sourced facts only — invent nothing; ` +
+    `if there is no reliable source, say so and skip the point.
+` +
+    `   c) Every row needs a direct link to the primary source AND a VERBATIM quote from it ` +
+    `(one or two sentences) supporting exactly what the row claims. The quote must be findable by ` +
+    `searching the page. If you cannot quote it, do not add the row.
+
+` +
+    `3. Save the result as a TABLE into base="${baseId}":
+` +
+    `   • Decide for yourself on the 3–6 columns that best describe the answer to THIS question ` +
+    `and add them with add_column (the base already has «Название», «Цитата» and «Источники» — ` +
+    `use those and add what is missing). The «Цитата» and «Источники» columns must not be deleted ` +
+    `and must not be left empty — they are what a human checks the row against.
+` +
+    `   • Fill the rows with add_rows: one row = one object / fact / point, by the sense of the ` +
+    `question; values keyed by the column keys.
+
+` +
+    `4. After the table, give a connected analysis: 1–3 paragraphs of conclusions with links to ` +
+    `primary sources (the analysis stays in this chat; the table is what travels to the site).`
   );
 }
 
