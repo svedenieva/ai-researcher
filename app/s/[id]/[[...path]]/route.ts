@@ -53,6 +53,13 @@ export async function GET(
         'X-Content-Type-Options': 'nosniff',
         // a site can be re-uploaded at the same address, so cache only with revalidation
         'Cache-Control': 'private, no-cache',
+        // An uploaded site is someone else's code running on our origin. Without
+        // this it can fetch /api/* with the viewer's session cookies and act as
+        // them. sandbox drops it into an opaque origin, so document.cookie and
+        // same-origin XHR stop working; the allow-* list keeps ordinary pages
+        // (scripts, styles, forms) usable.
+        'Content-Security-Policy':
+          "default-src 'self' data: blob:; connect-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; sandbox allow-scripts allow-popups allow-forms",
       },
     });
   } catch (e) {
