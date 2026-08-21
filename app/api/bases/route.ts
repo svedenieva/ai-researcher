@@ -1,6 +1,6 @@
 import { BASES } from '@/lib/datasource/bases';
 import { currentEmail } from '@/lib/current-user';
-import { getCustomStore, canAccessBase, type CustomBase } from '@/lib/datasource/customStore';
+import { getCustomStore, canAccessBase, RESERVED_COLUMN_KEYS, type CustomBase } from '@/lib/datasource/customStore';
 import type { ColumnDef } from '@/lib/datasource/types';
 
 // GET takes no request, so by default Next would serve a snapshot taken
@@ -61,7 +61,7 @@ function normalizeColumns(input: unknown): ColumnDef[] {
     const label = String((raw as { label?: unknown })?.label ?? '').trim();
     if (!label) continue;
     let key = label.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '_').replace(/(^_|_$)/g, '') || `col${cols.length}`;
-    while (used.has(key)) key = `${key}_`;
+    while (used.has(key) || RESERVED_COLUMN_KEYS.has(key)) key = `${key}_`;
     used.add(key);
     const type = (raw as { type?: unknown })?.type;
     const t: ColumnDef['type'] =

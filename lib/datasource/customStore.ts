@@ -96,7 +96,7 @@ export function normalizeNewColumn(col: NewColumn, existing: ColumnDef[]): Colum
   const label = String(col.label ?? '').trim();
   let key = label.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '_').replace(/(^_|_$)/g, '') || `col${existing.length}`;
   const used = new Set(existing.map((c) => c.key));
-  while (used.has(key)) key = `${key}_`;
+  while (used.has(key) || RESERVED_COLUMN_KEYS.has(key)) key = `${key}_`;
   const type: ColumnDef['type'] = (['number', 'url', 'long-text', 'select'] as const).includes(col.type as never) ? col.type! : 'text';
   return { key, label, type, sortable: true, filterable: Boolean(col.filterable) && type !== 'long-text' && type !== 'url' };
 }
@@ -110,6 +110,10 @@ export function normalizeNewColumn(col: NewColumn, existing: ColumnDef[]): Colum
 // __mode is deliberately NOT here: it is the user-facing "Режим" column and a
 // person toggles it in the grid. It is validated instead — see below.
 const SERVER_OWNED = new Set(['id', '__pos', '__source']);
+
+// Column keys that would collide with a record's own fields. "ID" is a column
+// label in half the CRM exports out there, and its derived key is exactly `id`.
+export const RESERVED_COLUMN_KEYS = new Set(['id', '__mode', '__pos', '__source']);
 
 export function sanitizeRecordData(data: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};

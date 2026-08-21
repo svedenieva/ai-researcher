@@ -1,6 +1,6 @@
 import { getDataSource } from '@/lib/datasource';
 import { BASES } from '@/lib/datasource/bases';
-import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
+import { getCustomStore, canAccessBase, RESERVED_COLUMN_KEYS } from '@/lib/datasource/customStore';
 import type { CustomBase, CustomStore } from '@/lib/datasource/customStore';
 import { accessibleBinFor, binHasBase, canRestoreRows, emptyScope, scopeBin } from '@/lib/datasource/binAccess';
 // MCP_TOKENS = "token:email,…" — parsed in one place, shared with /api/connect
@@ -255,7 +255,7 @@ function normalizeColumns(input: unknown): ColumnDef[] {
     const label = String((raw as { label?: unknown })?.label ?? '').trim();
     if (!label) continue;
     let key = label.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '_').replace(/(^_|_$)/g, '') || `col${cols.length}`;
-    while (used.has(key)) key = `${key}_`;
+    while (used.has(key) || RESERVED_COLUMN_KEYS.has(key)) key = `${key}_`;
     used.add(key);
     const t = (raw as { type?: unknown })?.type;
     const type: ColumnDef['type'] =
