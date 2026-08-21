@@ -7,7 +7,7 @@ import { accessibleBinFor, binHasBase, canRestoreRows, emptyScope, scopeBin } fr
 import { emailForToken } from '@/lib/mcp/tokens';
 import { decompose } from '@/lib/research/decompose';
 import type { ColumnDef } from '@/lib/datasource/types';
-import { checkPayload, checkRowCount } from '@/lib/limits';
+import { checkPayloadEn, checkRowCountEn } from '@/lib/limits';
 // @ts-expect-error — shared rules text, one copy for stdio and HTTP
 import { INSTRUCTIONS } from '@/lib/mcp/instructions.mjs';
 
@@ -357,14 +357,16 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       if (!nm) return failed('name is required');
       if (!cols.length) return failed('at least one column is required');
       const parent = typeof args.parent === 'string' && args.parent ? args.parent : null;
-      const base = await store.createBase({ name: nm, columns: cols, parent, owner: me });
+      // Validate the rows before the base is created — otherwise a rejected
+      // import still leaves a real, permanent, empty base behind.
       const rows = Array.isArray(args.rows) ? args.rows.map((r) => mapRow(cols, r)).filter((d) => Object.keys(d).length) : [];
-      const tooMany = checkRowCount(rows.length);
+      const tooMany = checkRowCountEn(rows.length);
       if (tooMany) return failed(tooMany);
       for (const row of rows) {
-        const tooBig = checkPayload(row);
+        const tooBig = checkPayloadEn(row);
         if (tooBig) return failed(tooBig);
       }
+      const base = await store.createBase({ name: nm, columns: cols, parent, owner: me });
       const imported = rows.length ? await store.addRecords(base.id, rows) : 0;
       return text({ id: base.id, name: base.name, columns: cols.map((c) => c.key), imported });
     }
@@ -451,10 +453,10 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       const gate = await requireBase(store, id, me);
       if (gate.error) return gate.error;
       const rows = Array.isArray(args.rows) ? args.rows.map((r) => mapRow(gate.base.columns, r)).filter((d) => Object.keys(d).length) : [];
-      const tooMany = checkRowCount(rows.length);
+      const tooMany = checkRowCountEn(rows.length);
       if (tooMany) return failed(tooMany);
       for (const row of rows) {
-        const tooBig = checkPayload(row);
+        const tooBig = checkPayloadEn(row);
         if (tooBig) return failed(tooBig);
       }
       const added = rows.length ? await store.addRecords(id, rows) : 0;

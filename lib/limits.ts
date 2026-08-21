@@ -35,3 +35,20 @@ export function checkRowCount(n: number): string | null {
 export function checkName(name: string): string | null {
   return name.length > MAX_NAME_CHARS ? `Название длиннее ${MAX_NAME_CHARS} символов` : null;
 }
+
+// English mirrors of checkPayload/checkRowCount for the MCP tool responses —
+// every other failed() string in app/api/mcp/route.ts is English, unlike the
+// Russian, user-facing REST error bodies above.
+export function checkPayloadEn(data: Record<string, unknown>): string | null {
+  if (depthOf(data) > MAX_DEPTH) return 'value is nested too deeply';
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value === 'string' && value.length > MAX_CELL_CHARS) {
+      return `field "${key}" is longer than ${MAX_CELL_CHARS} characters`;
+    }
+  }
+  return null;
+}
+
+export function checkRowCountEn(n: number): string | null {
+  return n > MAX_ROWS_PER_REQUEST ? `cannot add more than ${MAX_ROWS_PER_REQUEST} rows at once` : null;
+}

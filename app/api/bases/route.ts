@@ -111,6 +111,16 @@ export async function POST(request: Request): Promise<Response> {
   const columns = normalizeColumns(body?.columns);
   if (!columns.length) return Response.json({ error: 'Добавьте хотя бы одну колонку' }, { status: 400 });
 
+  // Validate the rows before the base is created — otherwise a rejected
+  // import still leaves a real, permanent, empty base behind.
+  const rows = mapRows(columns, body?.rows);
+  const tooMany = checkRowCount(rows.length);
+  if (tooMany) return Response.json({ error: tooMany }, { status: 400 });
+  for (const row of rows) {
+    const tooBig = checkPayload(row);
+    if (tooBig) return Response.json({ error: tooBig }, { status: 400 });
+  }
+
   const tone = body?.tone === 'teal' || body?.tone === 'blue' || body?.tone === 'amber' || body?.tone === 'sage'
     ? (body.tone as CustomBase['tone'])
     : undefined;
@@ -120,13 +130,6 @@ export async function POST(request: Request): Promise<Response> {
     const store = getCustomStore();
     const owner = await currentEmail();
     const base = await store.createBase({ name, columns, tone, parent, owner });
-    const rows = mapRows(columns, body?.rows);
-    const tooMany = checkRowCount(rows.length);
-    if (tooMany) return Response.json({ error: tooMany }, { status: 400 });
-    for (const row of rows) {
-      const tooBig = checkPayload(row);
-      if (tooBig) return Response.json({ error: tooBig }, { status: 400 });
-    }
     const imported = rows.length ? await store.addRecords(base.id, rows) : 0;
     return Response.json({ base, imported });
   } catch (e) {
