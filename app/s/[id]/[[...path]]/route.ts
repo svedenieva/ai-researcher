@@ -11,10 +11,27 @@ import { bodyFrom, contentTypeFor, isSafePath } from '@/lib/sites/site';
 
 export const dynamic = 'force-dynamic';
 
+// Security headers applied to all responses from this route, whether success or error.
+// An uploaded site is someone else's code running on our origin. Without CSP + sandbox,
+// it can fetch /api/* with the viewer's session cookies and act as them. sandbox drops
+// it into an opaque origin, so document.cookie and same-origin XHR stop working.
+// Note: inline scripts and styles are NOT usable (no 'unsafe-inline' or nonce), and
+// top-level navigations are blocked (no allow-popups), but form-action 'none' still
+// allows form POST to external URLs via the form's action attribute — use client-side
+// validation or the server to reject unwanted submissions.
+const isolationHeaders = {
+  'X-Content-Type-Options': 'nosniff',
+  'Content-Security-Policy':
+    "default-src 'self' data: blob:; connect-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; sandbox allow-scripts allow-forms",
+};
+
 function notFound(text: string): Response {
   return new Response(text, {
     status: 404,
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      ...isolationHeaders,
+    },
   });
 }
 
@@ -49,24 +66,28 @@ export async function GET(
     return new Response(bodyFrom(bytes), {
       headers: {
         'Content-Type': contentTypeFor(rel),
-        // type is taken from the extension — don't let the browser guess it
-        'X-Content-Type-Options': 'nosniff',
         // a site can be re-uploaded at the same address, so cache only with revalidation
         'Cache-Control': 'private, no-cache',
-        // An uploaded site is someone else's code running on our origin. Without
-        // this it can fetch /api/* with the viewer's session cookies and act as
-        // them. sandbox drops it into an opaque origin, so document.cookie and
-        // same-origin XHR stop working; the allow-* list keeps ordinary pages
-        // (scripts, styles, forms) usable.
-        'Content-Security-Policy':
-          "default-src 'self' data: blob:; connect-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'; sandbox allow-scripts allow-popups allow-forms",
+        ...isolationHeaders,
       },
     });
   } catch (e) {
     if (e instanceof SitesNotSetUp) {
-      return new Response(e.message, { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+      return new Response(e.message, {
+        status: 503,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          ...isolationHeaders,
+        },
+      });
     }
     const msg = e instanceof Error ? e.message : 'Ошибка отдачи сайта';
-    return new Response(msg, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    return new Response(msg, {
+      status: 500,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        ...isolationHeaders,
+      },
+    });
   }
 }
