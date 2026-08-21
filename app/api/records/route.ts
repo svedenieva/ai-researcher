@@ -6,8 +6,18 @@ import { currentEmail } from '@/lib/current-user';
 import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE, recordMode } from '@/lib/mode';
 import { descendantsOf } from '@/lib/datasource/tree';
 import type { ListParams } from '@/lib/datasource/types';
+import { isSafeUrlValue } from '@/lib/safe-url';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
+
+// A url-typed cell may only carry a scheme the browser won't execute.
+function badUrlCell(columns: { key: string; type: string }[], data: Record<string, unknown>): string | null {
+  for (const col of columns) {
+    if (col.type !== 'url') continue;
+    if (!isSafeUrlValue(data[col.key])) return col.key;
+  }
+  return null;
+}
 
 function readParams(url: URL): { params: ListParams; q: string | null } {
   const params: ListParams = {};
@@ -186,6 +196,9 @@ export async function POST(request: Request): Promise<Response> {
     const me = await currentEmail();
     // writing is allowed to own/shared/ownerless bases, not someone else's private one
     if (!base || !canAccessBase(base, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
+    if (badUrlCell(base.columns, data)) {
+      return Response.json({ error: 'В колонку-ссылку можно записать только http, https, mailto или tel' }, { status: 400 });
+    }
     const record = await store.addRecord(baseId, data);
     return Response.json({ record });
   } catch (e) {
@@ -214,6 +227,9 @@ export async function PATCH(request: Request): Promise<Response> {
     const base = await store.getBase(baseId);
     const me = await currentEmail();
     if (!base || !canAccessBase(base, me)) return Response.json({ error: 'База не найдена' }, { status: 404 });
+    if (badUrlCell(base.columns, patch)) {
+      return Response.json({ error: 'В колонку-ссылку можно записать только http, https, mailto или tel' }, { status: 400 });
+    }
     const record = await store.updateRecord(baseId, id, patch);
     if (!record) return Response.json({ error: 'Строка не найдена' }, { status: 404 });
     return Response.json({ record });
