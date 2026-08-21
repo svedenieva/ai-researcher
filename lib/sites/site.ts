@@ -71,6 +71,9 @@ export function isJunk(path: string): boolean {
 // and '..' would take the entry into someone else's folder.
 export function isSafePath(path: string): boolean {
   if (!path || path.startsWith('/') || path.includes('\\')) return false;
+  // a NUL or a newline is never part of a real file name; it reaches the storage
+  // key as-is and what the backend then does with it is anyone's guess
+  if (/[\u0000-\u001f]/.test(path)) return false;
   return !path.split('/').some((p) => p === '..' || p === '.' || p === '');
 }
 
