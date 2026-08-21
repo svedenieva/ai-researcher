@@ -15,6 +15,12 @@ export const RUNS_FOLDER = 'Исследования';
 // question. The folder carries the same pair so the merged view is readable.
 export const RUN_SEED_COLUMNS: ColumnDef[] = [
   { key: 'название', label: 'Название', type: 'text', sortable: true },
+  // The verbatim sentence from the source that backs the row. Inventing a
+  // plausible link is easy; inventing a quote that survives a search of the
+  // page is much harder — and checking one costs a reader seconds instead of
+  // an article. This is what makes the human check cheap enough to actually
+  // happen; it is not, and must not be sold as, automatic fact-checking.
+  { key: 'цитата', label: 'Цитата', type: 'long-text' },
   { key: 'источники', label: 'Источники', type: 'long-text' },
 ];
 

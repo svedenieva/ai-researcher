@@ -64,6 +64,7 @@ export default function Home() {
   // favorite sources of the current base
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [checkingLinks, setCheckingLinks] = useState(false);
 
   const isCustom = !BUILTIN_IDS.has(base);
 
@@ -124,6 +125,33 @@ export default function Home() {
     },
     [base, tabs, toast, confirm],
   );
+
+  // Mechanical source check: fetch every link the rows cite and mark the dead
+  // ones. Deliberately says "источник открылся", never "верно" — it cannot
+  // judge whether a page supports the row, and must not look like it can.
+  const checkLinks = useCallback(async () => {
+    setCheckingLinks(true);
+    try {
+      const r = await apiSend<{ rows: number; urls: number; dead: number; skipped: number }>(
+        '/api/records/check-links',
+        'POST',
+        { base },
+      );
+      setRefreshTick((t) => t + 1);
+      const tail = r.skipped ? `, не проверено: ${r.skipped}` : '';
+      toast(
+        r.urls === 0
+          ? 'Ссылок в строках не нашлось'
+          : r.dead
+            ? `Проверено ссылок: ${r.urls}, битых: ${r.dead}${tail}`
+            : `Проверено ссылок: ${r.urls} — все открылись${tail}`,
+      );
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось проверить ссылки');
+    } finally {
+      setCheckingLinks(false);
+    }
+  }, [base, toast]);
 
   const loadBases = useCallback(async () => {
     try {
@@ -338,6 +366,17 @@ export default function Home() {
             {tabs.find((t) => t.id === base)?.name ?? ''}
             {!loading && <span className={styles.currentCount}>{records.length}</span>}
           </span>
+          {isCustom && (
+            <button
+              type="button"
+              className={styles.navLink}
+              onClick={checkLinks}
+              disabled={checkingLinks}
+              title="Открыть каждый источник из строк и пометить битые. Это проверка существования ссылки, а не достоверности строки."
+            >
+              {checkingLinks ? 'Проверяю…' : 'Проверить источники'}
+            </button>
+          )}
           <a
             href={exportHref}
             className={styles.navLink}

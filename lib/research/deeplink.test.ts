@@ -24,4 +24,14 @@ describe('research deeplink (Variant C)', () => {
     const { instruction } = researchDeeplinks('x'.repeat(200), 'b');
     expect(instruction.length).toBeLessThan(14000);
   });
+  // A link is cheap to invent; a verbatim quote that survives a search of the
+  // page is not. The instruction must keep demanding both, or the human check
+  // gets expensive again and stops happening.
+  it('demands a primary source AND a verbatim quote for every row', () => {
+    const ins = researchInstruction('тема', 'b');
+    expect(ins).toContain('первоисточник');
+    expect(ins).toMatch(/ДОСЛОВНАЯ цитата/);
+    expect(ins).toContain('Не можешь привести цитату — не добавляй строку');
+    expect(ins).toContain('«Цитата»');
+  });
 });
