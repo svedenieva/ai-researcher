@@ -197,14 +197,25 @@ export default function Home() {
     if (!ready) return;
     const qs = recordsQuery({ base, sort, filters, search, mode });
     setLoading(true);
-    apiJson<{ columns?: ColumnDef[]; records?: CatalogRecord[]; total?: number; facets?: Record<string, string[]> }>(`/api/records?${qs}`)
+    apiJson<{ columns?: ColumnDef[]; records?: CatalogRecord[]; total?: number; facets?: Record<string, string[]>; warning?: string }>(`/api/records?${qs}`)
       .then((body) => {
         setColumns(body.columns ?? []);
         setRecords(body.records ?? []);
         setTotal(body.total ?? body.records?.length ?? 0);
         setFacets(body.facets ?? {});
+        // the catalog loaded but nested bases didn't — say so instead of
+        // quietly showing a shorter table
+        if (body.warning) toast(body.warning);
       })
-      .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось загрузить данные'))
+      .catch((e) => {
+        // Show nothing rather than the previous base's rows: leaving stale data
+        // under a new base's name is how "silently wrong" starts.
+        setColumns([]);
+        setRecords([]);
+        setTotal(0);
+        setFacets({});
+        toast(e instanceof Error ? e.message : 'Не удалось загрузить данные');
+      })
       .finally(() => setLoading(false));
   }, [sort, filters, search, base, ready, refreshTick, mode, toast]);
 

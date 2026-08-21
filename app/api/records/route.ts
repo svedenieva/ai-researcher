@@ -49,14 +49,33 @@ export async function GET(request: Request): Promise<Response> {
   };
 
   // ── custom base (created from the UI) ─────────────────────────
+  //
+  // Asking for a base and getting a DIFFERENT one is never an acceptable
+  // answer. This branch used to swallow every failure and fall through to the
+  // built-in catalog, so a missing base, a revoked one or a Supabase blip all
+  // rendered 400+ catalog rows under your base's name — and the research page,
+  // which polls this route waiting for its run base to fill up, read that as
+  // "the research is done" and showed the catalog as the result.
   if (baseId && !BUILTIN_IDS.has(baseId)) {
+    const store = getCustomStore();
+    const me = await currentEmail();
+
+    let custom;
     try {
-      const store = getCustomStore();
-      const me = await currentEmail();
-      const custom = await store.getBase(baseId);
-      // Privacy model: own base, shared, or ownerless. Someone else's private
-      // base can't be read — we fall back to the default showcase.
-      if (custom && canAccessBase(custom, me)) {
+      custom = await store.getBase(baseId);
+    } catch (e) {
+      console.error('custom base read failed:', e);
+      return Response.json({ error: 'Не удалось прочитать базу' }, { status: 500 });
+    }
+
+    // Missing and forbidden answer identically on purpose: confirming that a
+    // guessed id names a real private base is itself a leak.
+    if (!custom || !canAccessBase(custom, me)) {
+      return Response.json({ error: 'База не найдена или нет доступа' }, { status: 404 });
+    }
+
+    try {
+      {
         // descendants are taken only among ACCESSIBLE bases: another person's
         // private base nested inside a shared one won't appear in the slice
         const all = await store.listBases(me);
@@ -98,8 +117,8 @@ export async function GET(request: Request): Promise<Response> {
       }
     } catch (e) {
       console.error('custom base read failed:', e);
+      return Response.json({ error: 'Не удалось прочитать базу' }, { status: 500 });
     }
-    // not found / error — fall back to the default showcase
   }
 
   // ── built-in base (product catalog slice) ────────────────────
@@ -129,6 +148,10 @@ export async function GET(request: Request): Promise<Response> {
 
   // mix in records from custom bases nested under this section
   let merged = records;
+  // A failure here isn't fatal — the catalog itself is valid — but the table
+  // silently loses every nested row, and nothing told the user their data was
+  // missing. The warning travels with the response so the UI can say so.
+  let warning: string | undefined;
   try {
     const store = getCustomStore();
     // mix into the built-in section only bases ACCESSIBLE to the user
@@ -161,9 +184,10 @@ export async function GET(request: Request): Promise<Response> {
     }
   } catch (e) {
     console.error('nested bases merge failed:', e);
+    warning = 'Вложенные базы не загрузились — показан только каталог';
   }
 
-  return Response.json({ columns, records: merged, facets, total, base: base.id, custom: false });
+  return Response.json({ columns, records: merged, facets, total, base: base.id, custom: false, warning });
 }
 
 // add a row to a custom base

@@ -4,7 +4,7 @@ import { useCallback, useState, useEffect } from 'react';
 import Link from 'next/link';
 import ThemeToggle from '../theme-toggle';
 import { IconSearch, IconCheck, IconFlask, IconTrash } from '../icons';
-import { apiJson, apiSend } from '@/lib/api';
+import { ApiError, apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from '../ui';
 import styles from './research.module.css';
 
@@ -47,7 +47,15 @@ export default function Research() {
           const b = await apiJson<{ records?: Array<Record<string, unknown>> }>(`/api/records?base=${encodeURIComponent(run.baseId)}`);
           if (stop) return;
           if (Array.isArray(b.records) && b.records.length) { setRunRows(b.records); return; }
-        } catch { /* poll error — swallow and retry, a toast here would spam */ }
+        } catch (e) {
+          // the run base is gone (deleted from the tree, or never accessible) —
+          // waiting five more minutes for it would be a lie
+          if (e instanceof ApiError && e.status === 404) {
+            if (!stop) { setRunTimedOut(true); toast('База запуска не найдена — возможно, её удалили'); }
+            return;
+          }
+          /* transient poll error — swallow and retry, a toast here would spam */
+        }
         if (Date.now() - started > 5 * 60 * 1000) { if (!stop) setRunTimedOut(true); return; }
         await new Promise((res) => setTimeout(res, 4000));
       }

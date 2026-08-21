@@ -88,6 +88,48 @@ describe('GET /api/records', () => {
   });
 });
 
+// Asking for one base and receiving another is worse than an error: the grid
+// showed 400+ catalog rows under your base's name, and the research page read
+// that as a finished result.
+describe('GET /api/records — a base that cannot be read is never swapped for the catalog', () => {
+  it('answers 404 for an unknown base instead of the catalog', async () => {
+    const res = await call('http://localhost/api/records?base=нет-такой-базы');
+    expect(res.status).toBe(404);
+    const body = await res.json();
+    expect(body.records).toBeUndefined();
+    expect(body.error).toBeTruthy();
+  });
+
+  it('answers 404 for someone else\'s private base', async () => {
+    const store = getCustomStore();
+    const theirs = await store.createBase({
+      name: 'Чужая приватная',
+      columns: [{ key: 'name', label: 'N', type: 'text' }],
+      owner: 'stranger@example.com',
+    });
+    await store.addRecord(theirs.id, { name: 'секрет' });
+
+    const res = await call(`http://localhost/api/records?base=${theirs.id}`);
+    expect(res.status).toBe(404);
+    expect(JSON.stringify(await res.json())).not.toContain('секрет');
+  });
+
+  it('still returns a readable base normally', async () => {
+    const store = getCustomStore();
+    const mine = await store.createBase({
+      name: 'Доступная',
+      columns: [{ key: 'name', label: 'N', type: 'text' }],
+    });
+    await store.addRecord(mine.id, { name: 'моя строка' });
+
+    const res = await call(`http://localhost/api/records?base=${mine.id}`);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.custom).toBe(true);
+    expect(body.records.map((r: { name: string }) => r.name)).toEqual(['моя строка']);
+  });
+});
+
 describe('GET /api/records — research/reference mode', () => {
   // a base with one row of each kind; the flag is absent on the first row,
   // which is exactly how older rows look — they must count as drafts
