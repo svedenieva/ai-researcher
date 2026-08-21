@@ -35,6 +35,14 @@ export async function POST(
     // The manifest is the contract agreed at validateUpload time. Accepting a
     // path outside it turned this route into unbounded storage: MAX_FILES and
     // the total-size ceiling were both bypassed one request at a time.
+    // A row can have an empty/missing manifest for two reasons: it predates the
+    // `files` column (created before this check existed, or created while the
+    // migration in supabase/schema.sql hadn't been applied by hand yet), or it
+    // really was created with no files. Either way we refuse rather than accept
+    // a path we cannot verify — this is a deliberate choice, not an oversight.
+    // The only caller today (app/sites/page.tsx, right after creating a site)
+    // always uploads against a freshly created row that does have a manifest,
+    // so this does not block any live flow; it is not meant as a backfill path.
     if (!(site.files ?? []).some((f) => f.path === path)) {
       return Response.json({ error: `Файла «${path}» нет в составе сайта` }, { status: 400 });
     }

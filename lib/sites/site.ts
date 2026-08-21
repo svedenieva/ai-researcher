@@ -128,9 +128,6 @@ export function validateUpload(input: SiteFile[]): { ok: true; value: UploadChec
     const mb = (heavy.size / 1024 / 1024).toFixed(1);
     return { ok: false, error: `Файл «${heavy.path}» весит ${mb} МБ — больше 10 МБ` };
   }
-  const unsafe = files.find((f) => !isSafePath(f.path));
-  if (unsafe) return { ok: false, error: `Недопустимый путь: «${unsafe.path}»` };
-
   const total = files.reduce((s, f) => s + f.size, 0);
   if (total > MAX_TOTAL_BYTES) {
     const mb = (total / 1024 / 1024).toFixed(0);

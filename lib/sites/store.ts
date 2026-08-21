@@ -80,7 +80,7 @@ export class SiteStore {
   async create(def: NewSite): Promise<SiteMeta> {
     const taken = new Set((await this.list()).map((s) => s.id));
     const id = slugId(def.name, taken);
-    const row = {
+    const row: Record<string, unknown> = {
       id,
       name: def.name,
       client: def.client ?? null,
@@ -92,7 +92,16 @@ export class SiteStore {
       owner: def.owner ?? null,
       files: def.files,
     };
-    const { data, error } = await this.client.from('sites').insert(row).select('*').single();
+    let { data, error } = await this.client.from('sites').insert(row).select('*').single();
+    // the files column is added by hand (see schema.sql) — on a database where
+    // that migration hasn't run yet, drop it and create the site without a
+    // persisted manifest instead of failing every creation with a raw PostgREST
+    // "could not find column" error. Same pattern as owner_email/shared in
+    // lib/datasource/customStore.ts's createBase.
+    if (error && /files/.test(error.message)) {
+      delete row.files;
+      ({ data, error } = await this.client.from('sites').insert(row).select('*').single());
+    }
     if (error) explain(error.message);
     return toMeta(data as Record<string, unknown>);
   }
