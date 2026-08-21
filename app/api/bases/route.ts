@@ -16,6 +16,10 @@ interface BaseDTO {
   tone: string;
   builtin: boolean;
   parent: string | null;
+  /** who created the base; null for team/legacy bases. Built-in slices have none. */
+  owner?: string | null;
+  /** ISO creation date — shown in the showcase preview */
+  createdAt?: string | null;
 }
 
 // list of all bases for the switcher: built-in first (catalog slices),
@@ -38,6 +42,8 @@ export async function GET(): Promise<Response> {
         tone: b.tone,
         builtin: false,
         parent: b.parent && visible.has(b.parent) ? b.parent : null,
+        owner: b.owner,
+        createdAt: b.createdAt ?? null,
       }));
   } catch (e) {
     // if custom bases are unavailable (no tables) — show at least the built-in ones

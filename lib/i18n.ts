@@ -22,7 +22,8 @@ const UI = {
     en: 'Export what’s on screen to CSV (RFC 4180)',
   },
   sites: { uk: 'Сайти', ru: 'Сайты', en: 'Sites' },
-  trash: { uk: '🗑 Кошик', ru: '🗑 Корзина', en: '🗑 Trash' },
+  trash: { uk: 'Кошик', ru: 'Корзина', en: 'Trash' },
+  showcase: { uk: 'Вітрина', ru: 'Витрина', en: 'Showcase' },
   newResearch: { uk: '+ Нове дослідження', ru: '+ Новое исследование', en: '+ New research' },
   langTitle: { uk: 'Мова інтерфейсу', ru: 'Язык интерфейса', en: 'Interface language' },
 

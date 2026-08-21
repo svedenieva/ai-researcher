@@ -357,6 +357,7 @@ export default function Home() {
           >
             <IconDownload size={14} /> CSV
           </a>
+          <Link href="/bases" className={styles.navLink}>{tr(lang, 'showcase')}</Link>
           <Link href="/sites" className={styles.navLink}>{tr(lang, 'sites')}</Link>
           <Link href="/bin" className={styles.navLink}>{tr(lang, 'trash')}</Link>
           <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>

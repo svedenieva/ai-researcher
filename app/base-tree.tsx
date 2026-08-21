@@ -8,13 +8,14 @@ import { useToast, useConfirm } from './ui';
 import { IconFolder, IconFile, IconPencil, IconTrash } from './icons';
 import styles from './base-tree.module.css';
 
-interface TreeNode extends BaseTab {
+export interface TreeNode extends BaseTab {
   children: TreeNode[];
 }
 
 const BUILTIN_ORDER = ['ai', 'it', 'workforce', 'market'];
 
-function buildTree(tabs: BaseTab[]) {
+// shared with the showcase page (/bases), which renders the same hierarchy
+export function buildTree(tabs: BaseTab[]) {
   const byId = new Map<string, TreeNode>(tabs.map((t) => [t.id, { ...t, children: [] }]));
   const roots: TreeNode[] = [];
   for (const node of byId.values()) {

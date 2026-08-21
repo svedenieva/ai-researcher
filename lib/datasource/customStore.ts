@@ -19,6 +19,9 @@ export interface CustomBase {
   owner: string | null;
   /** explicitly marked shared — visible to everyone, even if it has an owner */
   shared: boolean;
+  /** when the base was created (ISO). Optional: legacy rows written before the
+      column was read back have none, and the showcase just omits the date. */
+  createdAt?: string | null;
 }
 
 export interface NewBase {
@@ -150,6 +153,7 @@ export class MemoryCustomStore implements CustomStore {
       parent: def.parent ?? null,
       owner: def.owner ?? null,
       shared: def.shared ?? false,
+      createdAt: new Date().toISOString(),
     };
     this.bases.push(base);
     this.rows[id] = [];
@@ -255,6 +259,7 @@ class SupabaseCustomStore implements CustomStore {
       // the shared column may not exist yet in the live DB — then undefined→false.
       // Isolation still works: owner===null (legacy/team) are visible to everyone.
       shared: Boolean(row.shared),
+      createdAt: (row.created_at as string) ?? null,
     };
   }
   async listAllBases(): Promise<CustomBase[]> {
@@ -335,7 +340,7 @@ class SupabaseCustomStore implements CustomStore {
       ({ error } = await this.client.from('bases').insert(row));
     }
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
-    return { id, name: def.name, tone, columns: def.columns, parent: def.parent ?? null, owner: def.owner ?? null, shared: def.shared ?? false };
+    return { id, name: def.name, tone, columns: def.columns, parent: def.parent ?? null, owner: def.owner ?? null, shared: def.shared ?? false, createdAt: new Date().toISOString() };
   }
   async listRecords(baseId: string): Promise<CatalogRecord[]> {
     let q = this.client.from('base_records').select('id, data').eq('base_id', baseId).is('deleted_at', null);

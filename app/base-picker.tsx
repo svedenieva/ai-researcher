@@ -14,6 +14,9 @@ export interface BaseTab {
   tone: string;
   builtin: boolean;
   parent: string | null;
+  /** only for custom bases — shown in the showcase preview */
+  owner?: string | null;
+  createdAt?: string | null;
 }
 
 export default function BasePicker({
