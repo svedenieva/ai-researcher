@@ -7,6 +7,7 @@ import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE, recordMode } from '@/lib/mode'
 import { descendantsOf } from '@/lib/datasource/tree';
 import type { ListParams } from '@/lib/datasource/types';
 import { isSafeUrlValue } from '@/lib/safe-url';
+import { checkPayload } from '@/lib/limits';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
 
@@ -189,6 +190,8 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: 'В эту базу нельзя добавлять строки' }, { status: 400 });
   }
   const data = body?.data && typeof body.data === 'object' ? (body.data as Record<string, unknown>) : {};
+  const tooBig = checkPayload(data);
+  if (tooBig) return Response.json({ error: tooBig }, { status: 400 });
 
   try {
     const store = getCustomStore();
@@ -221,6 +224,8 @@ export async function PATCH(request: Request): Promise<Response> {
     return Response.json({ error: 'Нельзя редактировать эту строку' }, { status: 400 });
   }
   const patch = body?.data && typeof body.data === 'object' ? (body.data as Record<string, unknown>) : {};
+  const tooBig = checkPayload(patch);
+  if (tooBig) return Response.json({ error: tooBig }, { status: 400 });
 
   try {
     const store = getCustomStore();

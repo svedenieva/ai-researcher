@@ -2,6 +2,7 @@ import { BASES } from '@/lib/datasource/bases';
 import { currentEmail } from '@/lib/current-user';
 import { getCustomStore, canAccessBase, RESERVED_COLUMN_KEYS, type CustomBase } from '@/lib/datasource/customStore';
 import type { ColumnDef } from '@/lib/datasource/types';
+import { checkName, checkPayload, checkRowCount } from '@/lib/limits';
 
 // GET takes no request, so by default Next would serve a snapshot taken
 // at build time — the list of bases would "freeze" until the next deploy.
@@ -104,6 +105,8 @@ export async function POST(request: Request): Promise<Response> {
   }
   const name = String(body?.name ?? '').trim();
   if (!name) return Response.json({ error: 'Нужно название базы' }, { status: 400 });
+  const longName = checkName(name);
+  if (longName) return Response.json({ error: longName }, { status: 400 });
 
   const columns = normalizeColumns(body?.columns);
   if (!columns.length) return Response.json({ error: 'Добавьте хотя бы одну колонку' }, { status: 400 });
@@ -118,6 +121,12 @@ export async function POST(request: Request): Promise<Response> {
     const owner = await currentEmail();
     const base = await store.createBase({ name, columns, tone, parent, owner });
     const rows = mapRows(columns, body?.rows);
+    const tooMany = checkRowCount(rows.length);
+    if (tooMany) return Response.json({ error: tooMany }, { status: 400 });
+    for (const row of rows) {
+      const tooBig = checkPayload(row);
+      if (tooBig) return Response.json({ error: tooBig }, { status: 400 });
+    }
     const imported = rows.length ? await store.addRecords(base.id, rows) : 0;
     return Response.json({ base, imported });
   } catch (e) {
