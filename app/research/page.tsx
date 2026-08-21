@@ -1,20 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import Link from 'next/link';
 import ThemeToggle from '../theme-toggle';
-import { IconSearch, IconCheck, IconFlask } from '../icons';
+import { IconSearch, IconCheck, IconFlask, IconTrash } from '../icons';
 import { apiJson, apiSend } from '@/lib/api';
-import { useToast } from '../ui';
+import { useToast, useConfirm } from '../ui';
 import styles from './research.module.css';
+
+interface RunInfo {
+  id: string;
+  name: string;
+  createdAt: string | null;
+  rows: number;
+}
+
+// the run in flight survives a reload — it used to live only in React state,
+// so closing the tab orphaned the base with no way back to it
+const ACTIVE_RUN_KEY = 'ais.research.run';
 
 export default function Research() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [prompt, setPrompt] = useState('');
 
   // ── Variant C: research on the user's own Claude via a deeplink ──
   const [starting, setStarting] = useState(false);
   const [run, setRun] = useState<{ baseId: string; baseName: string; web: string } | null>(null);
+  // Your past runs, so an abandoned one is findable and removable instead of
+  // sitting in the tree forever
+  const [runs, setRuns] = useState<RunInfo[] | null>(null);
   // the result lands in the run base once Claude saves it; poll the base
   const [runRows, setRunRows] = useState<Array<Record<string, unknown>> | null>(null);
   const [runTimedOut, setRunTimedOut] = useState(false);
@@ -41,12 +56,65 @@ export default function Research() {
     return () => { stop = true; };
   }, [run, recheck]);
 
+  const loadRuns = useCallback(() => {
+    apiJson<{ runs?: RunInfo[] }>('/api/research/runs')
+      .then((b) => setRuns(b.runs ?? []))
+      .catch(() => setRuns([]));
+  }, []);
+
+  // restore the run we were waiting on, and list past ones
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(ACTIVE_RUN_KEY);
+      if (saved) setRun(JSON.parse(saved));
+    } catch { /* corrupted entry — just start clean */ }
+    loadRuns();
+  }, [loadRuns]);
+
+  useEffect(() => {
+    try {
+      if (run) localStorage.setItem(ACTIVE_RUN_KEY, JSON.stringify(run));
+      else localStorage.removeItem(ACTIVE_RUN_KEY);
+    } catch { /* private mode — the run just won't survive a reload */ }
+  }, [run]);
+
+  const dropRun = async (r: RunInfo) => {
+    const ok = await confirm({
+      title: `Удалить «${r.name}»?`,
+      message: r.rows
+        ? `В запуске ${r.rows} строк. База уедет в корзину — вернуть можно оттуда.`
+        : 'Запуск пустой. База уедет в корзину — вернуть можно оттуда.',
+      confirmLabel: 'Удалить',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await apiSend('/api/bases', 'DELETE', { id: r.id });
+      if (run?.baseId === r.id) setRun(null);
+      loadRuns();
+      toast('Запуск удалён');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось удалить запуск');
+    }
+  };
+
+  const tidy = async () => {
+    try {
+      const { moved } = await apiSend<{ moved: number }>('/api/research/runs', 'POST', {});
+      loadRuns();
+      toast(moved ? `Прибрано: ${moved}` : 'Всё уже на месте');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось прибрать');
+    }
+  };
+
   const startClaude = async () => {
     if (!prompt.trim()) return;
     setStarting(true);
     try {
       const body = await apiSend<{ baseId: string; baseName: string; web: string }>('/api/research/start', 'POST', { prompt });
       setRun({ baseId: body.baseId, baseName: body.baseName, web: body.web });
+      loadRuns();
       // open the user's OWN Claude with the ready-made prompt
       window.open(body.web, '_blank', 'noopener,noreferrer');
     } catch (e) {
@@ -146,6 +214,33 @@ export default function Research() {
                 </p>
               </>
             )}
+          </section>
+        )}
+
+        {runs && runs.length > 0 && (
+          <section className={styles.runsBlock}>
+            <div className={styles.runsHead}>
+              <h2>Твои запуски</h2>
+              {runs.some((r) => !r.rows) && (
+                <span className={styles.runsHint}>пустые можно удалить — это брошенные</span>
+              )}
+              <button type="button" className={styles.tidy} onClick={tidy} title="Сложить старые запуски в папку «Исследования»">
+                Прибрать
+              </button>
+            </div>
+            <ul className={styles.runsList}>
+              {runs.map((r) => (
+                <li key={r.id} className={styles.runsItem}>
+                  <Link className={styles.runsName} href={`/?base=${encodeURIComponent(r.id)}`}>{r.name}</Link>
+                  <span className={r.rows ? styles.runsRows : styles.runsEmpty}>
+                    {r.rows ? `${r.rows} строк` : 'пусто'}
+                  </span>
+                  <button type="button" className={styles.runsDrop} onClick={() => dropRun(r)} title="Удалить запуск в корзину">
+                    <IconTrash size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
       </main>

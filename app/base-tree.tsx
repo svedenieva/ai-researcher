@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { BaseTab } from './base-picker';
 import { toneColor } from '@/lib/tone';
 import { apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
-import { IconFolder, IconFile, IconPencil, IconTrash } from './icons';
+import { IconFolder, IconFile, IconPencil, IconMove, IconTrash } from './icons';
 import styles from './base-tree.module.css';
 
 export interface TreeNode extends BaseTab {
@@ -58,6 +58,41 @@ export default function BaseTree({
   // inline rename: the id of the base being renamed, and its draft name
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+
+  // inline move: the id of the base being moved. The row turns into a parent
+  // picker, mirroring how rename turns it into an input.
+  const [movingId, setMovingId] = useState<string | null>(null);
+
+  // Where may this base go? Anywhere except itself and its own branch —
+  // otherwise the tree becomes cyclic. The server checks this too (it is the
+  // authority); this only keeps impossible options out of the list.
+  const moveTargets = useCallback(
+    (node: TreeNode) => {
+      const banned = new Set<string>([node.id]);
+      const walk = (n: TreeNode) => {
+        for (const c of n.children) {
+          banned.add(c.id);
+          walk(c);
+        }
+      };
+      walk(node);
+      return tabs.filter((t) => !banned.has(t.id) && t.id !== node.parent);
+    },
+    [tabs],
+  );
+
+  const commitMove = async (node: TreeNode, parent: string | null) => {
+    setMovingId(null);
+    if (parent === (node.parent ?? null)) return;
+    try {
+      await apiSend('/api/bases', 'PATCH', { id: node.id, parent });
+      onMutated?.();
+      const where = parent ? tabs.find((t) => t.id === parent)?.name : null;
+      toast(where ? `«${node.name}» → «${where}»` : `«${node.name}» — в корень`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось перенести базу');
+    }
+  };
 
   const startRename = (node: TreeNode) => { setEditValue(node.name); setEditingId(node.id); };
   const cancelRename = () => setEditingId(null);
@@ -172,7 +207,23 @@ export default function BaseTree({
           ) : (
             <span className={styles.twistGap} />
           )}
-          {editingId === node.id ? (
+          {movingId === node.id ? (
+            <select
+              className={styles.renameInput}
+              defaultValue=""
+              autoFocus
+              aria-label={`Перенести базу «${node.name}»`}
+              onChange={(e) => commitMove(node, e.target.value || null)}
+              onBlur={() => setMovingId(null)}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <option value="" disabled>Перенести в…</option>
+              {node.parent && <option value="">В корень</option>}
+              {moveTargets(node).map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          ) : editingId === node.id ? (
             <input
               className={styles.renameInput}
               value={editValue}
@@ -204,9 +255,10 @@ export default function BaseTree({
               {node.builtin && <span className={styles.tag}>встроенная</span>}
             </button>
           )}
-          {!node.builtin && editingId !== node.id && (
+          {!node.builtin && editingId !== node.id && movingId !== node.id && (
             <span className={styles.actions}>
               <button type="button" title="Переименовать" onClick={(e) => { e.stopPropagation(); startRename(node); }}><IconPencil size={14} /></button>
+              <button type="button" title="Перенести в другую ветку" onClick={(e) => { e.stopPropagation(); setMovingId(node.id); }}><IconMove size={14} /></button>
               <button type="button" title="Удалить базу в корзину" onClick={(e) => { e.stopPropagation(); deleteBase(node); }}><IconTrash size={14} /></button>
             </span>
           )}

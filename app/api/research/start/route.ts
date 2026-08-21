@@ -1,16 +1,7 @@
 import { getCustomStore } from '@/lib/datasource/customStore';
 import { currentEmail } from '@/lib/current-user';
 import { researchDeeplinks } from '@/lib/research/deeplink';
-import type { ColumnDef } from '@/lib/datasource/types';
-
-// Minimal seed for a research run base: just a name + a source column. Claude
-// adds the columns that actually fit the question itself (via add_column), per
-// the instruction — so any question gets a topic-shaped table, not a
-// company-shaped one.
-const RUN_SEED_COLUMNS: ColumnDef[] = [
-  { key: 'название', label: 'Название', type: 'text', sortable: true },
-  { key: 'источники', label: 'Источники', type: 'long-text' },
-];
+import { RUN_SEED_COLUMNS, researchFolder, runName } from '@/lib/research/runs';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,12 +20,13 @@ export async function POST(request: Request): Promise<Response> {
 
   // short date in the name so runs don't collide; the slug adds a numeric
   // suffix on any remaining clash
-  const d = new Date();
-  const stamp = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
-  const name = `Исследование: ${topic.slice(0, 48)} (${stamp})`;
+  const name = runName(topic, new Date());
 
   try {
-    const base = await store.createBase({ name, columns: RUN_SEED_COLUMNS, owner: me });
+    // runs are filed under the person's "Исследования" folder rather than
+    // dropped at the root, where abandoned ones used to pile up unlabelled
+    const folder = await researchFolder(me);
+    const base = await store.createBase({ name, columns: RUN_SEED_COLUMNS, owner: me, parent: folder.id });
     const links = researchDeeplinks(topic, base.id);
     return Response.json({
       baseId: base.id,

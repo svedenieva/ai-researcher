@@ -36,6 +36,10 @@ export const IconPencil = (p: IconProps) => (
 export const IconTrash = (p: IconProps) => (
   <Svg {...p}><path d="M3 6h18" /><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" /><path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" /></Svg>
 );
+// move a base to another branch: an arrow entering a folder
+export const IconMove = (p: IconProps) => (
+  <Svg {...p}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6" /><path d="M3 15h8" /><path d="M8 12l-5 3 5 3" /></Svg>
+);
 export const IconStar = (p: IconProps) => (
   <Svg {...p}><path d="M12 3l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 18.8 6.2 21.9l1.1-6.5L2.6 9.8l6.5-.9z" /></Svg>
 );
