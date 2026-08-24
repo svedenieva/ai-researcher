@@ -12,6 +12,9 @@ describe('research deeplink (Variant C)', () => {
     expect(ins).toContain('catalog_search');
     // the trusted-sources registry is consulted before searching
     expect(ins).toContain('list_trusted_sources');
+    // niche community discussion (Reddit / forums) is explicitly in scope, read
+    // as public web pages — no Reddit Data API, which their policy gates
+    expect(ins).toMatch(/reddit/i);
   });
 
   it('deeplink: web is a universal link, desktop is the claude:// scheme, q is encoded', () => {
