@@ -25,6 +25,7 @@ const UI = {
   trash: { uk: 'Кошик', ru: 'Корзина', en: 'Trash' },
   showcase: { uk: 'Вітрина', ru: 'Витрина', en: 'Showcase' },
   connect: { uk: 'Конектор', ru: 'Коннектор', en: 'Connector' },
+  sources: { uk: 'Джерела', ru: 'Источники', en: 'Sources' },
   newResearch: { uk: '+ Нове дослідження', ru: '+ Новое исследование', en: '+ New research' },
   langTitle: { uk: 'Мова інтерфейсу', ru: 'Язык интерфейса', en: 'Interface language' },
 

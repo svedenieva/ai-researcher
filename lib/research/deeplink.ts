@@ -33,13 +33,16 @@ export function researchInstruction(topic: string, baseId: string): string {
 ` +
     `2. Search in this order:
 ` +
-    `   a) Our own data first: the connector tools list_bases, query_records and catalog_search — ` +
+    `   a) First call list_trusted_sources with this topic — the company's vetted platforms, ` +
+    `channels and experts. Cover those sources before anything else.
+` +
+    `   b) Then our own data: the connector tools list_bases, query_records and catalog_search — ` +
     `find what has already been collected on the topic and reuse it.
 ` +
-    `   b) Then fill the gaps with your own web search. Real, sourced facts only — invent nothing; ` +
+    `   c) Then fill the gaps with your own web search. Real, sourced facts only — invent nothing; ` +
     `if there is no reliable source, say so and skip the point.
 ` +
-    `   c) Every row needs a direct link to the primary source AND a VERBATIM quote from it ` +
+    `   d) Every row needs a direct link to the primary source AND a VERBATIM quote from it ` +
     `(one or two sentences) supporting exactly what the row claims. The quote must be findable by ` +
     `searching the page. If you cannot quote it, do not add the row.
 

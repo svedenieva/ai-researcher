@@ -10,6 +10,8 @@ describe('research deeplink (Variant C)', () => {
     expect(ins).toContain('иссл-123');
     expect(ins).toContain('add_rows');
     expect(ins).toContain('catalog_search');
+    // the trusted-sources registry is consulted before searching
+    expect(ins).toContain('list_trusted_sources');
   });
 
   it('deeplink: web is a universal link, desktop is the claude:// scheme, q is encoded', () => {

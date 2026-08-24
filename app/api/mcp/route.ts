@@ -6,6 +6,7 @@ import { accessibleBinFor, binHasBase, canRestoreRows, emptyScope, scopeBin } fr
 // MCP_TOKENS = "token:email,…" — parsed in one place, shared with /api/connect
 import { emailForToken } from '@/lib/mcp/tokens';
 import { decompose } from '@/lib/research/decompose';
+import { getSourceStore, matchSources } from '@/lib/research/sources';
 import type { ColumnDef } from '@/lib/datasource/types';
 import { checkPayloadEn, checkRowCountEn } from '@/lib/limits';
 import { publicError } from '@/lib/errors';
@@ -242,6 +243,15 @@ const TOOLS = [
       type: 'object',
       required: ['prompt'],
       properties: { prompt: { type: 'string' } },
+    },
+  },
+  {
+    name: 'list_trusted_sources',
+    description:
+      "The company's vetted sources (platforms, channels, experts) for a topic. Call this BEFORE web-searching a research question and cover these sources first.",
+    inputSchema: {
+      type: 'object',
+      properties: { topic: { type: 'string', description: 'the research question or topic' } },
     },
   },
 ];
@@ -617,6 +627,17 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       // (lib/research).
       const { source, subtopics } = await decompose(prompt);
       return text({ source, subtopics });
+    }
+
+    case 'list_trusted_sources': {
+      const topic = String(args.topic ?? '').trim();
+      const all = await getSourceStore().list();
+      const picked = matchSources(all, topic);
+      return text({
+        total: picked.length,
+        sources: picked.map((s) => ({ name: s.name, type: s.type, url: s.url, topics: s.topics, note: s.note ?? undefined })),
+        hint: 'Cover these vetted sources first, then widen the web search. Every row still needs a link and a verbatim quote.',
+      });
     }
 
     default:

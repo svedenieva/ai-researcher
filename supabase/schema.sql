@@ -71,3 +71,16 @@ alter table bases        add column if not exists deleted_at timestamptz;
 alter table base_records add column if not exists deleted_at timestamptz;
 create index if not exists bases_deleted_at_idx        on bases (deleted_at);
 create index if not exists base_records_deleted_at_idx on base_records (deleted_at);
+
+--  Trusted sources registry: platforms, channels and experts the company
+--  trusts, tagged by topic. A research run consults it before searching.
+--  Company-wide (not owner-scoped): everyone signed in sees the same registry.
+create table if not exists trusted_sources (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  type       text not null default 'platform',   -- platform | channel | expert
+  url        text not null default '',
+  topics     jsonb not null default '[]',         -- lowercase topic tags
+  note       text,
+  created_at timestamptz not null default now()
+);
