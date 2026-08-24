@@ -5,6 +5,10 @@ export const MAX_ROWS_PER_REQUEST = 1000;
 export const MAX_CELL_CHARS = 64_000;
 export const MAX_NAME_CHARS = 200;
 export const MAX_DEPTH = 10;
+// research_decompose reaches a paid model. Any valid research question fits in a
+// few hundred characters; a megabyte-long "prompt" is a way to run up someone
+// else's key, so we reject it before the model is ever called.
+export const MAX_PROMPT_CHARS = 4000;
 
 function depthOf(value: unknown, level = 0): number {
   if (level > MAX_DEPTH) return level;
@@ -51,4 +55,8 @@ export function checkPayloadEn(data: Record<string, unknown>): string | null {
 
 export function checkRowCountEn(n: number): string | null {
   return n > MAX_ROWS_PER_REQUEST ? `cannot add more than ${MAX_ROWS_PER_REQUEST} rows at once` : null;
+}
+
+export function checkPromptEn(prompt: string): string | null {
+  return prompt.length > MAX_PROMPT_CHARS ? `prompt is longer than ${MAX_PROMPT_CHARS} characters` : null;
 }

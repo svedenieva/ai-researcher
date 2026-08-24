@@ -8,7 +8,7 @@ import { emailForToken } from '@/lib/mcp/tokens';
 import { decompose } from '@/lib/research/decompose';
 import { getSourceStore, matchSources } from '@/lib/research/sources';
 import type { ColumnDef } from '@/lib/datasource/types';
-import { checkPayloadEn, checkRowCountEn } from '@/lib/limits';
+import { checkPayloadEn, checkRowCountEn, checkPromptEn } from '@/lib/limits';
 import { publicError } from '@/lib/errors';
 // @ts-expect-error — shared rules text, one copy for stdio and HTTP
 import { INSTRUCTIONS } from '@/lib/mcp/instructions.mjs';
@@ -290,7 +290,19 @@ function mapRow(cols: ColumnDef[], row: unknown): Record<string, unknown> {
   for (const col of cols) {
     const v = src[col.key] ?? src[col.label];
     if (v === undefined || v === null || String(v).trim() === '') continue;
-    data[col.key] = col.type === 'number' ? Number(String(v).replace(',', '.')) : v;
+    // A nested object/array can't be a cell value: it would serialise to
+    // "[object Object]" or a comma-joined string and silently corrupt the row.
+    // Drop it rather than store garbage.
+    if (typeof v === 'object') continue;
+    if (col.type === 'number') {
+      // "двенадцать" → NaN. NaN in the store is a value that fails every later
+      // comparison and renders as an empty/NaN cell — drop it instead of storing it.
+      const n = Number(String(v).replace(',', '.'));
+      if (!Number.isFinite(n)) continue;
+      data[col.key] = n;
+    } else {
+      data[col.key] = v;
+    }
   }
   return data;
 }
@@ -621,6 +633,8 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
     case 'research_decompose': {
       const prompt = String(args.prompt ?? '').trim();
       if (!prompt) return failed('empty query');
+      const tooLong = checkPromptEn(prompt);
+      if (tooLong) return failed(tooLong);
       // Calling the logic directly rather than the HTTP route: a self-request
       // to /api/research/decompose hit the /login redirect in prod and
       // returned an empty list. Decomposition rules live in one place
