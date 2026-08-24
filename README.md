@@ -88,12 +88,11 @@ Tests run against an **in-memory** data store by default (no Supabase needed). S
 - `favorites`, `research/start`, `sites/*`, `s/[id]/…` (static-site serving)
 - `mcp` — the HTTP MCP endpoint (JSON-RPC 2.0, token-authed)
 
-**MCP connector** — the same 18 tools over two transports that share `lib/mcp/instructions.mjs`:
+**MCP connector** — 19 tools over one HTTP transport (`app/api/mcp/route.ts`),
+one URL + a personal token; nothing to install on the user's machine. Server
+instructions live in `lib/mcp/instructions.mjs`.
 
-- **stdio** — `mcp/server.mjs`, added to a client config, talks to Supabase directly with the service key.
-- **HTTP** — `app/api/mcp/route.ts`, one URL + a personal token; nothing to install on the user's machine.
-
-Tools: `list_bases`, `get_base`, `create_base`, `add_rows`, `query_records`, `update_record`, `add_column`, `update_column`, `delete_column`, `rename_base`, `move_base`, `delete_base`, `delete_rows`, `list_bin`, `restore`, `empty_bin`, `catalog_search`, `research_decompose`.
+Tools: `list_bases`, `get_base`, `create_base`, `add_rows`, `query_records`, `update_record`, `add_column`, `update_column`, `delete_column`, `rename_base`, `move_base`, `delete_base`, `delete_rows`, `list_bin`, `restore`, `empty_bin`, `catalog_search`, `research_decompose`, `list_trusted_sources`.
 
 ---
 
@@ -105,15 +104,20 @@ Tools: `list_bases`, `get_base`, `create_base`, `add_rows`, `query_records`, `up
 https://ai-reesearcher.vercel.app/api/mcp
 ```
 
-with header `Authorization: Bearer <your-token>` (your token comes from `MCP_TOKENS`; `?token=…` in the URL also works as a fallback). Open the URL with `?token=…` in a browser to self-check (`authorized: true` + the tool list).
+with header `Authorization: Bearer <your-token>` (your token comes from `MCP_TOKENS`; `?token=…` in the URL also works as a fallback). Open the URL with `?token=…` in a browser to self-check (`authorized: true` + the tool list). The `/connect` page shows your own token and a ready `claude mcp add …` command.
 
-**Local (stdio):** add to the client's MCP config:
+**In this repo (`.mcp.json`):** the checked-in config uses the same HTTP endpoint and reads the token from an env var, so no secret is committed:
 
 ```json
-{ "mcpServers": { "ai-researcher": { "command": "node", "args": ["/path/to/ai-researcher/mcp/server.mjs"] } } }
+{ "mcpServers": { "ai-researcher": { "type": "http", "url": "https://ai-reesearcher.vercel.app/api/mcp", "headers": { "Authorization": "Bearer ${AI_RESEARCHER_MCP_TOKEN}" } } } }
 ```
 
-The server reads `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` from the environment or from `../.env.local`.
+Set `AI_RESEARCHER_MCP_TOKEN` to your personal token before starting the client.
+
+> The old local **stdio** server (`mcp/server.mjs`) was removed: it was a second
+> 2500-line reimplementation that drifted out of parity with the HTTP route
+> (missing tools, missing fixes). The HTTP connector above is the single source
+> of truth.
 
 Access model: a token sees its **own + shared + ownerless** bases. Built-in catalog bases are read-only.
 

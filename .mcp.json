@@ -1,8 +1,11 @@
 {
   "mcpServers": {
     "ai-researcher": {
-      "command": "node",
-      "args": ["C:/Users/nehoc/ai-researcher/mcp/server.mjs"]
+      "type": "http",
+      "url": "https://ai-reesearcher.vercel.app/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AI_RESEARCHER_MCP_TOKEN}"
+      }
     }
   }
 }
