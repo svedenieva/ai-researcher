@@ -1,4 +1,4 @@
-import type { CatalogRecord } from './types';
+import type { CatalogRecord, Cell } from './types';
 
 // The catalog section is derived from the vertical. First draft of the split —
 // the grouping can be changed here in one line.
@@ -37,7 +37,23 @@ export function sectionFor(vertical: unknown): string | null {
   return SECTION_BY_VERTICAL[vertical] ?? null;
 }
 
-// Adds a derived `section` to each record (keeps an explicit one if present).
+// Strip a leading emoji (+ optional variation selector and spaces) from a badge
+// value: "🟢 Строить своё" → "Строить своё". Values with no leading emoji
+// ("E1 · подтверждено") pass through unchanged. Applied to the two catalog
+// fields that carry emoji, so the grid shows clean labels — the badge colours
+// and filters still match because the config keys are stripped the same way.
+function stripEmoji(v: Cell): Cell {
+  if (typeof v !== 'string') return v;
+  return v.replace(/^\p{Extended_Pictographic}️?\s*/u, '');
+}
+
+// Adds a derived `section` to each record (keeps an explicit one if present),
+// and cleans the emoji off the verdict / popularity badge values.
 export function withSections(records: CatalogRecord[]): CatalogRecord[] {
-  return records.map((r) => ({ ...r, section: r.section ?? sectionFor(r.vertical) }));
+  return records.map((r) => ({
+    ...r,
+    section: r.section ?? sectionFor(r.vertical),
+    verdict: stripEmoji(r.verdict),
+    pop: stripEmoji(r.pop),
+  }));
 }
