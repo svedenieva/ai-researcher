@@ -14,15 +14,37 @@
   height: 100vh;
   background: var(--paper);
   color: var(--ink);
+  transition: grid-template-columns 0.22s ease;
+}
+/* collapsed: the sidebar slides away, the main column takes the full width */
+.sideClosed {
+  grid-template-columns: 0 minmax(0, 1fr);
 }
 
 .side {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
+  overflow: hidden;
   background: var(--paper-raised);
   border-right: 1px solid var(--rule);
 }
+.sideClosed .side { border-right-color: transparent; }
+
+.hamburger {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  border: none;
+  background: none;
+  color: var(--ink-45);
+  cursor: pointer;
+  flex: none;
+}
+.hamburger:hover { background: var(--wash); color: var(--ink); }
 .sideHead {
   display: flex;
   align-items: center;

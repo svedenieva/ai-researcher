@@ -65,6 +65,7 @@ export default function Home() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [checkingLinks, setCheckingLinks] = useState(false);
+  const [sideOpen, setSideOpen] = useState(true);
 
   const isCustom = !BUILTIN_IDS.has(base);
 
@@ -338,7 +339,7 @@ export default function Home() {
 
 
   return (
-    <div className={styles.app}>
+    <div className={`${styles.app} ${sideOpen ? '' : styles.sideClosed}`}>
       {/* ── persistent left sidebar: brand + base tree ── */}
       <aside className={styles.side}>
         <div className={styles.sideHead}>
@@ -367,6 +368,15 @@ export default function Home() {
       {/* ── main column: top bar + grid ── */}
       <div className={styles.main}>
         <header className={styles.topbar}>
+          <button
+            type="button"
+            className={styles.hamburger}
+            onClick={() => setSideOpen((v) => !v)}
+            aria-label={sideOpen ? 'Згорнути панель' : 'Розгорнути панель'}
+            aria-expanded={sideOpen}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
           <span className={styles.crumb}>
             <span className={styles.crumbDot} style={{ background: toneColor(tabs.find((t) => t.id === base)?.tone) }} aria-hidden="true" />
             {tabs.find((t) => t.id === base)?.name ?? tr(lang, 'rootFolder')}
