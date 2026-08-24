@@ -14,6 +14,24 @@
   box-shadow: 0 12px 32px rgba(26, 26, 24, 0.16), var(--ring);
 }
 
+/* embedded variant: a persistent sidebar panel, not a floating drop-down */
+.embedded {
+  position: static;
+  z-index: auto;
+  display: flex;
+  flex-direction: column;
+  width: auto;
+  min-height: 0;
+  flex: 1;
+  padding: 12px 10px 10px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  max-height: none;
+}
+.embedded .search { margin-bottom: 10px; }
+
 .search {
   width: 100%;
   padding: 8px 12px;

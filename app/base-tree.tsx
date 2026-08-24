@@ -40,6 +40,7 @@ export default function BaseTree({
   onClose,
   onCreate,
   onMutated,
+  embedded = false,
 }: {
   tabs: BaseTab[];
   base: string;
@@ -50,6 +51,9 @@ export default function BaseTree({
   onCreate: () => void;
   /** base renamed/deleted — the base list needs to be re-read */
   onMutated?: () => void;
+  /** render as a persistent sidebar panel (no dialog head / close / autofocus)
+      instead of the drop-down window */
+  embedded?: boolean;
 }) {
   const { roots, byId } = useMemo(() => buildTree(tabs), [tabs]);
   const [query, setQuery] = useState('');
@@ -272,20 +276,26 @@ export default function BaseTree({
   // but behaves like a window — navigating the tree doesn't close it; it can be
   // closed with the cross, a click outside, or Esc.
   return (
-    <div className={styles.panel} role="dialog" aria-label="Выбор базы данных">
-      <div className={styles.head}>
-        <span className={styles.title}>Базы данных</span>
-        <button type="button" className={styles.close} onClick={onClose} aria-label="Закрыть">
-          ×
-        </button>
-      </div>
+    <div
+      className={embedded ? styles.embedded : styles.panel}
+      role={embedded ? 'navigation' : 'dialog'}
+      aria-label="Базы данных"
+    >
+      {!embedded && (
+        <div className={styles.head}>
+          <span className={styles.title}>Базы данных</span>
+          <button type="button" className={styles.close} onClick={onClose} aria-label="Закрыть">
+            ×
+          </button>
+        </div>
+      )}
 
       <input
         className={styles.search}
         placeholder="Поиск базы…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        autoFocus
+        autoFocus={!embedded}
       />
 
       <div className={styles.tree}>
@@ -298,7 +308,7 @@ export default function BaseTree({
           type="button"
           className={styles.create}
           onClick={() => {
-            onClose();
+            if (!embedded) onClose();
             onCreate();
           }}
         >

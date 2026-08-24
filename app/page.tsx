@@ -10,7 +10,7 @@ import { BASES, DEFAULT_BASE } from '@/lib/datasource/bases';
 import ThemeToggle from './theme-toggle';
 import LangSwitch from './lang-switch';
 import CreateBase from './create-base';
-import BasePicker from './base-picker';
+import BaseTree from './base-tree';
 import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
@@ -338,9 +338,10 @@ export default function Home() {
 
 
   return (
-    <div className={styles.shell}>
-      <header className={styles.header}>
-        <div className={styles.brand}>
+    <div className={styles.app}>
+      {/* ── persistent left sidebar: brand + base tree ── */}
+      <aside className={styles.side}>
+        <div className={styles.sideHead}>
           {logoOk ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src="/logo.png" alt="AiVocado" className={styles.markImg} onError={() => setLogoOk(false)} />
@@ -349,23 +350,29 @@ export default function Home() {
           )}
           <Link href="/" className={styles.brandName}>AI Researcher</Link>
         </div>
-
-        <BasePicker
+        <BaseTree
+          embedded
           tabs={tabs}
           base={base}
-          onChange={onBaseChange}
+          onPick={onBaseChange}
+          onClose={() => {}}
           onCreate={() => setCreating(true)}
           onMutated={loadBases}
-          rootLabel={tr(lang, 'rootFolder')}
         />
+        <div className={styles.sideFoot}>
+          <span className={styles.live} aria-hidden="true" /> {loading ? 'Синхронізація…' : 'Синхронізовано · Online'}
+        </div>
+      </aside>
 
-        <div className={styles.headerActions}>
-          {/* name of the selected base — on the right */}
-          <span className={styles.currentBase}>
-            <span className={styles.currentDot} style={{ background: toneColor(tabs.find((t) => t.id === base)?.tone) }} aria-hidden="true" />
-            {tabs.find((t) => t.id === base)?.name ?? ''}
-            {!loading && <span className={styles.currentCount}>{records.length}</span>}
+      {/* ── main column: top bar + grid ── */}
+      <div className={styles.main}>
+        <header className={styles.topbar}>
+          <span className={styles.crumb}>
+            <span className={styles.crumbDot} style={{ background: toneColor(tabs.find((t) => t.id === base)?.tone) }} aria-hidden="true" />
+            {tabs.find((t) => t.id === base)?.name ?? tr(lang, 'rootFolder')}
+            {!loading && <span className={styles.crumbCount}>{records.length}</span>}
           </span>
+          <div className={styles.spacer} />
           {isCustom && (
             <button
               type="button"
@@ -377,11 +384,7 @@ export default function Home() {
               {checkingLinks ? 'Проверяю…' : 'Проверить источники'}
             </button>
           )}
-          <a
-            href={exportHref}
-            className={styles.navLink}
-            title={tr(lang, 'csvHint')}
-          >
+          <a href={exportHref} className={styles.navLink} title={tr(lang, 'csvHint')}>
             <IconDownload size={14} /> CSV
           </a>
           <Link href="/bases" className={styles.navLink}>{tr(lang, 'showcase')}</Link>
@@ -391,10 +394,8 @@ export default function Home() {
           <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>
           <LangSwitch />
           <ThemeToggle />
-        </div>
-      </header>
+        </header>
 
-      <main className={styles.body}>
         {creating && (
           <CreateBase
             parents={tabs.map((t) => ({ id: t.id, name: t.name }))}
@@ -433,7 +434,7 @@ export default function Home() {
             records={shownRecords}
             total={total}
             loading={loading}
-            filtersPosition="left"
+            filtersPosition="top"
             sort={sort}
             filters={filters}
             filterOptions={displayFacets}
@@ -467,7 +468,7 @@ export default function Home() {
             accent={toneColor(tabs.find((t) => t.id === base)?.tone)}
           />
         </div>
-      </main>
+      </div>
     </div>
   );
 }

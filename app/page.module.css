@@ -7,6 +7,89 @@
   color: var(--ink);
 }
 
+/* ── app frame: persistent sidebar + main column ── */
+.app {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--paper-raised);
+  border-right: 1px solid var(--rule);
+}
+.sideHead {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 58px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--rule);
+  flex: none;
+}
+.sideFoot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-top: 1px solid var(--rule);
+  font-size: 12px;
+  color: var(--ink-45);
+  flex: none;
+}
+.live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tone-teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone-teal) 22%, transparent);
+  flex: none;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 58px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--paper) 80%, transparent);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  flex: none;
+}
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.crumbDot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.crumbCount {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-45);
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--wash);
+}
+.spacer { flex: 1; }
+
 /* header */
 
 .header {
@@ -293,7 +376,9 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
+  padding: 12px 20px 16px;
 }
+.main > .modeSwitch { margin: 12px 20px 0; }
 
 /* narrow screens */
 @media (max-width: 860px) {
