@@ -12,6 +12,11 @@ import { publicError } from '@/lib/errors';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
 
+// A row payload must be a plain object — not an array, string, number or null.
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
 // A url-typed cell may only carry a scheme the browser won't execute.
 function badUrlCell(columns: { key: string; type: string }[], data: Record<string, unknown>): string | null {
   for (const col of columns) {
@@ -190,7 +195,13 @@ export async function POST(request: Request): Promise<Response> {
   if (!baseId || BUILTIN_IDS.has(baseId)) {
     return Response.json({ error: 'Rows cannot be added to this base' }, { status: 400 });
   }
-  const data = body?.data && typeof body.data === 'object' ? (body.data as Record<string, unknown>) : {};
+  // `data` must be a plain object keyed by column. An array (typeof 'object')
+  // would be stored as a row with keys "0","1",…; a string/number silently
+  // became {} and added an empty row. Reject the wrong type outright.
+  if (!isPlainObject(body?.data)) {
+    return Response.json({ error: 'Row data must be an object' }, { status: 400 });
+  }
+  const data = body.data as Record<string, unknown>;
   const tooBig = checkPayload(data);
   if (tooBig) return Response.json({ error: tooBig }, { status: 400 });
 

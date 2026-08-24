@@ -427,9 +427,16 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       const gate = await requireBase(store, id, me);
       if (gate.error) return gate.error;
       if (!gate.base.columns.some((c) => c.key === key)) return failed(`no column ${key}`);
+      const newLabel = typeof args.label === 'string' ? args.label.trim() : undefined;
+      // Two columns sharing a label collide: add_rows/update_record map a cell by
+      // its label, so a duplicate makes edits land on the wrong column. Reject a
+      // rename onto a label another column already holds.
+      if (newLabel && gate.base.columns.some((c) => c.key !== key && c.label.trim() === newLabel)) {
+        return failed(`a column labelled "${newLabel}" already exists`);
+      }
       const type = typeof args.type === 'string' ? (args.type as ColumnDef['type']) : undefined;
       const updated = await store.updateColumn(id, key, {
-        label: typeof args.label === 'string' ? args.label : undefined,
+        label: newLabel,
         type,
         filterable: typeof args.filterable === 'boolean' ? args.filterable : undefined,
       });

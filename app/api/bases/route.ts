@@ -44,7 +44,10 @@ export async function GET(): Promise<Response> {
         tone: b.tone,
         builtin: false,
         parent: b.parent && visible.has(b.parent) ? b.parent : null,
-        owner: b.owner,
+        // Never hand one person another's email. A shared or ownerless base is
+        // visible to the whole team, but the owner address is personal data —
+        // expose it only when the base is the caller's own.
+        owner: b.owner && b.owner === me ? b.owner : null,
         createdAt: b.createdAt ?? null,
       }));
   } catch (e) {
