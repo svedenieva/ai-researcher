@@ -411,7 +411,7 @@ export default function Home() {
         {isCustom && (
           <div className={styles.modeSwitch} role="group" aria-label="Режим записей">
             {[
-              { v: 'all', l: 'Все' },
+              { v: 'all', l: 'Усі' },
               { v: MODE_RESEARCH, l: MODE_RESEARCH },
               { v: MODE_REFERENCE, l: MODE_REFERENCE },
             ].map((o) => (

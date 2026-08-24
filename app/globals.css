@@ -84,8 +84,12 @@
   --shadow-panel: 0 14px 28px -10px light-dark(rgb(26 26 24 / 0.14), rgb(0 0 0 / 0.5)),
     0 2px 6px -2px light-dark(rgb(26 26 24 / 0.07), rgb(0 0 0 / 0.4));
 
-  --radius: 7px;
-  --radius-lg: 12px;
+  /* less rounding overall — the redesign is crisp, not pill-soft */
+  --radius: 5px;
+  --radius-lg: 7px;
+  /* status badges are squared rectangles here, not round pills; rows sit tighter */
+  --badge-radius: 5px;
+  --row-pad-y: 5px;
 
   --tint: 11%;
 }
