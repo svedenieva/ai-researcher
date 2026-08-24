@@ -19,6 +19,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // server/client <html> attributes differ by design — silence that warning.
     <html lang="uk" suppressHydrationWarning>
       <head>
+        {/* Plus Jakarta Sans (UI/headings) + JetBrains Mono (data/labels).
+            A plain stylesheet link — the project deliberately avoids next/font.
+            @mindsheet reads the same --font-* vars, so the grid restyles too. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
