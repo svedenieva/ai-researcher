@@ -163,35 +163,6 @@
   flex: none;
 }
 
-/* research/reference mode filter — segmented control above the table */
-.modeSwitch {
-  display: inline-flex;
-  gap: 2px;
-  margin-bottom: 10px;
-  padding: 2px;
-  background: var(--wash);
-  border-radius: var(--radius);
-}
-
-.modeSeg {
-  padding: 5px 14px;
-  border: none;
-  border-radius: var(--radius);
-  background: none;
-  font-family: var(--font-sans), system-ui, sans-serif;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--ink-45);
-  cursor: pointer;
-}
-.modeSeg:hover { color: var(--ink); }
-
-.modeSegOn {
-  background: var(--paper-raised);
-  color: var(--ink);
-  box-shadow: var(--shadow-card);
-}
-
 .brandText {
   display: flex;
   flex-direction: column;
@@ -429,7 +400,6 @@
   min-height: 0;
   padding: 12px 20px 16px;
 }
-.main > .modeSwitch { margin: 12px 20px 0; }
 
 /* narrow screens */
 @media (max-width: 860px) {

@@ -26,8 +26,11 @@ const NEEDS_QUOTES = /[",\r\n]/;
 const FORMULA_START = /^[=+\-@\t\r]/;
 function neutralizeFormula(s: string): string {
   if (!FORMULA_START.test(s)) return s;
-  const n = Number(s);
-  if (s.trim() !== '' && Number.isFinite(n)) return s; // a real number, not a formula
+  // Treat a formatted number or phone ("-1,234", "+380 44 123") as a value, not
+  // a formula: strip grouping spaces/commas before the numeric test. Anything
+  // with a function name, "(", "|" or "!" stays NaN here and gets neutralised.
+  const numeric = s.replace(/[\s,]/g, '');
+  if (numeric !== '' && Number.isFinite(Number(numeric))) return s;
   return `'${s}`;
 }
 

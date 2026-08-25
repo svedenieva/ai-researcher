@@ -3,9 +3,9 @@ import { GET } from './route';
 import { getCustomStore } from '@/lib/datasource/customStore';
 import { MODE_KEY, MODE_REFERENCE } from '@/lib/mode';
 
-// The export promises "what's on screen is what's in the file". The mode switch
-// narrows the screen, so it has to narrow the file — this used to leak every row
-// because the download link dropped the mode parameter on the way out.
+// The export promises "what's on screen is what's in the file". The draft/verified
+// mode column was removed from the UI, so the file must not add it back either.
+// (The backend still honours an explicit &mode= filter, kept for the connector.)
 describe('GET /api/records/export', () => {
   async function seedBase() {
     const store = getCustomStore();
@@ -25,12 +25,11 @@ describe('GET /api/records/export', () => {
     expect(csv).toContain('проверено');
   });
 
-  it('carries the mode column the grid shows', async () => {
+  it('does not add the «Режим» column that was removed from the screen', async () => {
     const base = await seedBase();
     const csv = await (await GET(new Request(`http://localhost/api/records/export?base=${base.id}`))).text();
     const [header] = csv.split('\n');
-    expect(header).toContain('Режим');
-    expect(csv).toContain(MODE_REFERENCE);
+    expect(header).not.toContain('Режим');
   });
 
   it('honours the mode filter', async () => {
