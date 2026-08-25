@@ -437,7 +437,13 @@ export default function Home() {
             onFavoritesOnlyChange={setFavoritesOnly}
             onFiltersChange={setFilters}
             onSearchChange={setSearch}
-            onRowOpen={isCustom ? undefined : (record) => router.push(`/product/${record.id}`)}
+            onRowOpen={isCustom ? undefined : (record) => {
+              // a custom row merged into the catalog carries its base id — open
+              // its base, not /product/<id> (that route only knows catalog slugs)
+              const baseId = (record as Record<string, unknown>).__baseId;
+              if (typeof baseId === 'string' && baseId) router.push(`/?base=${baseId}`);
+              else router.push(`/product/${record.id}`);
+            }}
             editable={isCustom}
             onCellEdit={onCellEdit}
             onAddRow={onAddRow}

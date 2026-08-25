@@ -169,7 +169,10 @@ export async function GET(request: Request): Promise<Response> {
       merged = records.map((r) => ({ ...r, __source: base.name }));
       for (const id of descendants) {
         const sub = await store.listRecords(id);
-        merged = merged.concat(sub.map((r) => ({ ...r, __source: nameById.get(id) ?? id })));
+        // tag with the owning base id: these are custom rows (UUID ids) merged
+        // into the catalog view, and opening one must go to its base, not to
+        // /product/<id> (which only knows catalog slugs and would 404)
+        merged = merged.concat(sub.map((r) => ({ ...r, __source: nameById.get(id) ?? id, __baseId: id })));
       }
       columns = [...columns, SOURCE_COL];
       facets = { ...facets, __source: [...new Set(merged.map((r) => String(r.__source ?? '')))].filter(Boolean) };
