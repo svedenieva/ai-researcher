@@ -141,6 +141,7 @@ export function mindsheetStrings(lang: Lang): MindSheetStrings {
       dragRow: 'Перетягнути рядок', expandRecord: 'Розкрити запис', deleteRow: 'Видалити рядок',
       recordAria: 'Запис', close: 'Закрити', openAsPage: 'Відкрити сторінкою →',
       ok: 'ОК', groupingBy: (l, c) => `групування: ${l} · ${c}`, groupingHint: 'Shift + клік по заголовку — додати рівень',
+      groupColorsLabel: 'Кольорові групи',
       clearFilter: 'Прибрати фільтр', filterByValue: (v) => `Фільтр: ${v}`,
     },
     ru: {
@@ -173,6 +174,7 @@ export function mindsheetStrings(lang: Lang): MindSheetStrings {
       dragRow: 'Перетащить строку', expandRecord: 'Раскрыть запись', deleteRow: 'Удалить строку',
       recordAria: 'Запись', close: 'Закрыть', openAsPage: 'Открыть страницей →',
       ok: 'ОК', groupingBy: (l, c) => `группировка: ${l} · ${c}`, groupingHint: 'Shift + клик по заголовку — добавить уровень',
+      groupColorsLabel: 'Цветные группы',
       clearFilter: 'Убрать фильтр', filterByValue: (v) => `Фильтр: ${v}`,
     },
     en: {
@@ -205,6 +207,7 @@ export function mindsheetStrings(lang: Lang): MindSheetStrings {
       dragRow: 'Drag row', expandRecord: 'Expand record', deleteRow: 'Delete row',
       recordAria: 'Record', close: 'Close', openAsPage: 'Open as page →',
       ok: 'OK', groupingBy: (l, c) => `grouping: ${l} · ${c}`, groupingHint: 'Shift + click a header to add a level',
+      groupColorsLabel: 'Coloured groups',
       clearFilter: 'Clear filter', filterByValue: (v) => `Filter: ${v}`,
     },
   };
