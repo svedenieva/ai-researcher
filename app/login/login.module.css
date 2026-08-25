@@ -1,0 +1,63 @@
+.shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  /* full-bleed brand art; falls back to the paper colour until the file exists.
+     Save the image as public/login-bg.jpg. */
+  background-color: var(--paper);
+  background-image: url('/login-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: var(--ink);
+}
+
+.card {
+  width: 100%;
+  max-width: 340px;
+  padding: 24px 22px 26px;
+  /* nudge toward the lower third so the mascot art above stays visible */
+  align-self: end;
+  margin-bottom: 7vh;
+  text-align: center;
+  /* frosted panel so the button stays legible over the busy artwork */
+  background: color-mix(in srgb, var(--paper-raised) 78%, transparent);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card), var(--ring);
+}
+
+.title {
+  margin: 0 0 4px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.sub {
+  margin: 0 0 18px;
+  font-size: 12.5px;
+  color: var(--ink-45);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--sage); color: var(--sage); }
+.btn:disabled { opacity: 0.6; cursor: default; }

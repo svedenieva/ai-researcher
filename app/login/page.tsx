@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createClientForBrowser } from '@/lib/supabase-auth';
+import styles from './login.module.css';
 
 export default function Login() {
   const [busy, setBusy] = useState(false);
@@ -16,49 +17,11 @@ export default function Login() {
   };
 
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        background: 'var(--paper)',
-        color: 'var(--ink)',
-        padding: 24,
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 360,
-          padding: '32px 28px',
-          background: 'var(--paper-raised)',
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: 'var(--shadow-card), var(--ring)',
-          textAlign: 'center',
-        }}
-      >
-        <h1 style={{ margin: '0 0 6px', fontFamily: 'var(--font-display), Georgia, serif', fontSize: 22 }}>
-          AI-Researcher
-        </h1>
-        <p style={{ margin: '0 0 22px', fontSize: 13, color: 'var(--ink-45)' }}>
-          База знаний · Продукты и конкуренты
-        </p>
-        <button
-          type="button"
-          onClick={signIn}
-          disabled={busy}
-          style={{
-            width: '100%',
-            padding: '11px 16px',
-            borderRadius: 'var(--radius)',
-            border: '1px solid var(--rule)',
-            background: 'var(--paper)',
-            color: 'var(--ink)',
-            fontSize: 14,
-            fontWeight: 500,
-            cursor: busy ? 'default' : 'pointer',
-          }}
-        >
+    <main className={styles.shell}>
+      <div className={styles.card}>
+        <h1 className={styles.title}>AI-Researcher</h1>
+        <p className={styles.sub}>База знаний · Продукты и конкуренты</p>
+        <button type="button" onClick={signIn} disabled={busy} className={styles.btn}>
           {busy ? 'Переход к Google…' : 'Войти через Google'}
         </button>
       </div>
