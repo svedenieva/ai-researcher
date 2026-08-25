@@ -8,7 +8,7 @@ import { emailForToken } from '@/lib/mcp/tokens';
 import { decompose } from '@/lib/research/decompose';
 import { getSourceStore, matchSources } from '@/lib/research/sources';
 import type { ColumnDef } from '@/lib/datasource/types';
-import { checkPayloadEn, checkRowCountEn, checkPromptEn } from '@/lib/limits';
+import { checkPayloadEn, checkRowCountEn, checkPromptEn, checkName } from '@/lib/limits';
 import { publicError } from '@/lib/errors';
 // @ts-expect-error — shared rules text, one copy for stdio and HTTP
 import { INSTRUCTIONS } from '@/lib/mcp/instructions.mjs';
@@ -389,6 +389,8 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       const nm = String(args.name ?? '').trim();
       const cols = normalizeColumns(args.columns);
       if (!nm) return failed('name is required');
+      const longName = checkName(nm);
+      if (longName) return failed(longName);
       if (!cols.length) return failed('at least one column is required');
       const parent = typeof args.parent === 'string' && args.parent ? args.parent : null;
       if (parent) {
@@ -415,6 +417,13 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       if (gate.error) return gate.error;
       const label = String(args.label ?? '').trim();
       if (!label) return failed('column label is required');
+      const longLabel = checkName(label);
+      if (longLabel) return failed(longLabel);
+      // Same collision update_column guards against: two columns with one label
+      // make add_rows/update_record write to the wrong one.
+      if (gate.base.columns.some((c) => c.label.trim() === label)) {
+        return failed(`a column labelled "${label}" already exists`);
+      }
       const type = typeof args.type === 'string' ? (args.type as ColumnDef['type']) : undefined;
       const updated = await store.addColumn(id, { label, type, filterable: Boolean(args.filterable) });
       if (!updated) return failed('base not found');
@@ -461,6 +470,8 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       const gate = await requireBase(store, id, me);
       if (gate.error) return gate.error;
       if (!name) return failed('name is required');
+      const longName = checkName(name);
+      if (longName) return failed(longName);
       const updated = await store.renameBase(id, name);
       if (!updated) return failed('base not found');
       return text({ id: updated.id, name: updated.name });
