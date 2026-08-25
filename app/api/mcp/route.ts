@@ -772,16 +772,15 @@ export async function GET(request: Request): Promise<Response> {
   if ((request.headers.get('accept') ?? '').includes('text/event-stream')) {
     return new Response('SSE stream not offered', { status: 405, headers: CORS });
   }
-  // a normal browser open — self-check page
+  // a normal browser open — self-check page. The tool list is part of the
+  // internal surface, so an unauthenticated GET must not enumerate it.
   const me = emailForToken(tokenFrom(request));
-  return Response.json(
-    {
-      server: 'AiS',
-      transport: 'http/json-rpc',
-      authorized: Boolean(me),
-      user: me,
-      tools: TOOLS.map((t) => t.name),
-    },
-    { headers: CORS },
-  );
+  const body: Record<string, unknown> = {
+    server: 'AiS',
+    transport: 'http/json-rpc',
+    authorized: Boolean(me),
+    user: me,
+  };
+  if (me) body.tools = TOOLS.map((t) => t.name);
+  return Response.json(body, { headers: CORS });
 }

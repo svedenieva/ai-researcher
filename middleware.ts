@@ -28,6 +28,15 @@ const PUBLIC_PATHS = ['/login', '/auth/callback', '/api/mcp', '/.well-known/'];
 // answer here is "not supported", so the client drops OAuth and uses its token.
 const OAUTH_STUBS = ['/register', '/authorize', '/token'];
 
+// A public path matches only itself and its sub-paths — never a mere prefix.
+// Plain startsWith let "/loginXXX" and "/api/mcp-evil" through the gate: any
+// future route sharing a prefix would silently become unauthenticated.
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some((p) =>
+    p.endsWith('/') ? pathname === p || pathname.startsWith(p) : pathname === p || pathname.startsWith(`${p}/`),
+  );
+}
+
 function oauthNotSupported(): NextResponse {
   return new NextResponse(
     JSON.stringify({ error: 'oauth_not_supported', error_description: 'Сервер авторизует по личному токену' }),
@@ -68,7 +77,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   const signedIn = Boolean(user && isAllowed(user.email));
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isPublic = isPublicPath(pathname);
 
   if (!signedIn && !isPublic) {
     const url = request.nextUrl.clone();

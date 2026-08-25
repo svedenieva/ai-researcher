@@ -18,10 +18,23 @@ import type { ColumnDef } from './datasource/types';
 
 const NEEDS_QUOTES = /[",\r\n]/;
 
-/** A single field per rules 5–7. */
+// Excel and Google Sheets execute a cell whose text begins with one of these —
+// `=cmd|…`, `=HYPERLINK(…)`, `=IMPORTXML(…)` — as a FORMULA on open. The RFC says
+// nothing about it, so on top of quoting we neutralise such a cell by prefixing
+// an apostrophe, which makes the app treat it as text. Plain numbers (incl.
+// negative like -5) are left alone: they are values, not formulas.
+const FORMULA_START = /^[=+\-@\t\r]/;
+function neutralizeFormula(s: string): string {
+  if (!FORMULA_START.test(s)) return s;
+  const n = Number(s);
+  if (s.trim() !== '' && Number.isFinite(n)) return s; // a real number, not a formula
+  return `'${s}`;
+}
+
+/** A single field per rules 5–7, with formula injection neutralised first. */
 export function csvField(value: unknown): string {
   if (value === null || value === undefined) return '';
-  const s = String(value);
+  const s = neutralizeFormula(String(value));
   if (!NEEDS_QUOTES.test(s)) return s;
   return `"${s.replace(/"/g, '""')}"`;
 }
