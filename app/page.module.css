@@ -241,8 +241,8 @@
 .navLink:hover { color: var(--ink); }
 
 .newResearch {
-  padding: 7px 14px;
-  border-radius: var(--radius);
+  padding: 8px 18px;
+  border-radius: 999px;
   background: var(--sage);
   border: 1px solid var(--sage);
   color: light-dark(#fff, #0e1113);
