@@ -14,7 +14,6 @@ import BaseTree from './base-tree';
 import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
-import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE, MODE_VALUES, withModeColumn } from '@/lib/mode';
 import { recordsQuery } from '@/lib/records-query';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
@@ -44,8 +43,6 @@ export default function Home() {
   const confirm = useConfirm();
   // logo image with a graceful fallback to the "AiR" monogram if public/logo.png is absent
   const [logoOk, setLogoOk] = useState(true);
-  // research/reference mode filter: 'all' | MODE_RESEARCH | MODE_REFERENCE
-  const [mode, setMode] = useState<string>('all');
   const [columns, setColumns] = useState<ColumnDef[]>([]);
   const [records, setRecords] = useState<CatalogRecord[]>([]);
   const [total, setTotal] = useState<number>();
@@ -224,7 +221,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!ready) return;
-    const qs = recordsQuery({ base, sort, filters, search, mode });
+    const qs = recordsQuery({ base, sort, filters, search, mode: 'all' });
     setLoading(true);
     apiJson<{ columns?: ColumnDef[]; records?: CatalogRecord[]; total?: number; facets?: Record<string, string[]>; warning?: string }>(`/api/records?${qs}`)
       .then((body) => {
@@ -246,7 +243,7 @@ export default function Home() {
         toast(e instanceof Error ? e.message : 'Не удалось загрузить данные');
       })
       .finally(() => setLoading(false));
-  }, [sort, filters, search, base, ready, refreshTick, mode, toast]);
+  }, [sort, filters, search, base, ready, refreshTick, toast]);
 
   const onSortChange = useCallback((key: string) => {
     setSort((prev) =>
@@ -327,14 +324,12 @@ export default function Home() {
     ? records.filter((r) => favorites.includes(String(r.id)))
     : records;
 
-  // inject the system "Режим" column into custom bases: shown as a badge right
-  // after the name column; its select options come from facets
-  const displayColumns = isCustom ? withModeColumn(columns) : columns;
-  const displayFacets = isCustom ? { ...facets, [MODE_KEY]: [...MODE_VALUES] } : facets;
+  const displayColumns = columns;
+  const displayFacets = facets;
 
   // The export link mirrors the data request — same builder, so the file can't
   // describe a different slice than the screen
-  const exportQs = recordsQuery({ base, sort, filters, search, mode });
+  const exportQs = recordsQuery({ base, sort, filters, search, mode: 'all' });
   const exportHref = `/api/records/export${exportQs ? `?${exportQs}` : ''}`;
 
 
@@ -419,26 +414,6 @@ export default function Home() {
               onBaseChange(id);
             }}
           />
-        )}
-
-        {isCustom && (
-          <div className={styles.modeSwitch} role="group" aria-label="Режим записей">
-            {[
-              { v: 'all', l: 'Усі' },
-              { v: MODE_RESEARCH, l: MODE_RESEARCH },
-              { v: MODE_REFERENCE, l: MODE_REFERENCE },
-            ].map((o) => (
-              <button
-                key={o.v}
-                type="button"
-                className={`${styles.modeSeg} ${mode === o.v ? styles.modeSegOn : ''}`}
-                aria-pressed={mode === o.v}
-                onClick={() => setMode(o.v)}
-              >
-                {o.l}
-              </button>
-            ))}
-          </div>
         )}
 
         <div className={styles.content}>
