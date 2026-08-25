@@ -10,11 +10,6 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    # dummy public env so `next build` never trips over a missing key; real
-    # secrets live in Vercel, and every data path is server-side + service-key.
-    env:
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
     steps:
       - uses: actions/checkout@v4
 
@@ -33,4 +28,10 @@ jobs:
         run: npm test
 
       - name: Build
+        # dummy public env only here so `next build` never trips over a missing
+        # key; the tests deliberately run without it (mirrors local dev, where
+        # currentEmail() falls back to a dev identity).
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
         run: npm run build
