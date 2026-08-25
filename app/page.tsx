@@ -423,6 +423,7 @@ export default function Home() {
             total={total}
             loading={loading}
             filtersPosition="menu"
+            defaultDisplay={{ wrap: 'shrink' }}
             sort={sort}
             filters={filters}
             filterOptions={displayFacets}
