@@ -241,12 +241,12 @@
 .navLink:hover { color: var(--ink); }
 
 .newResearch {
-  padding: 8px 18px;
+  padding: 5px 13px;
   border-radius: 999px;
   background: var(--sage);
   border: 1px solid var(--sage);
   color: light-dark(#fff, #0e1113);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
 }
