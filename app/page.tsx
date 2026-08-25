@@ -79,7 +79,7 @@ export default function Home() {
     (record: CatalogRecord, key: string, value: string) => {
       apiSend('/api/records', 'PATCH', { base, id: record.id, data: { [key]: coerce(key, value) } })
         .then(() => setRefreshTick((t) => t + 1))
-        .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось сохранить'));
+        .catch((e) => toast(e instanceof Error ? e.message : 'Не вдалося зберегти'));
     },
     [base, coerce, toast],
   );
@@ -90,7 +90,7 @@ export default function Home() {
       for (const [k, v] of Object.entries(data)) if (v !== '') payload[k] = coerce(k, v);
       apiSend('/api/records', 'POST', { base, data: payload })
         .then(() => setRefreshTick((t) => t + 1))
-        .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось добавить строку'));
+        .catch((e) => toast(e instanceof Error ? e.message : 'Не вдалося додати рядок'));
     },
     [base, coerce, toast],
   );
@@ -103,22 +103,22 @@ export default function Home() {
       const currentName = tabs.find((t) => t.id === base)?.name;
       const source = record.__source;
       if (source && currentName && source !== currentName) {
-        toast(`Эту строку удаляйте в её базе: «${source}»`);
+        toast(`Цей рядок видаляйте в його базі: «${source}»`);
         return;
       }
       const ok = await confirm({
-        title: 'Удалить строку?',
-        message: 'Строка уедет в корзину — вернуть можно оттуда.',
-        confirmLabel: 'Удалить',
+        title: 'Видалити рядок?',
+        message: 'Рядок поїде в кошик — повернути можна звідти.',
+        confirmLabel: 'Видалити',
         danger: true,
       });
       if (!ok) return;
       try {
         await apiSend('/api/records', 'DELETE', { base, ids: [String(record.id)] });
         setRefreshTick((t) => t + 1);
-        toast('Строка удалена');
+        toast('Рядок видалено');
       } catch (e) {
-        toast(e instanceof Error ? e.message : 'Не удалось удалить строку');
+        toast(e instanceof Error ? e.message : 'Не вдалося видалити рядок');
       }
     },
     [base, tabs, toast, confirm],
@@ -136,16 +136,16 @@ export default function Home() {
         { base },
       );
       setRefreshTick((t) => t + 1);
-      const tail = r.skipped ? `, не проверено: ${r.skipped}` : '';
+      const tail = r.skipped ? `, не перевірено: ${r.skipped}` : '';
       toast(
         r.urls === 0
-          ? 'Ссылок в строках не нашлось'
+          ? 'Посилань у рядках не знайшлося'
           : r.dead
-            ? `Проверено ссылок: ${r.urls}, битых: ${r.dead}${tail}`
-            : `Проверено ссылок: ${r.urls} — все открылись${tail}`,
+            ? `Перевірено посилань: ${r.urls}, битих: ${r.dead}${tail}`
+            : `Перевірено посилань: ${r.urls} — усі відкрилися${tail}`,
       );
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Не удалось проверить ссылки');
+      toast(e instanceof Error ? e.message : 'Не вдалося перевірити посилання');
     } finally {
       setCheckingLinks(false);
     }
@@ -166,7 +166,7 @@ export default function Home() {
     (payload: Record<string, unknown>) => {
       apiSend('/api/columns', 'POST', { base, ...payload })
         .then(() => setRefreshTick((t) => t + 1))
-        .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось изменить колонку'));
+        .catch((e) => toast(e instanceof Error ? e.message : 'Не вдалося змінити колонку'));
     },
     [base, toast],
   );
@@ -177,7 +177,7 @@ export default function Home() {
     (orderedIds: string[]) => {
       apiSend('/api/records/reorder', 'POST', { base, order: orderedIds })
         .then(() => setRefreshTick((t) => t + 1))
-        .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось изменить порядок'));
+        .catch((e) => toast(e instanceof Error ? e.message : 'Не вдалося змінити порядок'));
     },
     [base, toast],
   );
@@ -240,7 +240,7 @@ export default function Home() {
         setRecords([]);
         setTotal(0);
         setFacets({});
-        toast(e instanceof Error ? e.message : 'Не удалось загрузить данные');
+        toast(e instanceof Error ? e.message : 'Не вдалося завантажити дані');
       })
       .finally(() => setLoading(false));
   }, [sort, filters, search, base, ready, refreshTick, toast]);
@@ -281,7 +281,7 @@ export default function Home() {
       .then((b) => setFavorites(Array.isArray(b.favorites) ? b.favorites : []))
       .catch((e) => {
         setFavorites([]);
-        toast(e instanceof Error ? e.message : 'Не удалось загрузить избранное');
+        toast(e instanceof Error ? e.message : 'Не вдалося завантажити обране');
       });
   }, [base, ready, toast]);
 
@@ -293,7 +293,7 @@ export default function Home() {
       apiSend('/api/favorites', 'POST', { base, record: id }).catch((e) => {
         // it failed — roll back
         setFavorites((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-        toast(e instanceof Error ? e.message : 'Не удалось сохранить избранное');
+        toast(e instanceof Error ? e.message : 'Не вдалося зберегти обране');
       });
     },
     [base, toast],
@@ -384,15 +384,15 @@ export default function Home() {
               className={styles.navLink}
               onClick={checkLinks}
               disabled={checkingLinks}
-              title="Открыть каждый источник из строк и пометить битые. Это проверка существования ссылки, а не достоверности строки."
+              title="Відкрити кожне джерело з рядків і позначити биті. Це перевірка існування посилання, а не достовірності рядка."
             >
-              {checkingLinks ? 'Проверяю…' : 'Проверить источники'}
+              {checkingLinks ? 'Перевіряю…' : 'Перевірити джерела'}
             </button>
           )}
           <a href={exportHref} className={styles.navLink} title={tr(lang, 'csvHint')}>
             <IconDownload size={14} /> CSV
           </a>
-          <nav className={styles.topNav} aria-label="Разделы">
+          <nav className={styles.topNav} aria-label="Розділи">
             <Link href="/bases" className={styles.navLink}>{tr(lang, 'showcase')}</Link>
             <Link href="/connect" className={styles.navLink}>{tr(lang, 'connect')}</Link>
             <Link href="/sources" className={styles.navLink}>{tr(lang, 'sources')}</Link>

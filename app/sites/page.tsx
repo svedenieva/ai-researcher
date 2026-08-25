@@ -46,7 +46,7 @@ export default function Sites() {
       const body = await apiJson<{ sites?: SiteMeta[] }>('/api/sites');
       setSites(body.sites ?? []);
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Ошибка');
+      toast(e instanceof Error ? e.message : 'Помилка');
     } finally {
       setLoading(false);
     }
@@ -95,7 +95,7 @@ export default function Sites() {
       accept(raw, file.name.replace(/\.zip$/i, ''));
     } catch {
       setPicked(null);
-      setPickError('Не удалось распаковать архив — он повреждён или это не zip');
+      setPickError('Не вдалося розпакувати архів — він пошкоджений або це не zip');
     }
   };
 
@@ -138,23 +138,23 @@ export default function Sites() {
       reset();
       await load();
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Ошибка загрузки');
+      toast(e instanceof Error ? e.message : 'Помилка завантаження');
       setProgress(null);
     }
   };
 
   const remove = async (site: SiteMeta) => {
-    if (!confirm(`Удалить «${site.name}» вместе со всеми файлами? Восстановить будет неоткуда.`)) return;
+    if (!confirm(`Видалити «${site.name}» разом з усіма файлами? Відновити не буде звідки.`)) return;
     try {
       await apiJson(`/api/sites/${encodeURIComponent(site.id)}`, { method: 'DELETE' });
       await load();
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Ошибка удаления');
+      toast(e instanceof Error ? e.message : 'Помилка видалення');
     }
   };
 
   const allTags = useMemo(
-    () => [...new Set(sites.flatMap((s) => s.tags))].sort((a, b) => a.localeCompare(b, 'ru')),
+    () => [...new Set(sites.flatMap((s) => s.tags))].sort((a, b) => a.localeCompare(b, 'uk')),
     [sites],
   );
 
@@ -168,7 +168,7 @@ export default function Sites() {
     });
     return [...list].sort((a, b) =>
       sortKey === 'name'
-        ? a.name.localeCompare(b.name, 'ru')
+        ? a.name.localeCompare(b.name, 'uk')
         : b.createdAt.localeCompare(a.createdAt),
     );
   }, [sites, query, tag, sortKey]);
@@ -179,7 +179,7 @@ export default function Sites() {
     <div className={styles.shell}>
       <header className={styles.header}>
         <Link href="/" className={styles.back}>
-          <span aria-hidden="true">←</span> К каталогу
+          <span aria-hidden="true">←</span> До каталогу
         </Link>
         <div className={styles.headerActions}>
           <ThemeToggle />
@@ -187,10 +187,10 @@ export default function Sites() {
       </header>
 
       <main className={styles.body}>
-        <h1 className={styles.title}>Сайты</h1>
+        <h1 className={styles.title}>Сайти</h1>
         <p className={styles.lead}>
-          Готовые статические страницы: залить папкой или архивом, открыть живьём, скачать обратно.
-          Внутри сайта пути должны быть относительными — <code>style.css</code>, а не <code>/style.css</code>.
+          Готові статичні сторінки: залити папкою або архівом, відкрити наживо, завантажити назад.
+          Усередині сайту шляхи мають бути відносними — <code>style.css</code>, а не <code>/style.css</code>.
         </p>
 
         <section className={styles.uploader}>
@@ -201,7 +201,7 @@ export default function Sites() {
               onClick={() => folderInput.current?.click()}
               disabled={busy}
             >
-              Выбрать папку
+              Обрати папку
             </button>
             <button
               type="button"
@@ -209,11 +209,11 @@ export default function Sites() {
               onClick={() => zipInput.current?.click()}
               disabled={busy}
             >
-              Выбрать .zip
+              Обрати .zip
             </button>
             {picked && (
               <span className={styles.pickInfo}>
-                {picked.length} файл(ов) · {formatBytes(picked.reduce((s, p) => s + p.blob.size, 0))} · старт:{' '}
+                {picked.length} файл(ів) · {formatBytes(picked.reduce((s, p) => s + p.blob.size, 0))} · старт:{' '}
                 <code>{entry}</code>
               </span>
             )}
@@ -235,29 +235,29 @@ export default function Sites() {
             <>
               <div className={styles.fields}>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Название *</span>
+                  <span className={styles.fieldLabel}>Назва *</span>
                   <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} disabled={busy} />
                 </label>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Клиент</span>
+                  <span className={styles.fieldLabel}>Клієнт</span>
                   <input className={styles.input} value={client} onChange={(e) => setClient(e.target.value)} disabled={busy} />
                 </label>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Теги через запятую</span>
+                  <span className={styles.fieldLabel}>Теги через кому</span>
                   <input className={styles.input} value={tags} onChange={(e) => setTags(e.target.value)} disabled={busy} />
                 </label>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Заметка</span>
+                  <span className={styles.fieldLabel}>Нотатка</span>
                   <input className={styles.input} value={note} onChange={(e) => setNote(e.target.value)} disabled={busy} />
                 </label>
               </div>
 
               <div className={styles.uploadActions}>
                 <button type="button" className={styles.primary} onClick={upload} disabled={busy || !name.trim()}>
-                  {busy ? `Загружаю ${progress!.done} из ${progress!.total}…` : 'Загрузить сайт'}
+                  {busy ? `Завантажую ${progress!.done} з ${progress!.total}…` : 'Завантажити сайт'}
                 </button>
                 <button type="button" className={styles.ghost} onClick={reset} disabled={busy}>
-                  Отменить
+                  Скасувати
                 </button>
                 {busy && (
                   <span className={styles.bar}>
@@ -273,12 +273,12 @@ export default function Sites() {
           <input
             type="search"
             className={styles.search}
-            placeholder="Поиск по названию, клиенту, заметке…"
+            placeholder="Пошук за назвою, клієнтом, нотаткою…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
           <select className={styles.select} value={tag} onChange={(e) => setTag(e.target.value)} aria-label="Тег">
-            <option value="">Все теги</option>
+            <option value="">Усі теги</option>
             {allTags.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
@@ -287,31 +287,31 @@ export default function Sites() {
             className={styles.select}
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
-            aria-label="Сортировка"
+            aria-label="Сортування"
           >
-            <option value="date">Сначала новые</option>
-            <option value="name">По названию</option>
+            <option value="date">Спочатку нові</option>
+            <option value="name">За назвою</option>
           </select>
           <span className={styles.count}>
-            {shown.length === sites.length ? `${sites.length} сайтов` : `показано ${shown.length} из ${sites.length}`}
+            {shown.length === sites.length ? `${sites.length} сайтів` : `показано ${shown.length} з ${sites.length}`}
           </span>
         </div>
 
         {loading ? (
-          <p className={styles.empty}>Загружаю…</p>
+          <p className={styles.empty}>Завантажую…</p>
         ) : shown.length === 0 ? (
-          <p className={styles.empty}>{sites.length ? 'Ничего не найдено' : 'Пока ни одного сайта'}</p>
+          <p className={styles.empty}>{sites.length ? 'Нічого не знайдено' : 'Поки що жодного сайту'}</p>
         ) : (
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Название</th>
-                  <th>Клиент</th>
+                  <th>Назва</th>
+                  <th>Клієнт</th>
                   <th>Теги</th>
-                  <th>Загружен</th>
-                  <th>Размер</th>
-                  <th>Залил</th>
+                  <th>Завантажено</th>
+                  <th>Розмір</th>
+                  <th>Залив</th>
                   <th />
                 </tr>
               </thead>
@@ -346,13 +346,13 @@ export default function Sites() {
                     <td className={styles.dim}>{s.owner ?? '—'}</td>
                     <td className={styles.rowActions}>
                       <a className={styles.action} href={`/s/${encodeURIComponent(s.id)}`} target="_blank" rel="noreferrer">
-                        Открыть
+                        Відкрити
                       </a>
                       <a className={styles.action} href={`/api/sites/${encodeURIComponent(s.id)}/download`}>
-                        Скачать
+                        Завантажити
                       </a>
                       <button type="button" className={styles.danger} onClick={() => remove(s)}>
-                        Удалить
+                        Видалити
                       </button>
                     </td>
                   </tr>

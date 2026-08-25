@@ -4,7 +4,7 @@ import { UiProvider } from './ui';
 
 export const metadata = {
   title: 'AiS · AI Researcher',
-  description: 'Базы знаний AiVocado: компании, продукты и исследования в одном месте.',
+  description: 'Бази знань AiVocado: компанії, продукти та дослідження в одному місці.',
 };
 
 // Apply the saved theme before the first paint. Without this, a stored

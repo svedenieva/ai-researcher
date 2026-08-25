@@ -77,7 +77,7 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
                 {t.action.label}
               </button>
             )}
-            <button type="button" className={styles.toastClose} onClick={() => dismiss(t.id)} aria-label="Закрыть">×</button>
+            <button type="button" className={styles.toastClose} onClick={() => dismiss(t.id)} aria-label="Закрити">×</button>
           </div>
         ))}
       </div>

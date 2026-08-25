@@ -20,7 +20,7 @@ interface Source {
   note?: string | null;
 }
 
-const TYPE_LABEL: Record<SourceType, string> = { platform: 'Площадка', channel: 'Канал', expert: 'Експерт' };
+const TYPE_LABEL: Record<SourceType, string> = { platform: 'Майданчик', channel: 'Канал', expert: 'Експерт' };
 
 export default function SourcesPage() {
   const toast = useToast();
@@ -89,13 +89,13 @@ export default function SourcesPage() {
       <div className={styles.form}>
         <input className={styles.in} placeholder="Назва (напр. Andrej Karpathy)" value={name} onChange={(e) => setName(e.target.value)} />
         <select className={styles.in} value={type} onChange={(e) => setType(e.target.value as SourceType)}>
-          <option value="platform">Площадка</option>
+          <option value="platform">Майданчик</option>
           <option value="channel">Канал</option>
           <option value="expert">Експерт</option>
         </select>
         <input className={styles.in} placeholder="Посилання (https://…)" value={url} onChange={(e) => setUrl(e.target.value)} />
         <input className={styles.in} placeholder="Теми через кому (ai, agents, ml)" value={topics} onChange={(e) => setTopics(e.target.value)} />
-        <input className={styles.in} placeholder="Заметка (необов'язково)" value={note} onChange={(e) => setNote(e.target.value)} />
+        <input className={styles.in} placeholder="Нотатка (необов'язково)" value={note} onChange={(e) => setNote(e.target.value)} />
         <button type="button" className={styles.add} onClick={add} disabled={busy}>+ Додати</button>
       </div>
 
@@ -106,7 +106,7 @@ export default function SourcesPage() {
         <div className={styles.scroll}>
           <table className={styles.table}>
             <thead>
-              <tr><th>Назва</th><th>Тип</th><th>Теми</th><th>Посилання</th><th>Заметка</th><th></th></tr>
+              <tr><th>Назва</th><th>Тип</th><th>Теми</th><th>Посилання</th><th>Нотатка</th><th></th></tr>
             </thead>
             <tbody>
               {sources.map((s) => (

@@ -34,7 +34,7 @@ export default async function ProductPage({
     <div className={styles.shell}>
       <header className={styles.header}>
         <Link href="/" className={styles.back}>
-          <span aria-hidden="true">←</span> К каталогу
+          <span aria-hidden="true">←</span> До каталогу
         </Link>
         <div className={styles.headerActions}>
           <ThemeToggle />
@@ -65,7 +65,7 @@ export default async function ProductPage({
 
           {facts.length > 0 && (
             <aside className={styles.facts}>
-              <h2 className={styles.factsTitle}>Факты</h2>
+              <h2 className={styles.factsTitle}>Факти</h2>
               <dl className={styles.factList}>
                 {facts.map((c) => (
                   <div key={c.key} className={styles.fact}>

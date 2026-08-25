@@ -23,9 +23,9 @@ function Copyable({ value, secret = false }: { value: string; secret?: boolean }
   const copy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(value);
-      toast('Скопировано');
+      toast('Скопійовано');
     } catch {
-      toast('Браузер не дал скопировать — выделите и скопируйте вручную');
+      toast('Браузер не дав скопіювати — виділіть і скопіюйте вручну');
     }
   }, [value, toast]);
 
@@ -34,11 +34,11 @@ function Copyable({ value, secret = false }: { value: string; secret?: boolean }
       <code className={styles.code}>{shown ? value : '•'.repeat(Math.min(value.length, 24))}</code>
       {secret && (
         <button type="button" className={styles.ghost} onClick={() => setShown((s) => !s)}>
-          {shown ? 'Скрыть' : 'Показать'}
+          {shown ? 'Сховати' : 'Показати'}
         </button>
       )}
       <button type="button" className={styles.ghost} onClick={copy}>
-        Копировать
+        Копіювати
       </button>
     </div>
   );
@@ -52,7 +52,7 @@ export default function ConnectPage() {
   useEffect(() => {
     apiJson<ConnectInfo>('/api/connect')
       .then(setInfo)
-      .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось загрузить данные подключения'))
+      .catch((e) => toast(e instanceof Error ? e.message : 'Не вдалося завантажити дані підключення'))
       .finally(() => setLoading(false));
   }, [toast]);
 
@@ -63,27 +63,27 @@ export default function ConnectPage() {
   return (
     <div className={styles.wrap}>
       <header className={styles.head}>
-        <Link href="/" className={styles.back}>← Таблица</Link>
-        <h1>Подключение коннектора AiS</h1>
+        <Link href="/" className={styles.back}>← Таблиця</Link>
+        <h1>Підключення конектора AiS</h1>
       </header>
 
       <p className={styles.lead}>
-        Коннектор даёт вашему Claude доступ к этим базам: он сможет читать каталог и записывать
-        результаты исследований прямо в базу. Исследование идёт на вашей подписке — ключи не нужны.
+        Конектор дає вашому Claude доступ до цих баз: він зможе читати каталог і записувати
+        результати досліджень прямо в базу. Дослідження йде на вашій підписці — ключі не потрібні.
       </p>
 
-      {loading && <p className={styles.none}>Загружаем…</p>}
+      {loading && <p className={styles.none}>Завантажуємо…</p>}
 
       {!loading && info && !info.token && (
         <section className={styles.warn}>
-          <h2>Ваш адрес ещё не в списке коннектора</h2>
+          <h2>Вашої адреси ще немає в списку конектора</h2>
           <p>
-            Вы вошли как <b>{info.email}</b>, но для этого адреса не выдан токен, поэтому подключить
-            коннектор пока нельзя.
+            Ви увійшли як <b>{info.email}</b>, але для цієї адреси не видано токен, тому підключити
+            конектор поки що не можна.
           </p>
           <p>
-            Попросите владельца проекта добавить вас в переменную <code>MCP_TOKENS</code> в настройках
-            Vercel — формат <code>токен:почта</code> через запятую — и сделать редеплой.
+            Попросіть власника проєкту додати вас у змінну <code>MCP_TOKENS</code> у налаштуваннях
+            Vercel — формат <code>токен:пошта</code> через кому — і зробити редеплой.
           </p>
         </section>
       )}
@@ -91,42 +91,42 @@ export default function ConnectPage() {
       {!loading && info?.token && (
         <>
           <section className={styles.block}>
-            <h2>1. Данные подключения</h2>
-            <label className={styles.label}>Адрес коннектора</label>
+            <h2>1. Дані підключення</h2>
+            <label className={styles.label}>Адреса конектора</label>
             <Copyable value={info.endpoint} />
             <label className={styles.label}>Ваш токен</label>
             <Copyable value={info.token} secret />
             <p className={styles.note}>
-              Токен — это пароль: он открывает ваши базы. Не пересылайте его и не вставляйте в адресную
-              строку — передавайте только заголовком, как в инструкции ниже.
+              Токен — це пароль: він відкриває ваші бази. Не пересилайте його і не вставляйте в адресний
+              рядок — передавайте лише заголовком, як в інструкції нижче.
             </p>
           </section>
 
           <section className={styles.block}>
-            <h2>2. Claude Desktop или claude.ai</h2>
+            <h2>2. Claude Desktop або claude.ai</h2>
             <ol className={styles.steps}>
-              <li>Настройки → <b>Коннекторы</b> → <b>Добавить пользовательский коннектор</b>.</li>
-              <li>Название — например <b>AiS</b>.</li>
-              <li>Адрес — вставьте адрес коннектора сверху.</li>
+              <li>Налаштування → <b>Конектори</b> → <b>Додати користувацький конектор</b>.</li>
+              <li>Назва — наприклад <b>AiS</b>.</li>
+              <li>Адреса — вставте адресу конектора зверху.</li>
               <li>
-                В заголовках укажите <code>Authorization</code> со значением{' '}
+                У заголовках вкажіть <code>Authorization</code> зі значенням{' '}
                 <code>Bearer &lt;ваш токен&gt;</code>.
               </li>
-              <li>Сохраните и убедитесь, что коннектор включён в чате.</li>
+              <li>Збережіть і переконайтеся, що конектор увімкнено в чаті.</li>
             </ol>
           </section>
 
           <section className={styles.block}>
             <h2>3. Claude Code</h2>
-            <p className={styles.note}>Одной командой в терминале:</p>
+            <p className={styles.note}>Однією командою в терміналі:</p>
             <Copyable value={cliCommand} secret />
           </section>
 
           <section className={styles.block}>
-            <h2>4. Проверка</h2>
+            <h2>4. Перевірка</h2>
             <p className={styles.note}>
-              Спросите своего Claude: <i>«покажи мои базы через AiS»</i>. Если он перечислит базы —
-              всё работает, можно запускать <Link href="/research">исследование</Link>.
+              Запитайте свого Claude: <i>«покажи мої бази через AiS»</i>. Якщо він перелічить бази —
+              усе працює, можна запускати <Link href="/research">дослідження</Link>.
             </p>
           </section>
         </>

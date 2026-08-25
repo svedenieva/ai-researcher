@@ -28,7 +28,7 @@ interface Preview {
 function formatDate(iso: string | null | undefined): string | null {
   if (!iso) return null;
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 export default function BasesShowcase() {
@@ -49,7 +49,7 @@ export default function BasesShowcase() {
         // pre-select the first base so the panel isn't empty on arrival
         if (list.length) setSelected((prev) => prev ?? list[0].id);
       })
-      .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось загрузить список баз'));
+      .catch((e) => toast(e instanceof Error ? e.message : 'Не вдалося завантажити список баз'));
   }, [toast]);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function BasesShowcase() {
         const records = body.records ?? [];
         setPreview({ columns: body.columns ?? [], records, total: body.total ?? records.length });
       })
-      .catch((e) => toast(e instanceof Error ? e.message : 'Не удалось загрузить базу'))
+      .catch((e) => toast(e instanceof Error ? e.message : 'Не вдалося завантажити базу'))
       .finally(() => setLoading(false));
   }, [selected, toast]);
 
@@ -81,7 +81,7 @@ export default function BasesShowcase() {
             {node.children.length ? <IconFolder size={14} /> : <IconFile size={14} />}
           </span>
           <span className={styles.name}>{node.name}</span>
-          {node.builtin && <span className={styles.tag}>встроенная</span>}
+          {node.builtin && <span className={styles.tag}>вбудована</span>}
         </button>
         {node.children.map((c) => renderNode(c, depth + 1))}
       </div>
@@ -97,19 +97,19 @@ export default function BasesShowcase() {
   return (
     <div className={styles.wrap}>
       <header className={styles.head}>
-        <Link href="/" className={styles.back}>← Таблица</Link>
-        <h1>Витрина баз</h1>
+        <Link href="/" className={styles.back}>← Таблиця</Link>
+        <h1>Вітрина баз</h1>
         <span className={styles.count}>{tabs.length}</span>
       </header>
 
       <div className={styles.layout}>
-        <nav className={styles.list} aria-label="Базы знаний">
-          {roots.length === 0 && <p className={styles.none}>Пока нет ни одной базы.</p>}
+        <nav className={styles.list} aria-label="Бази знань">
+          {roots.length === 0 && <p className={styles.none}>Поки що немає жодної бази.</p>}
           {roots.map((n) => renderNode(n, 0))}
         </nav>
 
         <section className={styles.panel} aria-live="polite">
-          {!current && <p className={styles.none}>Выберите базу слева.</p>}
+          {!current && <p className={styles.none}>Оберіть базу зліва.</p>}
 
           {current && (
             <>
@@ -117,13 +117,13 @@ export default function BasesShowcase() {
                 <span className={styles.panelDot} style={{ background: toneColor(current.tone) }} aria-hidden="true" />
                 <h2>{current.name}</h2>
                 <Link href={`/?base=${encodeURIComponent(current.id)}`} className={styles.open}>
-                  Открыть базу
+                  Відкрити базу
                 </Link>
               </div>
 
               <dl className={styles.meta}>
                 <div>
-                  <dt>Записей</dt>
+                  <dt>Записів</dt>
                   <dd>{loading ? '…' : preview?.total ?? 0}</dd>
                 </div>
                 <div>
@@ -136,7 +136,7 @@ export default function BasesShowcase() {
                 </div>
                 {created && (
                   <div>
-                    <dt>Создана</dt>
+                    <dt>Створена</dt>
                     <dd>{created}</dd>
                   </div>
                 )}
@@ -150,10 +150,10 @@ export default function BasesShowcase() {
                 </ul>
               )}
 
-              {loading && <p className={styles.none}>Загружаем…</p>}
+              {loading && <p className={styles.none}>Завантажуємо…</p>}
 
               {!loading && preview && previewRows.length === 0 && (
-                <p className={styles.none}>База пока пустая — строк нет.</p>
+                <p className={styles.none}>База поки порожня — рядків немає.</p>
               )}
 
               {!loading && previewRows.length > 0 && (
@@ -177,7 +177,7 @@ export default function BasesShowcase() {
                     </tbody>
                   </table>
                   {(preview?.total ?? 0) > previewRows.length && (
-                    <p className={styles.more}>…и ещё {(preview?.total ?? 0) - previewRows.length} строк</p>
+                    <p className={styles.more}>…і ще {(preview?.total ?? 0) - previewRows.length} рядків</p>
                   )}
                 </>
               )}

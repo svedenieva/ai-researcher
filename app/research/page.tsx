@@ -51,7 +51,7 @@ export default function Research() {
           // the run base is gone (deleted from the tree, or never accessible) —
           // waiting five more minutes for it would be a lie
           if (e instanceof ApiError && e.status === 404) {
-            if (!stop) { setRunTimedOut(true); toast('База запуска не найдена — возможно, её удалили'); }
+            if (!stop) { setRunTimedOut(true); toast('Базу запуску не знайдено — можливо, її видалили'); }
             return;
           }
           /* transient poll error — swallow and retry, a toast here would spam */
@@ -88,11 +88,11 @@ export default function Research() {
 
   const dropRun = async (r: RunInfo) => {
     const ok = await confirm({
-      title: `Удалить «${r.name}»?`,
+      title: `Видалити «${r.name}»?`,
       message: r.rows
-        ? `В запуске ${r.rows} строк. База уедет в корзину — вернуть можно оттуда.`
-        : 'Запуск пустой. База уедет в корзину — вернуть можно оттуда.',
-      confirmLabel: 'Удалить',
+        ? `У запуску ${r.rows} рядків. База поїде в кошик — повернути можна звідти.`
+        : 'Запуск порожній. База поїде в кошик — повернути можна звідти.',
+      confirmLabel: 'Видалити',
       danger: true,
     });
     if (!ok) return;
@@ -100,9 +100,9 @@ export default function Research() {
       await apiSend('/api/bases', 'DELETE', { id: r.id });
       if (run?.baseId === r.id) setRun(null);
       loadRuns();
-      toast('Запуск удалён');
+      toast('Запуск видалено');
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Не удалось удалить запуск');
+      toast(e instanceof Error ? e.message : 'Не вдалося видалити запуск');
     }
   };
 
@@ -110,9 +110,9 @@ export default function Research() {
     try {
       const { moved } = await apiSend<{ moved: number }>('/api/research/runs', 'POST', {});
       loadRuns();
-      toast(moved ? `Прибрано: ${moved}` : 'Всё уже на месте');
+      toast(moved ? `Прибрано: ${moved}` : 'Усе вже на місці');
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Не удалось прибрать');
+      toast(e instanceof Error ? e.message : 'Не вдалося прибрати');
     }
   };
 
@@ -126,7 +126,7 @@ export default function Research() {
       // open the user's OWN Claude with the ready-made prompt
       window.open(body.web, '_blank', 'noopener,noreferrer');
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Не удалось начать исследование');
+      toast(e instanceof Error ? e.message : 'Не вдалося почати дослідження');
     } finally {
       setStarting(false);
     }
@@ -136,7 +136,7 @@ export default function Research() {
     <div className={styles.shell}>
       <header className={styles.header}>
         <Link href="/" className={styles.back}>
-          <span aria-hidden="true">←</span> К каталогу
+          <span aria-hidden="true">←</span> До каталогу
         </Link>
         <div className={styles.headerActions}>
           <ThemeToggle />
@@ -144,15 +144,15 @@ export default function Research() {
       </header>
 
       <main className={styles.body}>
-        <h1 className={styles.title}>Новое исследование</h1>
+        <h1 className={styles.title}>Нове дослідження</h1>
         <p className={styles.lead}>
-          Опиши, что нужно исследовать. Откроется твой Claude с готовым запросом — он
-          соберёт данные и сохранит их в базу, а результат появится здесь.
+          Опиши, що потрібно дослідити. Відкриється твій Claude з готовим запитом — він
+          збере дані та збереже їх у базу, а результат з’явиться тут.
         </p>
 
         <textarea
           className={styles.prompt}
-          placeholder="Напр.: лучшие практики использования AI-агентов в продажах…"
+          placeholder="Напр.: найкращі практики використання AI-агентів у продажах…"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           rows={4}
@@ -163,9 +163,9 @@ export default function Research() {
             className={styles.primary}
             onClick={startClaude}
             disabled={starting || !prompt.trim()}
-            title="Откроется твой Claude с готовым запросом; он исследует и сохранит результат в базу"
+            title="Відкриється твій Claude з готовим запитом; він дослідить і збереже результат у базу"
           >
-            {starting ? 'Открываю Claude…' : <><IconSearch size={15} /> Исследовать в моём Claude</>}
+            {starting ? 'Відкриваю Claude…' : <><IconSearch size={15} /> Дослідити в моєму Claude</>}
           </button>
         </div>
 
@@ -174,7 +174,7 @@ export default function Research() {
             {runRows ? (
               /* the result arrived in the base — show it right here */
               <>
-                <div className={styles.claudeRunTitle}><IconCheck size={16} /> Готово — найдено {runRows.length}</div>
+                <div className={styles.claudeRunTitle}><IconCheck size={16} /> Готово — знайдено {runRows.length}</div>
                 <ul className={styles.runResults}>
                   {runRows.slice(0, 40).map((r, i) => (
                     <li key={i} className={styles.runResult}>
@@ -185,40 +185,40 @@ export default function Research() {
                   ))}
                 </ul>
                 <div className={styles.claudeRunActions}>
-                  <Link className={styles.primary} href={`/?base=${encodeURIComponent(run.baseId)}`}>Открыть базу «{run.baseName}» →</Link>
+                  <Link className={styles.primary} href={`/?base=${encodeURIComponent(run.baseId)}`}>Відкрити базу «{run.baseName}» →</Link>
                 </div>
               </>
             ) : runTimedOut ? (
               /* nothing arrived within 5 minutes */
               <>
-                <div className={styles.claudeRunTitle}>Пока пусто</div>
+                <div className={styles.claudeRunTitle}>Поки порожньо</div>
                 <p className={styles.claudeHint}>
-                  Проверь, что в Claude ты нажал <b>Enter</b> и что коннектор AiS подключён.
-                  Как Claude сохранит результат — нажми «Проверить снова».
+                  Перевір, що в Claude ти натиснув <b>Enter</b> і що конектор AiS підключено.
+                  Коли Claude збереже результат — натисни «Перевірити знову».
                 </p>
                 <div className={styles.claudeRunActions}>
-                  <button type="button" className={styles.primary} onClick={() => setRecheck((n) => n + 1)}>Проверить снова</button>
-                  <Link className={styles.ghost} href="/connect">Как подключить коннектор →</Link>
-                  <a className={styles.ghost} href={run.web} target="_blank" rel="noreferrer">Открыть Claude ещё раз</a>
-                  <Link className={styles.ghost} href={`/?base=${encodeURIComponent(run.baseId)}`}>Открыть базу на сайте →</Link>
+                  <button type="button" className={styles.primary} onClick={() => setRecheck((n) => n + 1)}>Перевірити знову</button>
+                  <Link className={styles.ghost} href="/connect">Як підключити конектор →</Link>
+                  <a className={styles.ghost} href={run.web} target="_blank" rel="noreferrer">Відкрити Claude ще раз</a>
+                  <Link className={styles.ghost} href={`/?base=${encodeURIComponent(run.baseId)}`}>Відкрити базу на сайті →</Link>
                 </div>
               </>
             ) : (
               /* waiting for Claude to write the result */
               <>
-                <div className={styles.claudeRunTitle}><IconFlask size={16} /> Жду результат от Claude…</div>
+                <div className={styles.claudeRunTitle}><IconFlask size={16} /> Чекаю результат від Claude…</div>
                 <ol className={styles.claudeSteps}>
-                  <li>В открывшейся вкладке Claude нажми <b>Enter</b> — запрос уже подставлен.</li>
-                  <li>Claude исследует и сохранит результат в базу <b>«{run.baseName}»</b> через коннектор AiS.</li>
-                  <li>Результат появится здесь автоматически (обычно 1–3 минуты).</li>
+                  <li>У відкритій вкладці Claude натисни <b>Enter</b> — запит уже підставлено.</li>
+                  <li>Claude дослідить і збереже результат у базу <b>«{run.baseName}»</b> через конектор AiS.</li>
+                  <li>Результат з’явиться тут автоматично (зазвичай 1–3 хвилини).</li>
                 </ol>
                 <div className={styles.claudeRunActions}>
-                  <a className={styles.primary} href={run.web} target="_blank" rel="noreferrer">Открыть Claude ещё раз</a>
-                  <Link className={styles.ghost} href={`/?base=${encodeURIComponent(run.baseId)}`}>Открыть базу на сайте →</Link>
+                  <a className={styles.primary} href={run.web} target="_blank" rel="noreferrer">Відкрити Claude ще раз</a>
+                  <Link className={styles.ghost} href={`/?base=${encodeURIComponent(run.baseId)}`}>Відкрити базу на сайті →</Link>
                 </div>
                 <p className={styles.claudeHint}>
-                  Нужен подключённый коннектор AiS в твоём Claude — <Link href="/connect">как подключить</Link>.
-                  Исследование идёт на твоей подписке.
+                  Потрібен підключений конектор AiS у твоєму Claude — <Link href="/connect">як підключити</Link>.
+                  Дослідження йде на твоїй підписці.
                 </p>
               </>
             )}
@@ -228,12 +228,12 @@ export default function Research() {
         {runs && runs.length > 0 && (
           <section className={styles.runsBlock}>
             <div className={styles.runsHead}>
-              <h2>Твои запуски</h2>
+              <h2>Твої запуски</h2>
               {runs.some((r) => !r.rows) && (
-                <span className={styles.runsHint}>пустые можно удалить — это брошенные</span>
+                <span className={styles.runsHint}>порожні можна видалити — це покинуті</span>
               )}
-              <button type="button" className={styles.tidy} onClick={tidy} title="Сложить старые запуски в папку «Исследования»">
-                Прибрать
+              <button type="button" className={styles.tidy} onClick={tidy} title="Скласти старі запуски в папку «Дослідження»">
+                Прибрати
               </button>
             </div>
             <ul className={styles.runsList}>
@@ -241,9 +241,9 @@ export default function Research() {
                 <li key={r.id} className={styles.runsItem}>
                   <Link className={styles.runsName} href={`/?base=${encodeURIComponent(r.id)}`}>{r.name}</Link>
                   <span className={r.rows ? styles.runsRows : styles.runsEmpty}>
-                    {r.rows ? `${r.rows} строк` : 'пусто'}
+                    {r.rows ? `${r.rows} рядків` : 'порожньо'}
                   </span>
-                  <button type="button" className={styles.runsDrop} onClick={() => dropRun(r)} title="Удалить запуск в корзину">
+                  <button type="button" className={styles.runsDrop} onClick={() => dropRun(r)} title="Видалити запуск у кошик">
                     <IconTrash size={14} />
                   </button>
                 </li>

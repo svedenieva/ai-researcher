@@ -20,9 +20,9 @@ export default function Login() {
     <main className={styles.shell}>
       <div className={styles.card}>
         <h1 className={styles.title}>AI-Researcher</h1>
-        <p className={styles.sub}>База знаний · Продукты и конкуренты</p>
+        <p className={styles.sub}>База знань · Продукти та конкуренти</p>
         <button type="button" onClick={signIn} disabled={busy} className={styles.btn}>
-          {busy ? 'Переход к Google…' : 'Войти через Google'}
+          {busy ? 'Перехід до Google…' : 'Увійти через Google'}
         </button>
       </div>
     </main>
