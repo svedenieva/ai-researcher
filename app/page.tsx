@@ -422,7 +422,7 @@ export default function Home() {
             records={shownRecords}
             total={total}
             loading={loading}
-            filtersPosition="top"
+            filtersPosition="menu"
             sort={sort}
             filters={filters}
             filterOptions={displayFacets}
