@@ -10,7 +10,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@aivocado/mindsheet": "github:svedenieva/mindsheet#9d54f41931307fec0aa11acd4b708dbf6db6f131",
+    "@aivocado/mindsheet": "github:svedenieva/mindsheet#12e3eecb3ae89b3d3335e98b1448cef46a2f582e",
     "@anthropic-ai/sdk": "^0.115.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
