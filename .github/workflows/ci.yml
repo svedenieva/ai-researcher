@@ -1,0 +1,36 @@
+name: CI
+
+# Every push and PR: type-check, run the full test suite, and build.
+# A green check here is the "yes, it's all tested automatically" answer.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    # dummy public env so `next build` never trips over a missing key; real
+    # secrets live in Vercel, and every data path is server-side + service-key.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # git-pinned dependency (@aivocado/mindsheet) → npm install, not npm ci
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build

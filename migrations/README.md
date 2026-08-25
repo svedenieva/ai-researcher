@@ -31,5 +31,6 @@ Supabase dashboard → your project → **SQL Editor** → New query → paste t
 |-----------|:---------------:|------|------|
 | `0001_trusted_sources.sql` | ✅ | 2026-08-24 | vetted-sources registry (connector spec, phase 1) |
 | `0002_sites_files.sql` | ⬜ | — | `files` jsonb on `sites` (already in schema.sql; confirm on prod) |
+| `0003_enable_rls.sql` | ⬜ | — | RLS on user tables; blocks direct anon-key reads (app uses service_role) |
 
 > New rows go at the bottom. `⬜` = not yet run against prod.
