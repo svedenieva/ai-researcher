@@ -232,6 +232,13 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  /* reset the native button chrome so a <button> matches the <a> links next to
+     it — no grey UA box for "Проверить источники" */
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
   font-size: 13px;
   font-weight: 500;
   color: var(--ink-45);
@@ -239,6 +246,7 @@
 }
 
 .navLink:hover { color: var(--ink); }
+.navLink:disabled { opacity: 0.5; cursor: default; }
 
 .newResearch {
   padding: 5px 13px;
