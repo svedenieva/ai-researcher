@@ -123,7 +123,7 @@ export function mindsheetStrings(lang: Lang): MindSheetStrings {
       wrapClip: 'Обрізати', wrapClipHint: 'один рядок, зайве зрізається по межі',
       wrapOverflow: 'За межу', wrapOverflowHint: 'текст заходить під сусідню клітинку, якщо вона порожня',
       wrapShrink: 'Стиснути', wrapShrinkHint: 'шрифт зменшується під ширину; що не влізло і у 8px — обрізається',
-      rowHeightHead: 'Висота рядка', rowLinesAll: 'Все',
+      rowHeightHead: 'Висота рядка', rowLinesAll: 'Всі',
       rowHeightNote: 'Висота працює лише з переносом — без нього рядок завжди один.',
       aggFold: 'Підсумки за групами', aggNote: 'Рахується по всій гілці, включно з вкладеними групами.',
       aggNone: '—', aggSum: 'сума', aggAvg: 'середнє', aggMin: 'мін', aggMax: 'макс', aggFilled: 'заповнено', aggUnique: 'унікальних',
@@ -142,6 +142,8 @@ export function mindsheetStrings(lang: Lang): MindSheetStrings {
       recordAria: 'Запис', close: 'Закрити', openAsPage: 'Відкрити сторінкою →',
       ok: 'ОК', groupingBy: (l, c) => `групування: ${l} · ${c}`, groupingHint: 'Shift + клік по заголовку — додати рівень',
       groupColorsLabel: 'Кольорові групи',
+      freezeFirstLabel: 'Закріпити першу колонку',
+      cellColorsLabel: 'Кольорові клітинки',
       clearFilter: 'Прибрати фільтр', filterByValue: (v) => `Фільтр: ${v}`,
     },
     ru: {
@@ -175,6 +177,8 @@ export function mindsheetStrings(lang: Lang): MindSheetStrings {
       recordAria: 'Запись', close: 'Закрыть', openAsPage: 'Открыть страницей →',
       ok: 'ОК', groupingBy: (l, c) => `группировка: ${l} · ${c}`, groupingHint: 'Shift + клик по заголовку — добавить уровень',
       groupColorsLabel: 'Цветные группы',
+      freezeFirstLabel: 'Закрепить первую колонку',
+      cellColorsLabel: 'Цветные ячейки',
       clearFilter: 'Убрать фильтр', filterByValue: (v) => `Фильтр: ${v}`,
     },
     en: {
@@ -208,6 +212,8 @@ export function mindsheetStrings(lang: Lang): MindSheetStrings {
       recordAria: 'Record', close: 'Close', openAsPage: 'Open as page →',
       ok: 'OK', groupingBy: (l, c) => `grouping: ${l} · ${c}`, groupingHint: 'Shift + click a header to add a level',
       groupColorsLabel: 'Coloured groups',
+      freezeFirstLabel: 'Freeze first column',
+      cellColorsLabel: 'Coloured cells',
       clearFilter: 'Clear filter', filterByValue: (v) => `Filter: ${v}`,
     },
   };
