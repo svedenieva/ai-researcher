@@ -52,22 +52,37 @@ RLS is enabled on every table that holds user data (migration
 
 ## How to verify (repeatable)
 
-Query a table twice — once with the service key, once with the public anon key.
-Service sees data; anon must see **zero rows** (HTTP 200, body `[]`).
+One command, run it before a deploy:
 
 ```bash
-# with the service key → rows come back
+npm run check:rls        # node --env-file=.env.local scripts/check-rls.mjs
+```
+
+For every user table it checks the anon key against **both** paths and prints a
+PASS/FAIL table (exit 1 on any hole):
+
+- **read** — anon `SELECT` must return 0 rows while the service key shows the real
+  count. Service-has-data + anon-sees-nothing proves RLS is doing the blocking.
+- **write** — anon `INSERT` of a minimal valid row must be denied with Postgres
+  `42501` ("violates row-level security policy"). This is the decisive signal and
+  works even for an **empty** table, where the read test alone can't tell "RLS
+  blocks" from "no data". A denied insert writes nothing; if RLS were off and the
+  insert slipped through, the script deletes the row again via the service key.
+
+The equivalent by hand (what the script automates):
+
+```bash
+# service key → rows come back;  anon key → must be []  (RLS working on read)
 curl "$SUPABASE_URL/rest/v1/bases?select=*&limit=1" \
   -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY"
-
-# with the PUBLIC anon key → must be []  (RLS working)
 curl "$SUPABASE_URL/rest/v1/bases?select=*&limit=1" \
   -H "apikey: $ANON_KEY" -H "Authorization: Bearer $ANON_KEY"
 ```
 
-Last verified 2026-08-26: `bases`, `base_records`, `trusted_sources` return data
-to the service key and `[]` to the anon key; `sites` is empty. All four have RLS
-on.
+Last verified **2026-08-26** (`npm run check:rls`, all 4 PASS): anon is blocked on
+both read and write for `bases` (svc 21 rows), `base_records` (svc 155),
+`trusted_sources` (svc 4) and `sites` (empty — confirmed via the `42501` write
+probe). Anon read returns `[]`; anon write returns `42501` on every table.
 
 ## Applying / migrations
 
