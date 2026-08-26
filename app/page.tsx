@@ -12,6 +12,7 @@ import LangSwitch from './lang-switch';
 import CreateBase from './create-base';
 import BaseTree from './base-tree';
 import BaseAiActions from './base-ai-actions';
+import SavedViews from './saved-views';
 import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
@@ -379,6 +380,19 @@ export default function Home() {
             {!loading && <span className={styles.crumbCount}>{records.length}</span>}
           </span>
           <div className={styles.spacer} />
+          <SavedViews
+            base={base}
+            sort={sort}
+            extraLevels={extraLevels}
+            filters={filters}
+            search={search}
+            onApply={(v) => {
+              setSort(v.sort);
+              setExtraLevels(v.extraLevels ?? []);
+              setFilters(v.filters ?? {});
+              setSearch(v.search ?? '');
+            }}
+          />
           {isCustom && (
             <BaseAiActions baseId={base} baseName={tabs.find((t) => t.id === base)?.name ?? tr(lang, 'rootFolder')} columns={displayColumns} />
           )}

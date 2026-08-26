@@ -37,6 +37,11 @@ const UI = {
   aiFillPick: { uk: 'Колонка…', ru: 'Колонка…', en: 'Column…' },
   aiFillBtn: { uk: 'Дозаповнити', ru: 'Дозаполнить', en: 'Fill' },
   aiFillNote: { uk: 'Запише значення в базу (тільки порожні клітинки) через твій Claude.', ru: 'Запишет значения в базу (только пустые ячейки) через твой Claude.', en: 'Writes values into the base (empty cells only) via your Claude.' },
+  savedViews: { uk: 'Види', ru: 'Виды', en: 'Views' },
+  saveViewPlaceholder: { uk: 'Назва виду…', ru: 'Название вида…', en: 'View name…' },
+  saveViewBtn: { uk: 'Зберегти поточний', ru: 'Сохранить текущий', en: 'Save current' },
+  noSavedViews: { uk: 'Збережених видів ще немає.', ru: 'Сохранённых видов пока нет.', en: 'No saved views yet.' },
+  saveViewNote: { uk: 'Зберігає фільтри, сортування, групування і пошук для цієї бази.', ru: 'Сохраняет фильтры, сортировку, группировку и поиск для этой базы.', en: 'Saves this base’s filters, sort, grouping and search.' },
   langTitle: { uk: 'Мова інтерфейсу', ru: 'Язык интерфейса', en: 'Interface language' },
 
   // base-picker.tsx
