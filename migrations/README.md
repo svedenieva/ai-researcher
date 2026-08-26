@@ -1,5 +1,9 @@
 # Database migrations
 
+> The Row-Level Security model and the "what stops user A reading user B's data"
+> answer are written up in [RLS.md](./RLS.md).
+
+
 Supabase has no migration runner wired into this project, and the service key we
 hold only reaches PostgREST — it **cannot run `CREATE TABLE` / `ALTER TABLE`**.
 So schema changes are applied **by hand in the Supabase SQL editor**. This folder
