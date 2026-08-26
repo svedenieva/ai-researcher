@@ -40,10 +40,13 @@ export function researchInstruction(topic: string, baseId: string): string {
     `find what has already been collected on the topic and reuse it.
 ` +
     `   c) Then fill the gaps with your own web search. Deliberately include niche community ` +
-    `discussion — Reddit threads (e.g. a site:reddit.com search, and the relevant subreddits) and ` +
-    `specialist forums — where practitioners compare tools and share first-hand experience; do not ` +
-    `stop at press releases and landing pages. Read the public pages themselves. Real, sourced ` +
-    `facts only — invent nothing; if there is no reliable source, say so and skip the point.
+    `discussion — Reddit threads (e.g. a site:reddit.com search, and the relevant subreddits), ` +
+    `X/Twitter posts from practitioners and domain experts (e.g. a site:x.com or site:twitter.com ` +
+    `search, and the accounts from the trusted-sources registry), and specialist forums — where ` +
+    `people compare tools and share first-hand experience; do not stop at press releases and ` +
+    `landing pages. Read the public pages themselves (some X posts are login-gated — use what is ` +
+    `publicly visible). Real, sourced facts only — invent nothing; if there is no reliable source, ` +
+    `say so and skip the point.
 ` +
     `   d) Every row needs a direct link to the primary source AND a VERBATIM quote from it ` +
     `(one or two sentences) supporting exactly what the row claims. The quote must be findable by ` +
