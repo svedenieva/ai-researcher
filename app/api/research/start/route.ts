@@ -2,6 +2,7 @@ import { getCustomStore } from '@/lib/datasource/customStore';
 import { currentEmail } from '@/lib/current-user';
 import { researchDeeplinks } from '@/lib/research/deeplink';
 import { RUN_SEED_COLUMNS, researchFolder, runName } from '@/lib/research/runs';
+import { serverAgentStatus } from '@/lib/research/server-agent';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,10 @@ export async function POST(request: Request): Promise<Response> {
       web: links.web,
       desktop: links.desktop,
       instruction: links.instruction,
+      // informational: is the server-side path (roadmap step 3) switched on?
+      // the default flow is still the deeplink above; a UI can offer the server
+      // run at /api/research/server when this is true.
+      serverAgent: serverAgentStatus().enabled,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Could not create the run base';

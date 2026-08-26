@@ -43,6 +43,30 @@ describe('research eval — scoreRows', () => {
     expect(s.quoteRate).toBe(0);
   });
 
+  it('counts empty rows and case-insensitive duplicate names', () => {
+    const rows = [
+      { name: 'Runway', quote: 'Generative video model', link: 'https://runwayml.com' },
+      { name: 'runway', quote: 'same tool, different casing', link: 'https://runwayml.com/pricing' }, // dup
+      { name: '', quote: '', link: '' }, // empty
+      { name: 'Pika', quote: 'Text to video', link: 'https://pika.art' },
+    ];
+    const s = scoreRows(rows);
+    expect(s.total).toBe(4);
+    expect(s.duplicateRows).toBe(1);
+    expect(s.duplicateRate).toBeCloseTo(1 / 4);
+    expect(s.emptyRows).toBe(1);
+    expect(s.emptyRate).toBeCloseTo(1 / 4);
+  });
+
+  it('an empty-name row is empty, not a duplicate of another empty-name row', () => {
+    const s = scoreRows([
+      { name: '', quote: '', link: '' },
+      { name: '', quote: '', link: '' },
+    ]);
+    expect(s.emptyRows).toBe(2);
+    expect(s.duplicateRows).toBe(0);
+  });
+
   it('subtopic coverage matches on words present in the rows', () => {
     const rows = [{ name: 'Otter', quote: 'automatic meeting transcription and summary', link: 'https://otter.ai' }];
     const s = scoreRows(rows, ['транскрипция', 'summary', 'приватность']);

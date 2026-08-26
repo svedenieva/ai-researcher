@@ -8,6 +8,8 @@
 //   - quote-found rate (opt-in, network): share of quotes actually present on
 //     the page they cite — the expensive, honest metric and the seed of the
 //     verifier pass (a row whose quote isn't on its page shouldn't count).
+//   - hygiene: empty rows (blanks left behind) and duplicate rows (the same
+//     entry written twice) — noise a good run keeps near zero.
 
 export interface EvalRow {
   name: string;
@@ -24,6 +26,11 @@ export interface RowScore {
   subtopicCoverage: number;
   coveredSubtopics: string[];
   missingSubtopics: string[];
+  // hygiene: rows a research run shouldn't have produced
+  emptyRows: number; // no name, no quote, no link — a blank the run left behind
+  duplicateRows: number; // rows whose name repeats one already seen (case-insensitive)
+  emptyRate: number;
+  duplicateRate: number;
 }
 
 function text(v: unknown): string {
@@ -60,6 +67,17 @@ export function scoreRows(rows: EvalRow[], subtopics: string[] = []): RowScore {
   // a real quote is more than a word or two; guard against "—" and stray tokens
   const withQuote = rows.filter((r) => r.quote.replace(/\s+/g, ' ').trim().length >= 12).length;
 
+  // hygiene metrics: blanks and repeats the run shouldn't have left
+  const emptyRows = rows.filter((r) => !r.name && !r.quote && !r.link).length;
+  const seen = new Set<string>();
+  let duplicateRows = 0;
+  for (const r of rows) {
+    const key = r.name.replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!key) continue; // an empty name isn't a "duplicate", it's an empty row
+    if (seen.has(key)) duplicateRows++;
+    else seen.add(key);
+  }
+
   const haystack = rows.map((r) => `${r.name} ${r.quote}`).join(' ').toLowerCase();
   const covered: string[] = [];
   const missing: string[] = [];
@@ -78,6 +96,10 @@ export function scoreRows(rows: EvalRow[], subtopics: string[] = []): RowScore {
     subtopicCoverage: subtopics.length ? covered.length / subtopics.length : 0,
     coveredSubtopics: covered,
     missingSubtopics: missing,
+    emptyRows,
+    duplicateRows,
+    emptyRate: total ? emptyRows / total : 0,
+    duplicateRate: total ? duplicateRows / total : 0,
   };
 }
 

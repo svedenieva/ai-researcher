@@ -13,6 +13,8 @@ A research answer is a set of rows in a run base. For a run we score:
 | **link rate** | share of rows citing a primary-source link | free |
 | **quote rate** | share of rows with a non-trivial verbatim quote | free |
 | **subtopic coverage** | share of the question's expected aspects touched | free |
+| **empty rate** | share of rows with no name/quote/link — blanks left behind | free |
+| **duplicate rate** | share of rows repeating a name already written | free |
 | **quote-found rate** | share of quotes actually present on the page they cite | network (opt-in) |
 
 `quote-found rate` is the honest one: inventing a plausible link is easy, a quote
@@ -22,8 +24,8 @@ eventually shouldn't be written.
 
 ## How to run a baseline (steps 1–2)
 
-1. The question set lives in `lib/research/eval-set.ts` — 12 real questions with
-   the subtopics a good answer covers. Grow it toward 10–15 that matter to you.
+1. The question set lives in `lib/research/eval-set.ts` — 15 real questions with
+   the subtopics a good answer covers. Grow or reshape it to what matters to you.
 2. Run each question through the **current deeplink** (the normal flow): open your
    Claude, let it fill the run base.
 3. Score the run base:
@@ -43,12 +45,32 @@ Once there's a baseline, the engine can move in measured steps, each compared to
 the baseline on the **same** metrics:
 
 3. **One server agent, no delegation** — the same `deeplink.ts` prompt, but on our
-   key, with web search + `/api/mcp`. Buys repeatability and logs.
+   key, with web search. Buys repeatability and logs. **Scaffold is in the repo,
+   behind a flag** (`lib/research/server-agent.ts`, route `POST /api/research/server`).
 4. **Add a worker role** — self + one cheap researcher, subtopics in parallel.
 5. **Verifier pass** — a separate check confirms each quote is on its page before
    the row is written (this doc's quote-found check, promoted to a gate).
 
 Do **not** skip to step 4/5 before step 3 shows the single agent's numbers.
+
+### Turning on step 3 (one env var over a key)
+
+Off by default — it spends money, so it needs a key **and** an explicit flag:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...     # the key that gets billed
+RESEARCH_SERVER_AGENT=1          # explicit opt-in; a key alone won't do it
+RESEARCH_MODEL=claude-sonnet-5   # optional; this is the default
+```
+
+Then `POST /api/research/server { "prompt": "<question>" }` creates a run base and
+fills it server-side; score it with the same `/api/research/eval` call. `/api/research/start`
+also returns `serverAgent: true` once the flag is on, so a UI can offer the server
+run beside the deeplink. v0 limits (honest): single agent, Anthropic's server-side
+`web_search` only (not our MCP connector yet), and just the three seeded columns —
+it does not add topic-shaped columns the way a user's Claude does. Its **first real
+run is what produces the step-3 baseline numbers** — until then the numbers are
+unknown, not assumed.
 
 ## Honest gaps (unknowns, not decisions)
 
