@@ -54,6 +54,40 @@
   border-bottom: 1px solid var(--rule);
   flex: none;
 }
+/* section links moved out of the crowded top bar into the sidebar */
+.sideNav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px;
+  border-top: 1px solid var(--rule);
+  flex: none;
+}
+.sideNavLink {
+  padding: 7px 11px;
+  border-radius: var(--radius);
+  color: var(--ink-70);
+  font-size: 13px;
+  font-weight: 500;
+}
+.sideNavLink:hover { background: var(--wash); color: var(--ink); }
+
+/* compact icon-only utility button in the top bar (CSV, check-links) */
+.iconBtn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--ink-45);
+  cursor: pointer;
+}
+.iconBtn:hover { color: var(--ink); background: var(--wash); }
+.iconBtn:disabled { opacity: 0.5; cursor: default; }
+
 .sideFoot {
   display: flex;
   align-items: center;

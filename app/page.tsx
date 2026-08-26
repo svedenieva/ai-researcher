@@ -21,7 +21,7 @@ import { toneColor } from '@/lib/tone';
 import { recordsQuery } from '@/lib/records-query';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
-import { IconDownload } from './icons';
+import { IconDownload, IconGlobe } from './icons';
 
 import styles from './page.module.css';
 
@@ -371,6 +371,13 @@ export default function Home() {
           onCreate={() => setCreating(true)}
           onMutated={loadBases}
         />
+        <nav className={styles.sideNav} aria-label="Розділи">
+          <Link href="/bases" className={styles.sideNavLink}>{tr(lang, 'showcase')}</Link>
+          <Link href="/connect" className={styles.sideNavLink}>{tr(lang, 'connect')}</Link>
+          <Link href="/sources" className={styles.sideNavLink}>{tr(lang, 'sources')}</Link>
+          <Link href="/sites" className={styles.sideNavLink}>{tr(lang, 'sites')}</Link>
+          <Link href="/bin" className={styles.sideNavLink}>{tr(lang, 'trash')}</Link>
+        </nav>
         <div className={styles.sideFoot}>
           <span className={styles.live} aria-hidden="true" /> {loading ? 'Синхронізація…' : 'Синхронізовано · Online'}
         </div>
@@ -414,24 +421,18 @@ export default function Home() {
           {isCustom && (
             <button
               type="button"
-              className={styles.navLink}
+              className={styles.iconBtn}
               onClick={checkLinks}
               disabled={checkingLinks}
+              aria-label="Перевірити джерела"
               title="Відкрити кожне джерело з рядків і позначити биті. Це перевірка існування посилання, а не достовірності рядка."
             >
-              {checkingLinks ? 'Перевіряю…' : 'Перевірити джерела'}
+              <IconGlobe size={16} />
             </button>
           )}
-          <a href={exportHref} className={styles.navLink} title={tr(lang, 'csvHint')}>
-            <IconDownload size={14} /> CSV
+          <a href={exportHref} className={styles.iconBtn} title={tr(lang, 'csvHint')} aria-label="CSV">
+            <IconDownload size={16} />
           </a>
-          <nav className={styles.topNav} aria-label="Розділи">
-            <Link href="/bases" className={styles.navLink}>{tr(lang, 'showcase')}</Link>
-            <Link href="/connect" className={styles.navLink}>{tr(lang, 'connect')}</Link>
-            <Link href="/sources" className={styles.navLink}>{tr(lang, 'sources')}</Link>
-            <Link href="/sites" className={styles.navLink}>{tr(lang, 'sites')}</Link>
-            <Link href="/bin" className={styles.navLink}>{tr(lang, 'trash')}</Link>
-          </nav>
           <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>
           <LangSwitch />
           <ThemeToggle />
