@@ -13,6 +13,7 @@ import CreateBase from './create-base';
 import BaseTree from './base-tree';
 import BaseAiActions from './base-ai-actions';
 import SavedViews from './saved-views';
+import GlobalSearch from './global-search';
 import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
@@ -348,6 +349,12 @@ export default function Home() {
           )}
           <Link href="/" className={styles.brandName}>AI Researcher</Link>
         </div>
+        <GlobalSearch
+          onNavigate={(baseId, query) => {
+            onBaseChange(baseId);
+            setSearch(query);
+          }}
+        />
         <BaseTree
           embedded
           tabs={tabs}
