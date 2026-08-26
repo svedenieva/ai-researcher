@@ -81,6 +81,10 @@
 }
 
 .topbar {
+  /* lift the bar (and its dropdowns) above the grid below — otherwise the grid,
+     which comes later in the DOM, paints over the «Дії ШІ» / «Види» popovers */
+  position: relative;
+  z-index: 40;
   display: flex;
   align-items: center;
   gap: 6px;
