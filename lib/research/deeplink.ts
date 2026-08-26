@@ -31,15 +31,19 @@ export function researchInstruction(topic: string, baseId: string): string {
     `not by a template (it is NOT necessarily about "companies").
 
 ` +
-    `2. Search in this order:
+    `2. Search in this order. THE USER'S OWN KNOWLEDGE BASE COMES FIRST — it is the ` +
+    `primary source, not a fallback:
 ` +
-    `   a) First call list_trusted_sources with this topic — the company's vetted platforms, ` +
-    `channels and experts. Cover those sources before anything else.
+    `   a) FIRST and foremost, search what the user has already collected: the connector ` +
+    `tools list_bases, catalog_search and query_records. Read the relevant bases, lean the ` +
+    `answer on what is already there, and REUSE existing rows and facts instead of re-finding ` +
+    `them from scratch. This is the main emphasis of the whole task; only after you have ` +
+    `exhausted the user's own data do you look outward.
 ` +
-    `   b) Then our own data: the connector tools list_bases, query_records and catalog_search — ` +
-    `find what has already been collected on the topic and reuse it.
+    `   b) Then call list_trusted_sources with this topic — the company's vetted platforms, ` +
+    `channels and experts — to know where to look for whatever the bases don't already cover.
 ` +
-    `   c) Then fill the gaps with your own web search. Deliberately include niche community ` +
+    `   c) Only then fill the remaining gaps with your own web search. Deliberately include niche community ` +
     `discussion — Reddit threads (e.g. a site:reddit.com search, and the relevant subreddits), ` +
     `X/Twitter posts from practitioners and domain experts (e.g. a site:x.com or site:twitter.com ` +
     `search, and the accounts from the trusted-sources registry), and specialist forums — where ` +
