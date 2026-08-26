@@ -11,6 +11,7 @@ import ThemeToggle from './theme-toggle';
 import LangSwitch from './lang-switch';
 import CreateBase from './create-base';
 import BaseTree from './base-tree';
+import BaseAiActions from './base-ai-actions';
 import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
@@ -378,6 +379,9 @@ export default function Home() {
             {!loading && <span className={styles.crumbCount}>{records.length}</span>}
           </span>
           <div className={styles.spacer} />
+          {isCustom && (
+            <BaseAiActions baseId={base} baseName={tabs.find((t) => t.id === base)?.name ?? tr(lang, 'rootFolder')} />
+          )}
           {isCustom && (
             <button
               type="button"

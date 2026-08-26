@@ -27,6 +27,12 @@ const UI = {
   connect: { uk: 'Конектор', ru: 'Коннектор', en: 'Connector' },
   sources: { uk: 'Джерела', ru: 'Источники', en: 'Sources' },
   newResearch: { uk: '+ Нове дослідження', ru: '+ Новое исследование', en: '+ New research' },
+  aiActions: { uk: 'Дії ШІ', ru: 'Действия ИИ', en: 'AI actions' },
+  aiAskPlaceholder: { uk: 'Спитати цю базу…', ru: 'Спросить эту базу…', en: 'Ask this base…' },
+  aiAskBtn: { uk: 'Запитати', ru: 'Спросить', en: 'Ask' },
+  aiGaps: { uk: 'Знайти прогалини', ru: 'Найти пробелы', en: 'Find gaps' },
+  aiSummary: { uk: 'Підсумок бази', ru: 'Сводка по базе', en: 'Summarize base' },
+  aiNote: { uk: 'Відкриється твій Claude із запитом до цієї бази через конектор.', ru: 'Откроется твой Claude с запросом к этой базе через коннектор.', en: 'Opens your Claude with a connector prompt over this base.' },
   langTitle: { uk: 'Мова інтерфейсу', ru: 'Язык интерфейса', en: 'Interface language' },
 
   // base-picker.tsx
