@@ -380,7 +380,7 @@ export default function Home() {
           </span>
           <div className={styles.spacer} />
           {isCustom && (
-            <BaseAiActions baseId={base} baseName={tabs.find((t) => t.id === base)?.name ?? tr(lang, 'rootFolder')} />
+            <BaseAiActions baseId={base} baseName={tabs.find((t) => t.id === base)?.name ?? tr(lang, 'rootFolder')} columns={displayColumns} />
           )}
           {isCustom && (
             <button

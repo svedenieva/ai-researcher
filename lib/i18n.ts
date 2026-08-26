@@ -33,6 +33,10 @@ const UI = {
   aiGaps: { uk: 'Знайти прогалини', ru: 'Найти пробелы', en: 'Find gaps' },
   aiSummary: { uk: 'Підсумок бази', ru: 'Сводка по базе', en: 'Summarize base' },
   aiNote: { uk: 'Відкриється твій Claude із запитом до цієї бази через конектор.', ru: 'Откроется твой Claude с запросом к этой базе через коннектор.', en: 'Opens your Claude with a connector prompt over this base.' },
+  aiFill: { uk: 'Дозаповнити колонку', ru: 'Дозаполнить колонку', en: 'Fill a column' },
+  aiFillPick: { uk: 'Колонка…', ru: 'Колонка…', en: 'Column…' },
+  aiFillBtn: { uk: 'Дозаповнити', ru: 'Дозаполнить', en: 'Fill' },
+  aiFillNote: { uk: 'Запише значення в базу (тільки порожні клітинки) через твій Claude.', ru: 'Запишет значения в базу (только пустые ячейки) через твой Claude.', en: 'Writes values into the base (empty cells only) via your Claude.' },
   langTitle: { uk: 'Мова інтерфейсу', ru: 'Язык интерфейса', en: 'Interface language' },
 
   // base-picker.tsx

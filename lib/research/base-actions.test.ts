@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { askBase, findGaps, summarize } from './base-actions';
+import { askBase, findGaps, summarize, fillColumn } from './base-actions';
 
 describe('base AI actions (Variant C over an existing base)', () => {
   it('askBase carries the base id, name, question and a connector read call', () => {
@@ -23,5 +23,16 @@ describe('base AI actions (Variant C over an existing base)', () => {
     }
     expect(findGaps('b7', 'N').instruction).toMatch(/missing|under-covered|gap/i);
     expect(summarize('b7', 'N').instruction).toMatch(/summary|takeaway|trend/i);
+  });
+
+  it('fillColumn writes only the chosen column of empty cells, sourced, never invented', () => {
+    const l = fillColumn('base-9', 'Ринок', 'Ціна');
+    expect(l.instruction).toContain('base-9');
+    expect(l.instruction).toContain('Ціна');
+    expect(l.instruction).toMatch(/update_record/);
+    expect(l.instruction).toMatch(/empty/i);
+    expect(l.instruction).toMatch(/never invent|do not invent/i);
+    // touches only the named column
+    expect(l.instruction).toMatch(/only «Ціна»|ONLY «Ціна»/);
   });
 });

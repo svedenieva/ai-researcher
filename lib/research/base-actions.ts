@@ -7,7 +7,7 @@
 // The prompts are English (models follow them best) but tell Claude to answer in
 // the base's own language. baseId/baseName are interpolated into the connector call.
 
-export type BaseAction = 'ask' | 'gaps' | 'summary';
+export type BaseAction = 'ask' | 'gaps' | 'summary' | 'fill';
 
 function links(instruction: string): { web: string; desktop: string; instruction: string } {
   const q = encodeURIComponent(instruction);
@@ -44,6 +44,23 @@ export function findGaps(baseId: string, baseName: string) {
       `Then list what is MISSING or under-covered: aspects, categories, competitors, use-cases or ` +
       `angles the base does not yet include. Group the gaps, and for each give a concrete next ` +
       `research query that would fill it. Base your judgement only on the rows present. ` +
+      `Answer in the base's language.`,
+  );
+}
+
+/** WRITE action: fill the empty cells of one column, row by row, with sources. */
+export function fillColumn(baseId: string, baseName: string, columnLabel: string) {
+  return links(
+    readBase(baseId, baseName) +
+      `Then fill the «${columnLabel}» column for the rows where it is currently EMPTY. ` +
+      `For each such row: work out the correct «${columnLabel}» value for THIS specific row — ` +
+      `use the row's own name and its «Источники» link as context, plus your own web search — ` +
+      `then write it back with update_record (base="${baseId}", the row's id, ` +
+      `{"${columnLabel}": <value>}). Change ONLY «${columnLabel}»; do not touch other columns or ` +
+      `other rows. Every value must be real and sourced — never invent: if the «Цитата» and ` +
+      `«Источники» columns exist and are empty for that row, back the value there too with a ` +
+      `direct link and a verbatim quote. If you cannot find a reliable value for a row, LEAVE IT ` +
+      `EMPTY and list which rows you skipped. At the end, report how many rows you filled. ` +
       `Answer in the base's language.`,
   );
 }
