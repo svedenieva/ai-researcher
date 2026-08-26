@@ -67,6 +67,6 @@ describe('GET /s/[id]/[[...path]]', () => {
   it('refuses to climb out of the site folder', async () => {
     const res = await call('http://localhost/s/demo/../../etc', 'demo', ['..', '..', 'etc']);
     expect(res.status).toBe(404);
-    expect(await res.text()).toContain('Недопустимый путь');
+    expect(await res.text()).toContain('Неприпустимий шлях');
   });
 });
