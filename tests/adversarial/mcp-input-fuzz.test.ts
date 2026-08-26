@@ -125,6 +125,35 @@ describe('add_rows — типы и объём', () => {
   });
 });
 
+describe('add_rows — дедуп по имени', () => {
+  // исследование и «дозаповнити колонку» могут повторно добавить одну и ту же
+  // запись — по умолчанию дубль по первой колонке отсекается и считается
+  it('повтор строки с тем же именем (без регистра) пропускается', async () => {
+    const base = await baseWithRows(0);
+    expect((await tool('add_rows', { base: base.id, rows: [{ name: 'Figma' }] })).data.added).toBe(1);
+    const r = await tool('add_rows', { base: base.id, rows: [{ name: 'figma' }, { name: 'Miro' }] });
+    expect(r.data.added).toBe(1); // только Miro
+    expect(r.data.skippedDuplicates).toBe(1); // figma — дубль
+    expect((await getCustomStore().listRecords(base.id)).length).toBe(2);
+  });
+
+  // дубли и внутри одного вызова
+  it('дубли внутри одного вызова тоже схлопываются', async () => {
+    const base = await baseWithRows(0);
+    const r = await tool('add_rows', { base: base.id, rows: [{ name: 'A' }, { name: 'a' }, { name: 'B' }] });
+    expect(r.data.added).toBe(2);
+    expect(r.data.skippedDuplicates).toBe(1);
+  });
+
+  it('dedupe:false разрешает добавить дубль', async () => {
+    const base = await baseWithRows(0);
+    await tool('add_rows', { base: base.id, rows: [{ name: 'Figma' }] });
+    const r = await tool('add_rows', { base: base.id, rows: [{ name: 'Figma' }], dedupe: false });
+    expect(r.data.added).toBe(1);
+    expect((await getCustomStore().listRecords(base.id)).length).toBe(2);
+  });
+});
+
 describe('update_record — не тот тип', () => {
   // data строкой/массивом не должно молча «обновлять ноль полей»
   it('data не-объектом отвечает ошибкой', async () => {

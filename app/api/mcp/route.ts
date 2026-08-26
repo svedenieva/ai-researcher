@@ -506,15 +506,31 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
       const id = String(args.base ?? '');
       const gate = await requireBase(store, id, me);
       if (gate.error) return gate.error;
-      const rows = Array.isArray(args.rows) ? args.rows.map((r) => mapRow(gate.base.columns, r)).filter((d) => Object.keys(d).length) : [];
+      let rows = Array.isArray(args.rows) ? args.rows.map((r) => mapRow(gate.base.columns, r)).filter((d) => Object.keys(d).length) : [];
       const tooMany = checkRowCountEn(rows.length);
       if (tooMany) return failed(tooMany);
       for (const row of rows) {
         const tooBig = checkPayloadEn(row);
         if (tooBig) return failed(tooBig);
       }
+      // Dedupe by the first (identity) column — a knowledge base rarely wants
+      // two rows with the same name, and the research / column-fill flows can
+      // otherwise re-add one. Skip a new row whose identity already exists (in
+      // the base, or earlier in this same batch). Pass dedupe:false to allow it.
+      let skippedDuplicates = 0;
+      const idKey = gate.base.columns[0]?.key;
+      if (idKey && args.dedupe !== false && rows.length) {
+        const norm = (v: unknown) => String(v ?? '').trim().toLowerCase();
+        const seen = new Set((await store.listRecords(id)).map((r) => norm(r[idKey])).filter(Boolean));
+        rows = rows.filter((row) => {
+          const key = norm(row[idKey]);
+          if (key && seen.has(key)) { skippedDuplicates++; return false; }
+          if (key) seen.add(key);
+          return true;
+        });
+      }
       const added = rows.length ? await store.addRecords(id, rows) : 0;
-      return text({ added });
+      return text({ added, skippedDuplicates });
     }
 
     case 'delete_rows': {
