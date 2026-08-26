@@ -14,6 +14,7 @@ import BaseTree from './base-tree';
 import BaseAiActions from './base-ai-actions';
 import SavedViews from './saved-views';
 import GlobalSearch from './global-search';
+import Shortcuts from './shortcuts';
 import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
@@ -66,6 +67,11 @@ export default function Home() {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [checkingLinks, setCheckingLinks] = useState(false);
   const [sideOpen, setSideOpen] = useState(true);
+  // on a phone the sidebar is an overlay — start it collapsed so the table is
+  // the first thing you see; the hamburger slides it in on demand
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches) setSideOpen(false);
+  }, []);
 
   const isCustom = !BUILTIN_IDS.has(base);
 
@@ -338,6 +344,7 @@ export default function Home() {
 
   return (
     <div className={`${styles.app} ${sideOpen ? '' : styles.sideClosed}`}>
+      <Shortcuts />
       {/* ── persistent left sidebar: brand + base tree ── */}
       <aside className={styles.side}>
         <div className={styles.sideHead}>
@@ -368,6 +375,7 @@ export default function Home() {
           <span className={styles.live} aria-hidden="true" /> {loading ? 'Синхронізація…' : 'Синхронізовано · Online'}
         </div>
       </aside>
+      {sideOpen && <div className={styles.scrim} onClick={() => setSideOpen(false)} aria-hidden="true" />}
 
       {/* ── main column: top bar + grid ── */}
       <div className={styles.main}>

@@ -45,6 +45,12 @@ const UI = {
   globalSearch: { uk: 'Пошук по всіх базах…', ru: 'Поиск по всем базам…', en: 'Search all bases…' },
   searchNoResults: { uk: 'Нічого не знайдено', ru: 'Ничего не найдено', en: 'Nothing found' },
   searchSearching: { uk: 'Шукаю…', ru: 'Ищу…', en: 'Searching…' },
+  scTitle: { uk: 'Гарячі клавіші', ru: 'Горячие клавиши', en: 'Keyboard shortcuts' },
+  scSearch: { uk: 'Пошук по всіх базах', ru: 'Поиск по всем базам', en: 'Search all bases' },
+  scHelp: { uk: 'Ця підказка', ru: 'Эта подсказка', en: 'This help' },
+  scClose: { uk: 'Закрити', ru: 'Закрыть', en: 'Close' },
+  scSort: { uk: 'Клік по заголовку — сортувати; Shift+клік — рівень групування', ru: 'Клик по заголовку — сортировка; Shift+клик — уровень группировки', en: 'Click a header to sort; Shift-click to add a grouping level' },
+  scView: { uk: 'Ширину колонки — тягни за межу заголовка', ru: 'Ширину колонки — тяни за границу заголовка', en: 'Drag a header edge to resize a column' },
   langTitle: { uk: 'Мова інтерфейсу', ru: 'Язык интерфейса', en: 'Interface language' },
 
   // base-picker.tsx

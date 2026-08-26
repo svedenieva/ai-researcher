@@ -112,6 +112,37 @@
 }
 .spacer { flex: 1; }
 
+/* scrim behind the mobile off-canvas sidebar (desktop: never shown) */
+.scrim { display: none; }
+
+/* ── phone: the 248px sidebar can't sit next to the table on a narrow screen,
+   so below 760px the main column takes the full width and the sidebar becomes
+   an off-canvas overlay the hamburger slides in. ── */
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 60;
+    width: 264px;
+    max-width: 84vw;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: 0 0 40px -8px rgba(20, 20, 20, 0.4);
+  }
+  .app:not(.sideClosed) .side { transform: translateX(0); }
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(20, 20, 20, 0.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .side { transition: none; }
+}
+
 /* header */
 
 .header {

@@ -62,6 +62,7 @@ export default function GlobalSearch({ onNavigate }: { onNavigate: (baseId: stri
     <div className={styles.wrap} ref={boxRef}>
       <span className={styles.icon} aria-hidden="true"><IconSearch size={14} /></span>
       <input
+        id="global-search-input"
         className={styles.input}
         type="search"
         value={q}
