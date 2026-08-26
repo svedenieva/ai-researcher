@@ -15,7 +15,7 @@ export async function DELETE(
     return Response.json({ ok: true, id });
   } catch (e) {
     if (e instanceof SitesNotSetUp) return Response.json({ error: e.message }, { status: 503 });
-    const msg = e instanceof Error ? e.message : 'Не удалось удалить сайт';
+    const msg = e instanceof Error ? e.message : 'Не вдалося видалити сайт';
     return Response.json({ error: msg }, { status: 500 });
   }
 }

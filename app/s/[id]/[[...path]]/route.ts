@@ -58,7 +58,7 @@ export async function GET(
     }
 
     const rel = segments.join('/');
-    if (!isSafePath(rel)) return notFound('Недопустимый путь');
+    if (!isSafePath(rel)) return notFound('Неприпустимий шлях');
 
     const bytes = await store.readFile(id, rel);
     if (!bytes) return notFound(`В сайте «${site.name}» нет файла «${rel}»`);
@@ -81,7 +81,7 @@ export async function GET(
         },
       });
     }
-    const msg = e instanceof Error ? e.message : 'Ошибка отдачи сайта';
+    const msg = e instanceof Error ? e.message : 'Помилка віддачі сайту';
     return new Response(msg, {
       status: 500,
       headers: {

@@ -266,7 +266,7 @@ function normalizeColumns(input: unknown): ColumnDef[] {
   for (const raw of Array.isArray(input) ? input : []) {
     const label = String((raw as { label?: unknown })?.label ?? '').trim();
     if (!label) continue;
-    let key = label.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '_').replace(/(^_|_$)/g, '') || `col${cols.length}`;
+    let key = label.toLowerCase().replace(/[^a-zа-яёіїєґ0-9]+/gi, '_').replace(/(^_|_$)/g, '') || `col${cols.length}`;
     while (used.has(key) || RESERVED_COLUMN_KEYS.has(key)) key = `${key}_`;
     used.add(key);
     const t = (raw as { type?: unknown })?.type;

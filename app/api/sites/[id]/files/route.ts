@@ -51,7 +51,7 @@ export async function POST(
     return Response.json({ ok: true, path, size: bytes.length });
   } catch (e) {
     if (e instanceof SitesNotSetUp) return Response.json({ error: e.message }, { status: 503 });
-    const msg = e instanceof Error ? e.message : 'Не удалось записать файл';
+    const msg = e instanceof Error ? e.message : 'Не вдалося записати файл';
     return Response.json({ error: msg }, { status: 500 });
   }
 }

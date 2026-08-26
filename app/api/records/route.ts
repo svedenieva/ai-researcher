@@ -60,7 +60,7 @@ export async function GET(request: Request): Promise<Response> {
   // the level selector works like a slice: the higher the level, the wider the cut.
   const SOURCE_COL = {
     key: '__source',
-    label: 'Из базы',
+    label: 'З бази',
     type: 'select' as const,
     sortable: true,
     filterable: true,

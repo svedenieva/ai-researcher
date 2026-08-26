@@ -19,11 +19,15 @@ export default function Login() {
   return (
     <main className={styles.shell}>
       <div className={styles.card}>
-        <h1 className={styles.title}>AI-Researcher</h1>
+        <div className={styles.glow} aria-hidden="true" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="" className={styles.mascot} />
+        <h1 className={styles.title}>AI Researcher</h1>
         <p className={styles.sub}>База знань · Продукти та конкуренти</p>
         <button type="button" onClick={signIn} disabled={busy} className={styles.btn}>
           {busy ? 'Перехід до Google…' : 'Увійти через Google'}
         </button>
+        <div className={styles.wordmark}>aivocado ai</div>
       </div>
     </main>
   );
