@@ -26,6 +26,17 @@ function readBase(baseId: string, baseName: string): string {
   );
 }
 
+// The user's other bases are the FIRST place to look before the open web — they
+// already collected this knowledge once. Reused across the outward-looking actions.
+function otherBasesFirst(): string {
+  return (
+    `Before searching the open web, look at what the user has ALREADY collected in their OTHER ` +
+    `bases: call list_bases, then catalog_search / query_records on the relevant ones. Their own ` +
+    `data is the primary source — reuse a value or fact found there (keeping its «Источники» link) ` +
+    `rather than re-finding it online. Go to web search only for what their bases don't already cover. `
+  );
+}
+
 /** Answer a question using only what's in the base, citing the rows used. */
 export function askBase(baseId: string, baseName: string, question: string) {
   return links(
@@ -42,9 +53,12 @@ export function findGaps(baseId: string, baseName: string) {
   return links(
     readBase(baseId, baseName) +
       `Then list what is MISSING or under-covered: aspects, categories, competitors, use-cases or ` +
-      `angles the base does not yet include. Group the gaps, and for each give a concrete next ` +
-      `research query that would fill it. Base your judgement only on the rows present. ` +
-      `Answer in the base's language.`,
+      `angles the base does not yet include. ` +
+      otherBasesFirst() +
+      `For each gap, check the user's other bases first: if it is ALREADY covered somewhere in ` +
+      `their data, say so and point to that base (a candidate to merge in) instead of calling it a ` +
+      `gap. For gaps genuinely absent from all their bases, give a concrete next research query that ` +
+      `would fill it. Group the results. Answer in the base's language.`,
   );
 }
 
@@ -53,8 +67,10 @@ export function fillColumn(baseId: string, baseName: string, columnLabel: string
   return links(
     readBase(baseId, baseName) +
       `Then fill the «${columnLabel}» column for the rows where it is currently EMPTY. ` +
+      otherBasesFirst() +
       `For each such row: work out the correct «${columnLabel}» value for THIS specific row — ` +
-      `use the row's own name and its «Источники» link as context, plus your own web search — ` +
+      `use the row's own name and its «Источники» link as context, then the user's other bases ` +
+      `(above), and only then your own web search — ` +
       `then write it back with update_record (base="${baseId}", the row's id, ` +
       `{"${columnLabel}": <value>}). Change ONLY «${columnLabel}»; do not touch other columns or ` +
       `other rows. Every value must be real and sourced — never invent: if the «Цитата» and ` +

@@ -23,6 +23,9 @@ describe('base AI actions (Variant C over an existing base)', () => {
     }
     expect(findGaps('b7', 'N').instruction).toMatch(/missing|under-covered|gap/i);
     expect(summarize('b7', 'N').instruction).toMatch(/summary|takeaway|trend/i);
+    // gaps consults the user's OTHER bases before treating something as a gap
+    expect(findGaps('b7', 'N').instruction).toMatch(/list_bases/);
+    expect(findGaps('b7', 'N').instruction).toMatch(/other bases/i);
   });
 
   it('fillColumn writes only the chosen column of empty cells, sourced, never invented', () => {
@@ -34,5 +37,8 @@ describe('base AI actions (Variant C over an existing base)', () => {
     expect(l.instruction).toMatch(/never invent|do not invent/i);
     // touches only the named column
     expect(l.instruction).toMatch(/only «Ціна»|ONLY «Ціна»/);
+    // pulls from the user's other bases before hitting the open web
+    expect(l.instruction).toMatch(/list_bases/);
+    expect(l.instruction).toMatch(/before searching the open web/i);
   });
 });
