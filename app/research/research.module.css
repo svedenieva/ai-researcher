@@ -148,16 +148,45 @@
 }
 .runResult {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 5px 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 0;
   border-top: 1px solid var(--rule);
   font-size: 13px;
 }
+.runTop { display: flex; align-items: baseline; gap: 8px; }
 .runName { font-weight: 600; color: var(--ink); }
-.runWhat { color: var(--ink-70); min-width: 0; flex: 1; }
-.runUrl { margin-left: auto; color: var(--sage); text-decoration: none; }
+.runUrl { margin-left: auto; flex: none; color: var(--sage); text-decoration: none; }
 .runUrl:hover { color: var(--ink); }
+/* the verbatim quote — the whole point of a trustworthy row, shown, not dropped */
+.runQuote {
+  color: var(--ink-70);
+  line-height: 1.45;
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* waiting skeleton — a soft shimmer where the results will land */
+.skeleton { list-style: none; margin: 12px 0 14px; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.skelRow { display: flex; flex-direction: column; gap: 6px; padding: 7px 0; border-top: 1px solid var(--rule); }
+.skelName, .skelQuote {
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--wash) 25%, color-mix(in srgb, var(--sage) 22%, var(--wash)) 37%, var(--wash) 63%);
+  background-size: 400% 100%;
+  animation: skelShimmer 1.4s ease infinite;
+}
+.skelName { width: 40%; }
+.skelQuote { width: 88%; height: 9px; }
+.skelRow:nth-child(2) .skelName { width: 32%; }
+.skelRow:nth-child(2) .skelQuote { width: 76%; }
+.skelRow:nth-child(3) .skelName { width: 46%; }
+.skelRow:nth-child(3) .skelQuote { width: 64%; }
+@keyframes skelShimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .skelName, .skelQuote { animation: none; } }
 
 /* plan */
 .plan {

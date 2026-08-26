@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ThemeToggle from '../theme-toggle';
 import { IconSearch, IconCheck, IconFlask, IconTrash } from '../icons';
 import { ApiError, apiJson, apiSend } from '@/lib/api';
+import { extractRow } from '@/lib/research/eval';
 import { useToast, useConfirm } from '../ui';
 import styles from './research.module.css';
 
@@ -116,6 +117,20 @@ export default function Research() {
     }
   };
 
+  // if the Claude tab got closed, let the user grab the ready-made prompt again.
+  // the full instruction is the q= payload of the deeplink — decode it back out.
+  const copyPrompt = async () => {
+    const q = run?.web.split('?q=')[1];
+    const text = q ? decodeURIComponent(q) : prompt;
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Запит скопійовано — встав його у свій Claude');
+    } catch {
+      toast('Не вдалося скопіювати');
+    }
+  };
+
   const startClaude = async () => {
     if (!prompt.trim()) return;
     setStarting(true);
@@ -176,13 +191,20 @@ export default function Research() {
               <>
                 <div className={styles.claudeRunTitle}><IconCheck size={16} /> Готово — знайдено {runRows.length}</div>
                 <ul className={styles.runResults}>
-                  {runRows.slice(0, 40).map((r, i) => (
-                    <li key={i} className={styles.runResult}>
-                      <span className={styles.runName}>{String(r.name ?? r['название'] ?? '—')}</span>
-                      {r.what || r['что_делает'] ? <span className={styles.runWhat}>{String(r.what ?? r['что_делает'])}</span> : null}
-                      {r.url ? <a className={styles.runUrl} href={String(r.url)} target="_blank" rel="noreferrer">↗</a> : null}
-                    </li>
-                  ))}
+                  {runRows.slice(0, 40).map((r, i) => {
+                    const row = extractRow(r);
+                    return (
+                      <li key={i} className={styles.runResult}>
+                        <div className={styles.runTop}>
+                          <span className={styles.runName}>{row.name || '—'}</span>
+                          {row.link ? (
+                            <a className={styles.runUrl} href={row.link} target="_blank" rel="noreferrer" title={row.link}>↗</a>
+                          ) : null}
+                        </div>
+                        {row.quote ? <span className={styles.runQuote}>«{row.quote}»</span> : null}
+                      </li>
+                    );
+                  })}
                 </ul>
                 <div className={styles.claudeRunActions}>
                   <Link className={styles.primary} href={`/?base=${encodeURIComponent(run.baseId)}`}>Відкрити базу «{run.baseName}» →</Link>
@@ -198,8 +220,9 @@ export default function Research() {
                 </p>
                 <div className={styles.claudeRunActions}>
                   <button type="button" className={styles.primary} onClick={() => setRecheck((n) => n + 1)}>Перевірити знову</button>
-                  <Link className={styles.ghost} href="/connect">Як підключити конектор →</Link>
                   <a className={styles.ghost} href={run.web} target="_blank" rel="noreferrer">Відкрити Claude ще раз</a>
+                  <button type="button" className={styles.ghost} onClick={copyPrompt}>Скопіювати запит</button>
+                  <Link className={styles.ghost} href="/connect">Як підключити конектор →</Link>
                   <Link className={styles.ghost} href={`/?base=${encodeURIComponent(run.baseId)}`}>Відкрити базу на сайті →</Link>
                 </div>
               </>
@@ -212,8 +235,14 @@ export default function Research() {
                   <li>Claude дослідить і збереже результат у базу <b>«{run.baseName}»</b> через конектор AiS.</li>
                   <li>Результат з’явиться тут автоматично (зазвичай 1–3 хвилини).</li>
                 </ol>
+                <ul className={styles.skeleton} aria-hidden="true">
+                  <li className={styles.skelRow}><span className={styles.skelName} /><span className={styles.skelQuote} /></li>
+                  <li className={styles.skelRow}><span className={styles.skelName} /><span className={styles.skelQuote} /></li>
+                  <li className={styles.skelRow}><span className={styles.skelName} /><span className={styles.skelQuote} /></li>
+                </ul>
                 <div className={styles.claudeRunActions}>
                   <a className={styles.primary} href={run.web} target="_blank" rel="noreferrer">Відкрити Claude ще раз</a>
+                  <button type="button" className={styles.ghost} onClick={copyPrompt}>Скопіювати запит</button>
                   <Link className={styles.ghost} href={`/?base=${encodeURIComponent(run.baseId)}`}>Відкрити базу на сайті →</Link>
                 </div>
                 <p className={styles.claudeHint}>
