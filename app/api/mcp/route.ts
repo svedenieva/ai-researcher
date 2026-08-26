@@ -271,7 +271,7 @@ function normalizeColumns(input: unknown): ColumnDef[] {
     used.add(key);
     const t = (raw as { type?: unknown })?.type;
     const type: ColumnDef['type'] =
-      t === 'number' || t === 'url' || t === 'long-text' || t === 'select' ? t : 'text';
+      t === 'number' || t === 'url' || t === 'long-text' || t === 'select' || t === 'date' || t === 'checkbox' || t === 'rating' ? t : 'text';
     cols.push({
       key,
       label,
@@ -294,7 +294,7 @@ function mapRow(cols: ColumnDef[], row: unknown): Record<string, unknown> {
     // "[object Object]" or a comma-joined string and silently corrupt the row.
     // Drop it rather than store garbage.
     if (typeof v === 'object') continue;
-    if (col.type === 'number') {
+    if (col.type === 'number' || col.type === 'rating') {
       // "двенадцать" → NaN. NaN in the store is a value that fails every later
       // comparison and renders as an empty/NaN cell — drop it instead of storing it.
       const n = Number(String(v).replace(',', '.'));

@@ -5,7 +5,7 @@ export interface CatalogRecord {
   [field: string]: Cell;
 }
 
-export type ColumnType = 'text' | 'number' | 'long-text' | 'url' | 'select';
+export type ColumnType = 'text' | 'number' | 'long-text' | 'url' | 'select' | 'date' | 'checkbox' | 'rating';
 
 export interface ColumnDef {
   key: string;

@@ -32,6 +32,9 @@ export default function CreateBase({
     select: t(lang, 'typeSelect'),
     'long-text': t(lang, 'typeLongText'),
     url: t(lang, 'typeUrl'),
+    date: t(lang, 'typeDate'),
+    checkbox: t(lang, 'typeCheckbox'),
+    rating: t(lang, 'typeRating'),
   };
   const [mode, setMode] = useState<'manual' | 'import'>('manual');
   const [name, setName] = useState('');

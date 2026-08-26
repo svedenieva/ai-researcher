@@ -70,7 +70,7 @@ function normalizeColumns(input: unknown): ColumnDef[] {
     used.add(key);
     const type = (raw as { type?: unknown })?.type;
     const t: ColumnDef['type'] =
-      type === 'number' || type === 'url' || type === 'long-text' || type === 'select' ? type : 'text';
+      type === 'number' || type === 'url' || type === 'long-text' || type === 'select' || type === 'date' || type === 'checkbox' || type === 'rating' ? type : 'text';
     cols.push({
       key,
       label,
