@@ -13,7 +13,15 @@ export interface ParsedTable {
 // We look for the delimiter only OUTSIDE quotes and only in the first record. A
 // naive `text.includes('\t')` gets it wrong: a tab inside a quoted field is a
 // valid value per RFC 4180, and it made the whole CSV collapse into one column.
+//
+// Semicolon matters as much as comma: Excel in a locale whose decimal mark is a
+// comma (uk / ru / most of Europe) exports CSV with a ';' delimiter — the file
+// the user most often has to hand. Missing it collapsed the whole table into one
+// column. We COUNT each candidate across the first record and take the most
+// frequent, so one stray ';' in a comma file (or vice-versa) doesn't fool it;
+// ties fall back to comma, then tab, then semicolon.
 function sniffDelimiter(t: string): string {
+  const counts: Record<string, number> = { ',': 0, '\t': 0, ';': 0 };
   let inQuotes = false;
   for (let i = 0; i < t.length; i++) {
     const ch = t[i];
@@ -21,13 +29,14 @@ function sniffDelimiter(t: string): string {
       if (inQuotes && t[i + 1] === '"') i++;
       else inQuotes = !inQuotes;
     } else if (!inQuotes) {
-      if (ch === '\t') return '\t';
-      if (ch === ',') return ',';
+      if (ch === ',' || ch === '\t' || ch === ';') counts[ch] += 1;
       // the first record has ended — no reason to look further
-      if (ch === '\n') break;
+      else if (ch === '\n') break;
     }
   }
-  return ',';
+  let best = ',';
+  for (const d of [',', '\t', ';']) if (counts[d] > counts[best]) best = d;
+  return best;
 }
 
 export function parseTable(text: string): ParsedTable {
