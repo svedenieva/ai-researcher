@@ -21,7 +21,7 @@ import { toneColor } from '@/lib/tone';
 import { recordsQuery } from '@/lib/records-query';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
-import { IconDownload, IconGlobe, IconMerge, IconFile, IconGrid } from './icons';
+import { IconDownload, IconGlobe, IconMerge, IconFile, IconGrid, IconShare } from './icons';
 
 import styles from './page.module.css';
 
@@ -67,6 +67,7 @@ export default function Home() {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [checkingLinks, setCheckingLinks] = useState(false);
   const [deduping, setDeduping] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [sideOpen, setSideOpen] = useState(true);
   // on a phone the sidebar is an overlay — start it collapsed so the table is
   // the first thing you see; the hamburger slides it in on demand
@@ -164,6 +165,22 @@ export default function Home() {
       toast(e instanceof Error ? e.message : 'Не вдалося перевірити посилання');
     } finally {
       setCheckingLinks(false);
+    }
+  }, [base, toast]);
+
+  // Public read-only link for the base — copy it to the clipboard. Shown only
+  // when the server has sharing switched on (RESEARCH_SHARE_SECRET).
+  const shareBase = useCallback(async () => {
+    try {
+      const r = await apiJson<{ url: string }>(`/api/records/share-link?base=${encodeURIComponent(base)}`);
+      try {
+        await navigator.clipboard.writeText(r.url);
+        toast('Публічне посилання скопійовано — доступ лише для перегляду');
+      } catch {
+        toast(r.url); // clipboard blocked — at least show the link
+      }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не вдалося створити посилання');
     }
   }, [base, toast]);
 
@@ -269,12 +286,13 @@ export default function Home() {
     if (!ready) return;
     const qs = recordsQuery({ base, sort, filters, search, mode: 'all' });
     setLoading(true);
-    apiJson<{ columns?: ColumnDef[]; records?: CatalogRecord[]; total?: number; facets?: Record<string, string[]>; warning?: string }>(`/api/records?${qs}`)
+    apiJson<{ columns?: ColumnDef[]; records?: CatalogRecord[]; total?: number; facets?: Record<string, string[]>; warning?: string; sharing?: boolean }>(`/api/records?${qs}`)
       .then((body) => {
         setColumns(body.columns ?? []);
         setRecords(body.records ?? []);
         setTotal(body.total ?? body.records?.length ?? 0);
         setFacets(body.facets ?? {});
+        setSharing(!!body.sharing);
         // the catalog loaded but nested bases didn't — say so instead of
         // quietly showing a shorter table
         if (body.warning) toast(body.warning);
@@ -489,6 +507,17 @@ export default function Home() {
           <a href={excelHref} className={styles.iconBtn} title={tr(lang, 'xlsHint')} aria-label="CSV Excel">
             <IconGrid size={16} />
           </a>
+          {isCustom && sharing && (
+            <button
+              type="button"
+              className={styles.iconBtn}
+              onClick={shareBase}
+              aria-label="Публічне посилання"
+              title="Скопіювати публічне посилання лише для перегляду (без входу)"
+            >
+              <IconShare size={16} />
+            </button>
+          )}
           {isCustom && (
             <a href={reportHref} className={styles.iconBtn} title={tr(lang, 'mdHint')} aria-label="Markdown">
               <IconFile size={16} />

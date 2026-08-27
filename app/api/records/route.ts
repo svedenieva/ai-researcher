@@ -9,6 +9,7 @@ import type { ListParams } from '@/lib/datasource/types';
 import { isSafeUrlValue } from '@/lib/safe-url';
 import { checkPayload } from '@/lib/limits';
 import { publicError } from '@/lib/errors';
+import { sharingEnabled } from '@/lib/research/share';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
 
@@ -118,7 +119,7 @@ export async function GET(request: Request): Promise<Response> {
         const ds = new JsonDataSource(rows, cols);
         const [records, facets] = await Promise.all([ds.list(params), ds.facets()]);
         const total = q || params.filters ? (await ds.list()).length : records.length;
-        return Response.json({ columns: cols, records, facets, total, base: baseId, custom: true });
+        return Response.json({ columns: cols, records, facets, total, base: baseId, custom: true, sharing: sharingEnabled() });
       }
     } catch (e) {
       console.error('custom base read failed:', e);

@@ -18,7 +18,11 @@ import { isAllowed } from '@/lib/supabase-auth';
 // and a client reads that redirect as "the server does want OAuth after all",
 // then goes off to perform an exchange that does not exist instead of simply
 // using its token. Nothing secret is served at those paths.
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/api/mcp', '/.well-known/'];
+// /p/ and /api/public/ serve a base by an unguessable HMAC share token (see
+// lib/research/share.ts) — read-only, one base, and only when a server secret is
+// set; the routes themselves 404 without a valid token, so they carry their own
+// guard and don't need a session.
+const PUBLIC_PATHS = ['/login', '/auth/callback', '/api/mcp', '/.well-known/', '/p/', '/api/public/'];
 
 // Having found no description under /.well-known/, an MCP client falls back to
 // the default OAuth paths - /register, /authorize, /token at the root. Behind the

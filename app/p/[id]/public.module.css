@@ -1,0 +1,61 @@
+.shell {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+  color: var(--ink, #1a1d1a);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.title {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.badge {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--wash, #eef1ee);
+  color: var(--ink-45, #6b716b);
+}
+
+.empty { color: var(--ink-45, #6b716b); font-size: 15px; }
+
+.scroll { overflow-x: auto; border: 1px solid var(--rule, #e3e6e3); border-radius: 12px; }
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13.5px;
+}
+.table th, .table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--rule, #e3e6e3);
+}
+.table th {
+  position: sticky;
+  top: 0;
+  background: var(--paper-raised, #f7f9f7);
+  font-weight: 600;
+  color: var(--ink-70, #3d423d);
+  white-space: nowrap;
+}
+.table tr:last-child td { border-bottom: none; }
+.table td { max-width: 420px; }
+.table a { color: var(--sage, #4a8f6b); text-decoration: underline; word-break: break-all; }
+
+.foot {
+  margin-top: 24px;
+  font-size: 12px;
+  color: var(--ink-25, #9aa19a);
+}
