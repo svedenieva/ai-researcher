@@ -20,6 +20,31 @@ interface RunInfo {
 // so closing the tab orphaned the base with no way back to it
 const ACTIVE_RUN_KEY = 'ais.research.run';
 
+// The seeded columns every run base starts with; everything ELSE is an aspect
+// Claude chose for THIS question, so its fill rate is "how covered is that
+// aspect" — an empty aspect column is a gap the answer left open.
+const SEED_KEYS = new Set([
+  'название', 'назва', 'name', 'title',
+  'цитата', 'quote',
+  'источники', 'источник', 'sources', 'source', 'url', 'ссылка', 'посилання',
+]);
+
+function aspectCoverage(
+  rows: Array<Record<string, unknown>>,
+  columns: Array<{ key: string; label: string }>,
+): Array<{ key: string; label: string; filled: number; total: number; covered: boolean }> {
+  const total = rows.length;
+  return columns
+    .filter((c) => !c.key.startsWith('__') && !SEED_KEYS.has(c.key.toLowerCase()))
+    .map((c) => {
+      const filled = rows.filter((r) => {
+        const v = r[c.key];
+        return v !== null && v !== undefined && String(v).trim() !== '';
+      }).length;
+      return { key: c.key, label: c.label || c.key, filled, total, covered: filled > 0 };
+    });
+}
+
 export default function Research() {
   const toast = useToast();
   const confirm = useConfirm();
@@ -33,6 +58,8 @@ export default function Research() {
   const [runs, setRuns] = useState<RunInfo[] | null>(null);
   // the result lands in the run base once Claude saves it; poll the base
   const [runRows, setRunRows] = useState<Array<Record<string, unknown>> | null>(null);
+  // the base's columns — the aspect columns Claude chose drive the coverage view
+  const [runColumns, setRunColumns] = useState<Array<{ key: string; label: string }>>([]);
   const [runTimedOut, setRunTimedOut] = useState(false);
   const [recheck, setRecheck] = useState(0);
 
@@ -41,13 +68,21 @@ export default function Research() {
     let stop = false;
     const started = Date.now();
     setRunRows(null);
+    setRunColumns([]);
     setRunTimedOut(false);
     const poll = async () => {
       while (!stop) {
         try {
-          const b = await apiJson<{ records?: Array<Record<string, unknown>> }>(`/api/records?base=${encodeURIComponent(run.baseId)}`);
+          const b = await apiJson<{
+            records?: Array<Record<string, unknown>>;
+            columns?: Array<{ key: string; label: string }>;
+          }>(`/api/records?base=${encodeURIComponent(run.baseId)}`);
           if (stop) return;
-          if (Array.isArray(b.records) && b.records.length) { setRunRows(b.records); return; }
+          if (Array.isArray(b.records) && b.records.length) {
+            setRunRows(b.records);
+            setRunColumns(b.columns ?? []);
+            return;
+          }
         } catch (e) {
           // the run base is gone (deleted from the tree, or never accessible) —
           // waiting five more minutes for it would be a lie
@@ -190,6 +225,30 @@ export default function Research() {
               /* the result arrived in the base — show it right here */
               <>
                 <div className={styles.claudeRunTitle}><IconCheck size={16} /> Готово — знайдено {runRows.length}</div>
+                {(() => {
+                  const cov = aspectCoverage(runRows, runColumns);
+                  if (!cov.length) return null;
+                  const open = cov.filter((a) => !a.covered).length;
+                  return (
+                    <div className={styles.coverage}>
+                      <span className={styles.coverageLabel}>
+                        Аспекти{open > 0 ? ` · не розкрито: ${open}` : ' · усі розкриті'}
+                      </span>
+                      <div className={styles.coverageChips}>
+                        {cov.map((a) => (
+                          <span
+                            key={a.key}
+                            className={a.covered ? styles.aspectOn : styles.aspectOff}
+                            title={`${a.filled} з ${a.total} рядків заповнено`}
+                          >
+                            {a.label}
+                            <span className={styles.aspectCount}>{a.filled}/{a.total}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
                 <ul className={styles.runResults}>
                   {runRows.slice(0, 40).map((r, i) => {
                     const row = extractRow(r);

@@ -21,7 +21,7 @@ import { toneColor } from '@/lib/tone';
 import { recordsQuery } from '@/lib/records-query';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
-import { IconDownload, IconGlobe } from './icons';
+import { IconDownload, IconGlobe, IconMerge } from './icons';
 
 import styles from './page.module.css';
 
@@ -66,6 +66,7 @@ export default function Home() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [checkingLinks, setCheckingLinks] = useState(false);
+  const [deduping, setDeduping] = useState(false);
   const [sideOpen, setSideOpen] = useState(true);
   // on a phone the sidebar is an overlay — start it collapsed so the table is
   // the first thing you see; the hamburger slides it in on demand
@@ -139,26 +140,62 @@ export default function Home() {
   const checkLinks = useCallback(async () => {
     setCheckingLinks(true);
     try {
-      const r = await apiSend<{ rows: number; urls: number; dead: number; skipped: number }>(
-        '/api/records/check-links',
-        'POST',
-        { base },
-      );
+      const r = await apiSend<{
+        rows: number; urls: number; dead: number; skipped: number;
+        quotesChecked: number; quotesMissing: number; quotesSkipped: number;
+      }>('/api/records/check-links', 'POST', { base });
       setRefreshTick((t) => t + 1);
-      const tail = r.skipped ? `, не перевірено: ${r.skipped}` : '';
-      toast(
+      const linkPart =
         r.urls === 0
-          ? 'Посилань у рядках не знайшлося'
+          ? 'посилань не знайшлося'
           : r.dead
-            ? `Перевірено посилань: ${r.urls}, битих: ${r.dead}${tail}`
-            : `Перевірено посилань: ${r.urls} — усі відкрилися${tail}`,
-      );
+            ? `посилань: ${r.urls}, битих: ${r.dead}`
+            : `посилань: ${r.urls} — усі відкрилися`;
+      // the quote check is the honest part: a link can be invented, a quote that
+      // isn't on the page is what exposes a made-up row
+      const quotePart = r.quotesChecked
+        ? r.quotesMissing
+          ? `; цитат: ${r.quotesChecked}, немає на сторінці: ${r.quotesMissing} ✗`
+          : `; цитати: ${r.quotesChecked} — усі на місці ✓`
+        : '';
+      const tail = r.skipped ? `; не перевірено посилань: ${r.skipped}` : '';
+      toast(`Перевірено — ${linkPart}${quotePart}${tail}`);
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Не вдалося перевірити посилання');
     } finally {
       setCheckingLinks(false);
     }
   }, [base, toast]);
+
+  // Merge duplicate rows (same name): fill the kept row's gaps from the copies,
+  // send the extras to the bin. Reversible, so a light confirm is enough.
+  const dedupe = useCallback(async () => {
+    const ok = await confirm({
+      title: 'Злити дублі?',
+      message:
+        'Рядки з однаковою назвою буде злито в один: порожні клітинки заповняться з копій, зайві поїдуть у кошик (звідти можна повернути).',
+      confirmLabel: 'Злити',
+    });
+    if (!ok) return;
+    setDeduping(true);
+    try {
+      const r = await apiSend<{ groups: number; removed: number; filled: number }>(
+        '/api/records/dedupe',
+        'POST',
+        { base },
+      );
+      setRefreshTick((t) => t + 1);
+      toast(
+        r.removed
+          ? `Злито груп: ${r.groups}, прибрано дублів: ${r.removed}${r.filled ? `, заповнено рядків: ${r.filled}` : ''}`
+          : 'Дублів не знайдено',
+      );
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не вдалося злити дублі');
+    } finally {
+      setDeduping(false);
+    }
+  }, [base, confirm, toast]);
 
   const loadBases = useCallback(async () => {
     try {
@@ -425,9 +462,21 @@ export default function Home() {
               onClick={checkLinks}
               disabled={checkingLinks}
               aria-label="Перевірити джерела"
-              title="Відкрити кожне джерело з рядків і позначити биті. Це перевірка існування посилання, а не достовірності рядка."
+              title="Відкрити кожне джерело з рядків, позначити биті й перевірити, чи цитата дійсно є на сторінці. Це механічна перевірка джерела, а не достовірності рядка."
             >
               <IconGlobe size={16} />
+            </button>
+          )}
+          {isCustom && (
+            <button
+              type="button"
+              className={styles.iconBtn}
+              onClick={dedupe}
+              disabled={deduping}
+              aria-label="Злити дублі"
+              title="Знайти рядки з однаковою назвою і злити кожну групу в один: порожні клітинки заповнюються з дублів, зайві їдуть у кошик."
+            >
+              <IconMerge size={16} />
             </button>
           )}
           <a href={exportHref} className={styles.iconBtn} title={tr(lang, 'csvHint')} aria-label="CSV">

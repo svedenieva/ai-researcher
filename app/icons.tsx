@@ -84,3 +84,7 @@ export const IconInbox = (p: IconProps) => (
 export const IconCheck = (p: IconProps) => (
   <Svg {...p}><path d="M5 13l4 4L19 7" /></Svg>
 );
+// merge duplicates: two branches folding into one (git-merge glyph)
+export const IconMerge = (p: IconProps) => (
+  <Svg {...p}><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M6 21V9a9 9 0 0 0 9 9" /></Svg>
+);

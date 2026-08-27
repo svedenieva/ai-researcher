@@ -135,6 +135,40 @@
 .claudeRunActions .ghost { text-decoration: none; display: inline-flex; align-items: center; }
 .claudeHint { margin: 12px 0 0; font-size: 12px; color: var(--ink-45); line-height: 1.5; }
 
+/* aspect coverage — which of Claude's chosen aspect-columns got filled */
+.coverage { margin: 10px 0 4px; }
+.coverageLabel {
+  display: block;
+  margin-bottom: 7px;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+.coverageChips { display: flex; flex-wrap: wrap; gap: 6px; }
+.aspectOn, .aspectOff {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+.aspectOn {
+  background: light-dark(#e2efe6, #16281d);
+  color: light-dark(#2c6b45, #83c99d);
+}
+/* an empty aspect is the point of the view — make it read as a gap, not a chip */
+.aspectOff {
+  background: light-dark(#f7ecd6, #2c2411);
+  color: light-dark(#8a5c26, #d6ac6a);
+  border-color: light-dark(#e8d6ab, #3a2f13);
+}
+.aspectCount { font-family: var(--font-mono), monospace; font-size: 10px; opacity: 0.8; }
+
 /* результат исследования, прилетевший в базу запуска */
 .runResults {
   list-style: none;
