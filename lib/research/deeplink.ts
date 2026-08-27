@@ -65,7 +65,9 @@ export function researchInstruction(topic: string, baseId: string): string {
     `and must not be left empty — they are what a human checks the row against.
 ` +
     `   • Fill the rows with add_rows: one row = one object / fact / point, by the sense of the ` +
-    `question; values keyed by the column keys.
+    `question; values keyed by the column keys. Call add_rows with verify:"flag" — the server ` +
+    `re-checks that each «Цитата» is actually on its «Источники» page and marks any that is not, ` +
+    `so a quote you couldn't place gets caught rather than passing silently.
 
 ` +
     `4. After the table, give a connected analysis: 1–3 paragraphs of conclusions with links to ` +

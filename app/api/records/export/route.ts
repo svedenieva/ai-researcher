@@ -3,6 +3,13 @@ import { attachmentHeader, csvBody, rowsFor } from '@/lib/csv';
 import { BASES, baseById } from '@/lib/datasource/bases';
 import { getCustomStore } from '@/lib/datasource/customStore';
 import type { ColumnDef } from '@/lib/datasource/types';
+import { toMarkdown } from '@/lib/research/report';
+
+// Content-Disposition for a non-CSV download (attachmentHeader hardcodes .csv).
+function attachment(name: string, ext: string): string {
+  const ascii = name.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+  return `attachment; filename="${ascii}.${ext}"; filename*=UTF-8''${encodeURIComponent(name)}.${ext}`;
+}
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
 
@@ -45,6 +52,18 @@ export async function GET(request: Request): Promise<Response> {
     } catch {
       name = baseId;
     }
+  }
+
+  // Markdown report: a shareable write-up (name → quote → aspects → source),
+  // the same slice the screen shows. CSV stays the default.
+  if (url.searchParams.get('format') === 'md') {
+    const md = toMarkdown(name, columns, body.records ?? []);
+    return new Response(md, {
+      headers: {
+        'Content-Type': 'text/markdown; charset=utf-8',
+        'Content-Disposition': attachment(name, 'md'),
+      },
+    });
   }
 
   return new Response(csvBody(table), {

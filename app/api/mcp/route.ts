@@ -7,6 +7,8 @@ import { accessibleBinFor, binHasBase, canRestoreRows, emptyScope, scopeBin } fr
 import { emailForToken } from '@/lib/mcp/tokens';
 import { decompose } from '@/lib/research/decompose';
 import { getSourceStore, matchSources } from '@/lib/research/sources';
+import { extractRow, quoteFoundOnPage } from '@/lib/research/eval';
+import { isFetchableUrl, CHECK_COLUMN } from '@/lib/research/links';
 import type { ColumnDef } from '@/lib/datasource/types';
 import { checkPayloadEn, checkRowCountEn, checkPromptEn, checkName } from '@/lib/limits';
 import { publicError } from '@/lib/errors';
@@ -147,13 +149,22 @@ const TOOLS = [
   },
   {
     name: 'add_rows',
-    description: 'Adds rows to an existing base.',
+    description:
+      'Adds rows to an existing base. Optional verify: fetch each row\'s cited page ' +
+      'and check the row\'s verbatim quote is actually on it — "flag" adds the row but ' +
+      'marks a missing quote in the check column, "drop" refuses such rows outright.',
     inputSchema: {
       type: 'object',
       required: ['base', 'rows'],
       properties: {
         base: { type: 'string', description: 'base id' },
         rows: { type: 'array', items: { type: 'object' } },
+        dedupe: { type: 'boolean', description: 'skip rows whose first-column value already exists (default true)' },
+        verify: {
+          type: 'string',
+          enum: ['flag', 'drop'],
+          description: 'verify each quote is on its cited page: "flag" marks misses, "drop" refuses them',
+        },
       },
     },
   },
@@ -529,8 +540,54 @@ async function callTool(name: string, args: Record<string, unknown>, me: string)
           return true;
         });
       }
+      // Verifier gate (opt-in): before writing, fetch each row's cited page and
+      // confirm the verbatim quote is actually there. A link is cheap to invent;
+      // a quote that survives a search of the page is not — this is what stops a
+      // made-up row at the door. "flag" keeps the row but marks the miss; "drop"
+      // refuses it. Off by default (it fetches pages, and a page can be JS-only).
+      const verify = args.verify === 'flag' || args.verify === 'drop' ? args.verify : null;
+      let verified = 0;
+      let flagged = 0;
+      let unverified = 0;
+      if (verify && rows.length) {
+        const VERIFY_CAP = 40;
+        const targets: Array<{ i: number; url: string; quote: string }> = [];
+        rows.forEach((row, i) => {
+          const { quote, link } = extractRow(row);
+          const q = quote.replace(/\s+/g, ' ').trim();
+          if (q.length >= 12 && link && isFetchableUrl(link) && targets.length < VERIFY_CAP) {
+            targets.push({ i, url: link, quote: q });
+          }
+        });
+        const missing = new Set<number>();
+        let k = 0;
+        const worker = async () => {
+          while (k < targets.length) {
+            const t = targets[k++];
+            verified += 1;
+            if (!(await quoteFoundOnPage(t.url, t.quote))) missing.add(t.i);
+          }
+        };
+        await Promise.all(Array.from({ length: Math.min(6, targets.length) }, worker));
+
+        if (missing.size) {
+          if (verify === 'drop') {
+            rows = rows.filter((_, i) => !missing.has(i));
+            unverified = missing.size;
+          } else {
+            if (!gate.base.columns.some((c) => c.key === CHECK_COLUMN.key)) {
+              await store.addColumn(id, { label: CHECK_COLUMN.label, type: 'text' });
+            }
+            rows.forEach((row, i) => {
+              if (missing.has(i)) row[CHECK_COLUMN.key] = 'цитаты нет на странице ✗';
+            });
+            flagged = missing.size;
+          }
+        }
+      }
+
       const added = rows.length ? await store.addRecords(id, rows) : 0;
-      return text({ added, skippedDuplicates });
+      return text({ added, skippedDuplicates, ...(verify ? { verified, flagged, unverified } : {}) });
     }
 
     case 'delete_rows': {

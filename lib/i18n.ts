@@ -21,6 +21,11 @@ const UI = {
     ru: 'Выгрузить то, что сейчас на экране, в CSV (RFC 4180)',
     en: 'Export what’s on screen to CSV (RFC 4180)',
   },
+  mdHint: {
+    uk: 'Вивантажити звіт у Markdown — назва, цитата, джерело для кожного рядка',
+    ru: 'Выгрузить отчёт в Markdown — название, цитата, источник по каждой строке',
+    en: 'Export a Markdown report — name, quote and source per row',
+  },
   sites: { uk: 'Сайти', ru: 'Сайты', en: 'Sites' },
   trash: { uk: 'Кошик', ru: 'Корзина', en: 'Trash' },
   showcase: { uk: 'Вітрина', ru: 'Витрина', en: 'Showcase' },

@@ -21,7 +21,7 @@ import { toneColor } from '@/lib/tone';
 import { recordsQuery } from '@/lib/records-query';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
-import { IconDownload, IconGlobe, IconMerge } from './icons';
+import { IconDownload, IconGlobe, IconMerge, IconFile } from './icons';
 
 import styles from './page.module.css';
 
@@ -377,6 +377,8 @@ export default function Home() {
   // describe a different slice than the screen
   const exportQs = recordsQuery({ base, sort, filters, search, mode: 'all' });
   const exportHref = `/api/records/export${exportQs ? `?${exportQs}` : ''}`;
+  // same slice, Markdown report — a shareable write-up rather than a table dump
+  const reportHref = `/api/records/export?${exportQs ? `${exportQs}&` : ''}format=md`;
 
 
   return (
@@ -482,6 +484,11 @@ export default function Home() {
           <a href={exportHref} className={styles.iconBtn} title={tr(lang, 'csvHint')} aria-label="CSV">
             <IconDownload size={16} />
           </a>
+          {isCustom && (
+            <a href={reportHref} className={styles.iconBtn} title={tr(lang, 'mdHint')} aria-label="Markdown">
+              <IconFile size={16} />
+            </a>
+          )}
           <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>
           <LangSwitch />
           <ThemeToggle />
