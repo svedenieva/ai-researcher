@@ -8,7 +8,8 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check:rls": "node --env-file=.env.local scripts/check-rls.mjs"
+    "check:rls": "node --env-file=.env.local scripts/check-rls.mjs",
+    "eval": "node --env-file=.env.local scripts/eval.mjs"
   },
   "dependencies": {
     "@aivocado/mindsheet": "github:svedenieva/mindsheet#e09690f454dae3e63cbae27dd93a939eb9b91a3f",
