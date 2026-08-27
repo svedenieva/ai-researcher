@@ -27,6 +27,13 @@ export function researchInstruction(topic: string, baseId: string): string {
     `Research this question: "${topic}". Answer and label the result in the language of the question.
 
 ` +
+    `0. FIRST check you actually have the AiS connector: you need the tools list_bases and ` +
+    `add_rows. If you do NOT have a tool called add_rows, STOP and tell the user, in the ` +
+    `question's language: "Підключи конектор AiS, щоб я зміг зберегти результат: відкрий сторінку ` +
+    `/connect на сайті й додай конектор у Claude (Settings → Connectors)." Do not run the research ` +
+    `without it — the result has nowhere to be saved, so the site would stay empty.
+
+` +
     `1. Break the question down into 5–10 key aspects — led by what the question actually asks, ` +
     `not by a template (it is NOT necessarily about "companies").
 

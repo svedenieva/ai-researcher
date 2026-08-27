@@ -135,6 +135,24 @@
 .claudeRunActions .ghost { text-decoration: none; display: inline-flex; align-items: center; }
 .claudeHint { margin: 12px 0 0; font-size: 12px; color: var(--ink-45); line-height: 1.5; }
 
+/* the "why is it empty" callout — the connector is the usual cause, say it plainly */
+.connectorNote {
+  margin: 10px 0 14px;
+  padding: 11px 13px;
+  border-radius: var(--radius, 8px);
+  background: light-dark(#f7ecd6, #2c2411);
+  color: light-dark(#7a5320, #d6ac6a);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.connectorNote code {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
 /* quality badge — the run scored on the things that make it trustworthy */
 .quality { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 2px; }
 .qBadge, .qBadgeWarn {

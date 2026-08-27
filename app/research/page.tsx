@@ -330,17 +330,23 @@ export default function Research() {
               /* nothing arrived within 5 minutes */
               <>
                 <div className={styles.claudeRunTitle}>Поки порожньо</div>
-                <p className={styles.claudeHint}>
-                  Перевір, що в Claude ти натиснув <b>Enter</b> і що конектор AiS підключено.
-                  Коли Claude збереже результат — натисни «Перевірити знову».
-                </p>
+                <div className={styles.connectorNote}>
+                  <b>Найчастіша причина</b> — у твоєму Claude не підключено конектор <b>AiS</b>.
+                  Без нього Claude не має інструмента <code>add_rows</code> і не може записати
+                  результат сюди — тому тут порожньо. Швидка перевірка: спитай у того ж Claude
+                  «які інструменти AiS тобі доступні?». Якщо порожньо — підключи конектор і повтори.
+                </div>
                 <div className={styles.claudeRunActions}>
-                  <button type="button" className={styles.primary} onClick={() => setRecheck((n) => n + 1)}>Перевірити знову</button>
+                  <Link className={styles.primary} href="/connect">Підключити конектор AiS →</Link>
+                  <button type="button" className={styles.ghost} onClick={() => setRecheck((n) => n + 1)}>Перевірити знову</button>
                   <a className={styles.ghost} href={run.web} target="_blank" rel="noreferrer">Відкрити Claude ще раз</a>
                   <button type="button" className={styles.ghost} onClick={copyPrompt}>Скопіювати запит</button>
-                  <Link className={styles.ghost} href="/connect">Як підключити конектор →</Link>
                   <Link className={styles.ghost} href={`/?base=${encodeURIComponent(run.baseId)}`}>Відкрити базу на сайті →</Link>
                 </div>
+                <p className={styles.claudeHint}>
+                  Також переконайся, що у вкладці Claude ти натиснув <b>Enter</b>. Коли результат
+                  збережеться — натисни «Перевірити знову».
+                </p>
               </>
             ) : (
               /* waiting for Claude to write the result */
