@@ -66,7 +66,10 @@ export async function GET(request: Request): Promise<Response> {
     });
   }
 
-  return new Response(csvBody(table), {
+  // Excel in a comma-decimal locale splits a double-clicked CSV on ';', not ','
+  // — so ?excel=1 serialises with a semicolon (our own importer already reads it).
+  const delim = url.searchParams.get('excel') === '1' ? ';' : ',';
+  return new Response(csvBody(table, true, delim), {
     headers: {
       // charset in the type so the browser doesn't guess; BOM inside for Excel
       'Content-Type': 'text/csv; charset=utf-8',

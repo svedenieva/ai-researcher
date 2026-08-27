@@ -5,7 +5,7 @@ import Link from 'next/link';
 import ThemeToggle from '../theme-toggle';
 import { IconSearch, IconCheck, IconFlask, IconTrash } from '../icons';
 import { ApiError, apiJson, apiSend } from '@/lib/api';
-import { extractRow } from '@/lib/research/eval';
+import { extractRow, scoreRows } from '@/lib/research/eval';
 import { useToast, useConfirm } from '../ui';
 import styles from './research.module.css';
 
@@ -56,6 +56,8 @@ export default function Research() {
   // Your past runs, so an abandoned one is findable and removable instead of
   // sitting in the tree forever
   const [runs, setRuns] = useState<RunInfo[] | null>(null);
+  // is the server-side research path switched on? (flag on the server)
+  const [serverAgent, setServerAgent] = useState(false);
   // the result lands in the run base once Claude saves it; poll the base
   const [runRows, setRunRows] = useState<Array<Record<string, unknown>> | null>(null);
   // the base's columns — the aspect columns Claude chose drive the coverage view
@@ -101,8 +103,8 @@ export default function Research() {
   }, [run, recheck]);
 
   const loadRuns = useCallback(() => {
-    apiJson<{ runs?: RunInfo[] }>('/api/research/runs')
-      .then((b) => setRuns(b.runs ?? []))
+    apiJson<{ runs?: RunInfo[]; serverAgent?: boolean }>('/api/research/runs')
+      .then((b) => { setRuns(b.runs ?? []); setServerAgent(!!b.serverAgent); })
       .catch(() => setRuns([]));
   }, []);
 
@@ -166,6 +168,28 @@ export default function Research() {
     }
   };
 
+  // Server-side research (roadmap step 3) — only offered when the flag is on.
+  // Runs synchronously on our key and writes straight into a run base; the poll
+  // below then shows the rows, same as the deeplink path.
+  const startServer = async () => {
+    if (!prompt.trim()) return;
+    setStarting(true);
+    try {
+      const body = await apiSend<{ baseId: string; baseName: string; added: number }>(
+        '/api/research/server',
+        'POST',
+        { prompt },
+      );
+      setRun({ baseId: body.baseId, baseName: body.baseName, web: '' });
+      loadRuns();
+      toast(`Готово на сервері — додано рядків: ${body.added}`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не вдалося запустити на сервері');
+    } finally {
+      setStarting(false);
+    }
+  };
+
   const startClaude = async () => {
     if (!prompt.trim()) return;
     setStarting(true);
@@ -217,6 +241,17 @@ export default function Research() {
           >
             {starting ? 'Відкриваю Claude…' : <><IconSearch size={15} /> Дослідити в моєму Claude</>}
           </button>
+          {serverAgent && (
+            <button
+              type="button"
+              className={styles.ghost}
+              onClick={startServer}
+              disabled={starting || !prompt.trim()}
+              title="Провести дослідження на сервері (на нашому ключі), без відкриття твого Claude"
+            >
+              Дослідити на сервері
+            </button>
+          )}
         </div>
 
         {run && (
@@ -225,6 +260,28 @@ export default function Research() {
               /* the result arrived in the base — show it right here */
               <>
                 <div className={styles.claudeRunTitle}><IconCheck size={16} /> Готово — знайдено {runRows.length}</div>
+                {(() => {
+                  const s = scoreRows(runRows.map(extractRow));
+                  const pct = (n: number) => Math.round(n * 100);
+                  return (
+                    <div className={styles.quality}>
+                      <span className={styles.qBadge} title="Частка рядків із посиланням на джерело">
+                        посилання {pct(s.linkRate)}%
+                      </span>
+                      <span className={styles.qBadge} title="Частка рядків із дослівною цитатою">
+                        цитати {pct(s.quoteRate)}%
+                      </span>
+                      <span className={s.duplicateRows ? styles.qBadgeWarn : styles.qBadge} title="Рядки з однаковою назвою">
+                        дублі {s.duplicateRows}
+                      </span>
+                      {s.emptyRows > 0 && (
+                        <span className={styles.qBadgeWarn} title="Порожні рядки — без назви, цитати й посилання">
+                          порожні {s.emptyRows}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
                 {(() => {
                   const cov = aspectCoverage(runRows, runColumns);
                   if (!cov.length) return null;

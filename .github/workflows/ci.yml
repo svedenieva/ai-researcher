@@ -35,3 +35,27 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
         run: npm run build
+
+  # Verify prod RLS still holds: the public anon key must not read or write the
+  # user tables (scripts/check-rls.mjs). Read-only against prod — the only write
+  # it attempts is an anon INSERT, which RLS is expected to REFUSE. Needs three
+  # repo secrets; skips cleanly when they aren't set (forks, unconfigured repos).
+  rls:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check RLS on prod
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "No Supabase secrets configured — skipping RLS check."
+            exit 0
+          fi
+          node scripts/check-rls.mjs

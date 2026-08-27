@@ -1,6 +1,7 @@
 import { currentEmail } from '@/lib/current-user';
 import { getCustomStore } from '@/lib/datasource/customStore';
 import { listRuns, tidyRuns } from '@/lib/research/runs';
+import { serverAgentStatus } from '@/lib/research/server-agent';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,9 @@ export async function GET(): Promise<Response> {
   );
 
   runs.sort((a, b) => String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')));
-  return Response.json({ runs });
+  // whether the server-side research path is switched on — the page uses it to
+  // decide if it should offer a "run on the server" button beside the deeplink
+  return Response.json({ runs, serverAgent: serverAgentStatus().enabled });
 }
 
 // File older root-level runs into the folder — one click to clear the clutter

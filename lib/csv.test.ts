@@ -72,6 +72,21 @@ describe('table export', () => {
   });
 });
 
+describe('semicolon export (for Excel in a comma-decimal locale)', () => {
+  it('joins on ; and quotes a field that contains ;', () => {
+    const csv = toCsv({ headers: ['a', 'b'], rows: [['1;2', 'x']] }, ';');
+    expect(csv).toBe('a;b\r\n"1;2";x');
+  });
+
+  it('a plain comma is NOT quoted when ; is the delimiter — and round-trips back', () => {
+    const csv = toCsv({ headers: ['Назва', 'Ціна'], rows: [['Товар', '29,99']] }, ';');
+    expect(csv).toBe('Назва;Ціна\r\nТовар;29,99');
+    const back = parseTable(csv); // importer auto-detects ';'
+    expect(back.headers).toEqual(['Назва', 'Ціна']);
+    expect(back.rows).toEqual([['Товар', '29,99']]);
+  });
+});
+
 describe('round trip: export then import back', () => {
   it('returns the same values, including commas, quotes and line breaks', () => {
     const headers = ['Название', 'Заметка', 'Число'];

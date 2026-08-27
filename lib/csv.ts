@@ -16,7 +16,13 @@ import type { ColumnDef } from './datasource/types';
 // objects, and other worksheet contents are lost». So for us CSV is a channel for
 // exchanging values, not a storage format for the base.
 
-const NEEDS_QUOTES = /[",\r\n]/;
+// A field needs quoting if it holds a quote, a line break, or the delimiter in
+// use. The delimiter is a parameter now: Excel in a comma-decimal locale (uk/ru/
+// most of EU) splits a double-clicked CSV on ';', not ',', so an "Excel" export
+// serialises with ';' — the mirror of the import fix that learned to read ';'.
+function needsQuotes(s: string, delim: string): boolean {
+  return s.includes('"') || s.includes('\r') || s.includes('\n') || s.includes(delim);
+}
 
 // Excel and Google Sheets execute a cell whose text begins with one of these —
 // `=cmd|…`, `=HYPERLINK(…)`, `=IMPORTXML(…)` — as a FORMULA on open. The RFC says
@@ -35,10 +41,10 @@ function neutralizeFormula(s: string): string {
 }
 
 /** A single field per rules 5–7, with formula injection neutralised first. */
-export function csvField(value: unknown): string {
+export function csvField(value: unknown, delim = ','): string {
   if (value === null || value === undefined) return '';
   const s = neutralizeFormula(String(value));
-  if (!NEEDS_QUOTES.test(s)) return s;
+  if (!needsQuotes(s, delim)) return s;
   return `"${s.replace(/"/g, '""')}"`;
 }
 
@@ -52,9 +58,9 @@ export interface CsvTable {
  * trailing line break (rule 2 allows omitting it, and an extra empty line at
  * the end trips up some importers).
  */
-export function toCsv(table: CsvTable): string {
-  const lines = [table.headers.map(csvField).join(',')];
-  for (const row of table.rows) lines.push(row.map(csvField).join(','));
+export function toCsv(table: CsvTable, delim = ','): string {
+  const lines = [table.headers.map((h) => csvField(h, delim)).join(delim)];
+  for (const row of table.rows) lines.push(row.map((v) => csvField(v, delim)).join(delim));
   return lines.join('\r\n');
 }
 
@@ -64,13 +70,13 @@ export function toCsv(table: CsvTable): string {
 export const UTF8_BOM = '\ufeff';
 
 /** Table → file bytes, ready to serve. */
-export function csvBytes(table: CsvTable, withBom = true): Uint8Array {
-  return new TextEncoder().encode((withBom ? UTF8_BOM : '') + toCsv(table));
+export function csvBytes(table: CsvTable, withBom = true, delim = ','): Uint8Array {
+  return new TextEncoder().encode((withBom ? UTF8_BOM : '') + toCsv(table, delim));
 }
 
 // Response doesn't accept a Uint8Array by type — return a buffer of the exact length.
-export function csvBody(table: CsvTable, withBom = true): ArrayBuffer {
-  return csvBytes(table, withBom).slice().buffer as ArrayBuffer;
+export function csvBody(table: CsvTable, withBom = true, delim = ','): ArrayBuffer {
+  return csvBytes(table, withBom, delim).slice().buffer as ArrayBuffer;
 }
 
 /** Record values in column order; empty for missing fields. */
