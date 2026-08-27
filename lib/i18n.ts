@@ -26,11 +26,6 @@ const UI = {
     ru: 'Выгрузить отчёт в Markdown — название, цитата, источник по каждой строке',
     en: 'Export a Markdown report — name, quote and source per row',
   },
-  xlsHint: {
-    uk: 'CSV для Excel — розділювач «;», відкриється по колонках у локалі з десятковою комою',
-    ru: 'CSV для Excel — разделитель «;», откроется по столбцам в локали с десятичной запятой',
-    en: 'CSV for Excel — semicolon-delimited, opens in columns in comma-decimal locales',
-  },
   sites: { uk: 'Сайти', ru: 'Сайты', en: 'Sites' },
   trash: { uk: 'Кошик', ru: 'Корзина', en: 'Trash' },
   showcase: { uk: 'Вітрина', ru: 'Витрина', en: 'Showcase' },

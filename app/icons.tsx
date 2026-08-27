@@ -88,10 +88,6 @@ export const IconCheck = (p: IconProps) => (
 export const IconMerge = (p: IconProps) => (
   <Svg {...p}><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M6 21V9a9 9 0 0 0 9 9" /></Svg>
 );
-// spreadsheet grid — the "for Excel" CSV export
-export const IconGrid = (p: IconProps) => (
-  <Svg {...p}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M3 15h18M9 3v18M15 3v18" /></Svg>
-);
 // share: three nodes joined — the public read-only link
 export const IconShare = (p: IconProps) => (
   <Svg {...p}><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 10.6l6.8-4M8.6 13.4l6.8 4" /></Svg>
