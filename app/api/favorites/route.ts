@@ -1,33 +1,15 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+import { currentEmail } from '@/lib/current-user';
 
 // Favorite sources: starring a record. Stored per user (email from the
 // session), so favorites follow the person across devices.
 // Table: favorites (user_email, base_id, record_id).
+//
+// The signed-in email comes from the shared lib/current-user helper — one place
+// to fix, so an auth change (null-owner guards, the dev fallback) can't drift
+// between here and everywhere else.
 
 export const dynamic = 'force-dynamic';
-
-async function currentEmail(): Promise<string | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anon) return 'local@dev'; // local development without auth
-  const store = await cookies();
-  const supabase = createServerClient(url, anon, {
-    cookies: {
-      getAll() {
-        return store.getAll();
-      },
-      setAll() {
-        /* the route only reads the session */
-      },
-    },
-  });
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user?.email ?? null;
-}
 
 function admin() {
   const url = process.env.SUPABASE_URL;

@@ -2,7 +2,8 @@ import { currentEmail } from '@/lib/current-user';
 import { canAccessBase, getCustomStore } from '@/lib/datasource/customStore';
 import { BASES } from '@/lib/datasource/bases';
 import { CHECK_COLUMN, checkAll, extractUrls, isFetchableUrl, summarize } from '@/lib/research/links';
-import { extractRow, quoteFoundOnPage } from '@/lib/research/eval';
+import { extractRow } from '@/lib/research/eval';
+import { quoteFoundOnPage } from '@/lib/research/verify-quote';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;

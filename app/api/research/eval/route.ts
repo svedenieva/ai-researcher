@@ -1,6 +1,7 @@
 import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
 import { currentEmail } from '@/lib/current-user';
-import { extractRow, scoreRows, quoteFoundOnPage } from '@/lib/research/eval';
+import { extractRow, scoreRows } from '@/lib/research/eval';
+import { quoteFoundOnPage } from '@/lib/research/verify-quote';
 import { questionById } from '@/lib/research/eval-set';
 
 export const dynamic = 'force-dynamic';

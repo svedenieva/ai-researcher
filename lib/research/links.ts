@@ -5,6 +5,7 @@
 // with the person who flips the row to "Проверено".
 
 import type { ColumnDef } from '../datasource/types';
+import { safeFetch, hostLooksPrivate } from '../net/safe-fetch';
 
 /** Column the verdict is written into. Lives here, not in the route file:
     Next.js route modules may only export handlers and route config. */
@@ -25,13 +26,11 @@ export function extractUrls(value: unknown): string[] {
   return found.map((u) => u.replace(/[.,;:!?]+$/, ''));
 }
 
-// Hosts that must never be fetched: the server would be making the request, so
-// an attacker-supplied "source" could otherwise probe the private network or
-// the cloud metadata endpoint. A hostname that RESOLVES to a private address is
-// still reachable this way — full protection needs DNS resolution before the
-// fetch; this blocks the literal forms, which is what a pasted source contains.
-const BLOCKED_HOST = /^(localhost|.*\.local|.*\.internal|0\.0\.0\.0|127\..*|10\..*|192\.168\..*|169\.254\..*|172\.(1[6-9]|2\d|3[01])\..*|\[?::1\]?)$/i;
-
+// Cheap, synchronous gate: the server makes these requests, so a "source" pasted
+// by anyone must not aim them at the private network or the cloud metadata
+// endpoint. hostLooksPrivate covers literal, numeric (2130706433, 0x7f000001)
+// and local-name forms; the DNS-resolving check and per-redirect revalidation
+// live in safeFetch, which checkUrl uses for the actual request.
 export function isFetchableUrl(raw: string): boolean {
   let u: URL;
   try {
@@ -40,7 +39,7 @@ export function isFetchableUrl(raw: string): boolean {
     return false;
   }
   if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
-  return !BLOCKED_HOST.test(u.hostname);
+  return !hostLooksPrivate(u.hostname);
 }
 
 export type LinkVerdict = 'ok' | 'dead' | 'blocked';
@@ -51,14 +50,20 @@ export interface LinkCheck {
   status?: number;
 }
 
-/** One request per URL: HEAD when the server allows it, GET when it doesn't. */
-export async function checkUrl(url: string, timeoutMs = 7000, fetchImpl: typeof fetch = fetch): Promise<LinkCheck> {
+/**
+ * One request per URL: HEAD when the server allows it, GET when it doesn't.
+ * Production goes through safeFetch (validates every redirect hop against the
+ * private-network guard); tests inject a fetch to stay offline.
+ */
+export async function checkUrl(url: string, timeoutMs = 7000, fetchImpl?: typeof fetch): Promise<LinkCheck> {
   if (!isFetchableUrl(url)) return { url, verdict: 'blocked' };
   const attempt = async (method: 'HEAD' | 'GET') => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-      return await fetchImpl(url, { method, redirect: 'follow', signal: ctrl.signal });
+      return fetchImpl
+        ? await fetchImpl(url, { method, redirect: 'follow', signal: ctrl.signal })
+        : await safeFetch(url, { method, signal: ctrl.signal });
     } finally {
       clearTimeout(timer);
     }

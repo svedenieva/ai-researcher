@@ -20,6 +20,11 @@ export async function POST(request: Request): Promise<Response> {
   if (!status.enabled) {
     return Response.json({ error: 'Server research is disabled', reason: status.reason }, { status: 403 });
   }
+  // NOTE: no per-user rate limit / quota yet. Each run is bounded (maxTurns in
+  // runServerResearch), but a user could trigger many runs and bill our key
+  // without limit. The only current mitigation is that this path is OFF unless
+  // the flag is set. Before enabling it in production, add a store-backed quota
+  // (runs-per-user-per-day) — an in-memory counter is useless on serverless.
 
   let body: { prompt?: unknown };
   try { body = await request.json(); } catch { return Response.json({ error: 'Malformed request' }, { status: 400 }); }
@@ -27,6 +32,9 @@ export async function POST(request: Request): Promise<Response> {
   if (!topic) return Response.json({ error: 'Empty query' }, { status: 400 });
 
   const me = await currentEmail();
+  // owner===null = a base visible to everyone (canAccessBase); never mint one
+  // from an unauthenticated request.
+  if (!me) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   const store = getCustomStore();
 
   try {

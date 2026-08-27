@@ -11,6 +11,10 @@
 //   - hygiene: empty rows (blanks left behind) and duplicate rows (the same
 //     entry written twice) — noise a good run keeps near zero.
 
+// This module is imported by a CLIENT component (the research page uses
+// extractRow / scoreRows), so it stays pure — no Node built-ins. The fetching
+// part (quoteFoundOnPage) is in ./verify-quote, which the client never imports.
+
 export interface EvalRow {
   name: string;
   quote: string;
@@ -103,50 +107,6 @@ export function scoreRows(rows: EvalRow[], subtopics: string[] = []): RowScore {
   };
 }
 
-// ── the honest, expensive check ────────────────────────────────────────────
-
-function normalize(s: string): string {
-  return s
-    .replace(/\s+/g, ' ')
-    .replace(/[«»"“”'’‘`]/g, '"')
-    .trim()
-    .toLowerCase();
-}
-
-function stripHtml(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'");
-}
-
-/**
- * Is the quote actually on the page it cites? Fetches the URL, strips markup and
- * checks whether a meaningful slice of the (normalised) quote appears in the
- * (normalised) page text. Not exact — pages reflow — so it matches on the first
- * ~120 normalised chars, which is enough to tell a real quote from an invented one.
- * `fetchImpl` is injectable for tests.
- */
-export async function quoteFoundOnPage(
-  url: string,
-  quote: string,
-  fetchImpl: typeof fetch = fetch,
-): Promise<boolean> {
-  const needle = normalize(quote);
-  if (!url || needle.length < 12) return false;
-  let body: string;
-  try {
-    const res = await fetchImpl(url, { redirect: 'follow' });
-    if (!res.ok) return false;
-    body = await res.text();
-  } catch {
-    return false;
-  }
-  const hay = normalize(stripHtml(body));
-  // whole quote, or its leading slice for long/edited quotes
-  return hay.includes(needle) || hay.includes(needle.slice(0, 120));
-}
+// The honest, expensive check — "is the quote actually on the cited page?" —
+// lives in ./verify-quote (server-only: it fetches, pulling node:dns). Kept out
+// of this file so the client can import extractRow / scoreRows without it.

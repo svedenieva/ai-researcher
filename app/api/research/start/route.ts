@@ -17,6 +17,10 @@ export async function POST(request: Request): Promise<Response> {
   if (!topic) return Response.json({ error: 'Empty query' }, { status: 400 });
 
   const me = await currentEmail();
+  // owner===null is, by design, a base visible to EVERYONE (see canAccessBase).
+  // Never create one from an unauthenticated request — defence in depth behind
+  // the middleware, which is the only other thing standing here.
+  if (!me) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   const store = getCustomStore();
 
   // short date in the name so runs don't collide; the slug adds a numeric

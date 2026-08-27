@@ -7,7 +7,8 @@ import { accessibleBinFor, binHasBase, canRestoreRows, emptyScope, scopeBin } fr
 import { emailForToken } from '@/lib/mcp/tokens';
 import { decompose } from '@/lib/research/decompose';
 import { getSourceStore, matchSources } from '@/lib/research/sources';
-import { extractRow, quoteFoundOnPage } from '@/lib/research/eval';
+import { extractRow } from '@/lib/research/eval';
+import { quoteFoundOnPage } from '@/lib/research/verify-quote';
 import { isFetchableUrl, CHECK_COLUMN } from '@/lib/research/links';
 import type { ColumnDef } from '@/lib/datasource/types';
 import { checkPayloadEn, checkRowCountEn, checkPromptEn, checkName } from '@/lib/limits';
