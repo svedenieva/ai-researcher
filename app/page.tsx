@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MindSheet } from '@aivocado/mindsheet';
@@ -21,6 +21,7 @@ import { toneColor } from '@/lib/tone';
 import { recordsQuery } from '@/lib/records-query';
 import { MODE_RESEARCH, MODE_REFERENCE } from '@/lib/mode';
 import { basePath } from '@/lib/datasource/tree';
+import { defaultGroupSort } from '@/lib/presets';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
 import { IconGlobe, IconMerge, IconFile, IconShare } from './icons';
@@ -74,6 +75,9 @@ export default function Home() {
   const [deduping, setDeduping] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [sideOpen, setSideOpen] = useState(true);
+  // apply a base's default grouping (e.g. «Стадия» for the «Внедрение» preset)
+  // once when the base is entered, then leave sorting to the user
+  const pendingDefaultGroup = useRef(true);
   // on a phone the sidebar is an overlay — start it collapsed so the table is
   // the first thing you see; the hamburger slides it in on demand
   useEffect(() => {
@@ -302,6 +306,13 @@ export default function Home() {
         setTotal(body.total ?? body.records?.length ?? 0);
         setFacets(body.facets ?? {});
         setSharing(!!body.sharing);
+        // on entering a base, open it grouped by its default-group column if it
+        // has one (the «Внедрение» preset groups by «Стадия» — a process board)
+        if (pendingDefaultGroup.current) {
+          pendingDefaultGroup.current = false;
+          const dg = defaultGroupSort(body.columns ?? []);
+          if (dg) setSort(dg);
+        }
         // the catalog loaded but nested bases didn't — say so instead of
         // quietly showing a shorter table
         if (body.warning) toast(body.warning);
@@ -389,6 +400,7 @@ export default function Home() {
     // still open sorted by popularity.
     setSort(BUILTIN_IDS.has(id) ? DEFAULT_SORT : undefined);
     setExtraLevels([]);
+    pendingDefaultGroup.current = true; // re-apply the base's default grouping
   }, []);
 
 

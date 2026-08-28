@@ -68,6 +68,7 @@ const UI = {
   // create-base.tsx
   newBase: { uk: 'Нова база', ru: 'Новая база', en: 'New base' },
   fromScratch: { uk: 'з нуля або імпортом із таблиці', ru: 'с нуля или импортом из таблицы', en: 'from scratch or by importing a table' },
+  presetLabel: { uk: 'Шаблон:', ru: 'Шаблон:', en: 'Template:' },
   baseName: { uk: 'Назва бази', ru: 'Название базы', en: 'Base name' },
   baseNamePlaceholder: { uk: 'Напр.: Інструменти для дизайну', ru: 'Напр.: Инструменты для дизайна', en: 'e.g. Design tools' },
   insideBase: { uk: 'Усередині бази (необов’язково)', ru: 'Внутри базы (необязательно)', en: 'Inside base (optional)' },

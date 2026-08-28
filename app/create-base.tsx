@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { parseTable, inferType } from '@/lib/parseTable';
 import type { ColumnType } from '@/lib/datasource/types';
+import { BASE_PRESETS, type BasePreset } from '@/lib/presets';
 import { useLang } from './lang-provider';
 import { t, tImportN, tColumnN } from '@/lib/i18n';
 import { apiSend } from '@/lib/api';
@@ -13,6 +14,12 @@ interface ColDraft {
   label: string;
   type: ColumnType;
   filterable: boolean;
+  // preset columns carry display metadata (stage order, colours, default group);
+  // the manual editor ignores these but they ride along to the create request
+  order?: string[];
+  badge?: boolean;
+  badgeVariant?: Record<string, string>;
+  defaultGroup?: boolean;
 }
 
 export default function CreateBase({
@@ -49,6 +56,24 @@ export default function CreateBase({
     setCols((prev) => prev.map((c, j) => (j === i ? { ...c, ...patch } : c)));
   const addCol = () => setCols((prev) => [...prev, { label: '', type: 'text', filterable: false }]);
   const removeCol = (i: number) => setCols((prev) => prev.filter((_, j) => j !== i));
+
+  // a template fills the column schema (and the name, if empty) in one click,
+  // then drops into the manual editor so the columns can still be tweaked
+  const applyPreset = (p: BasePreset) => {
+    if (!name.trim()) setName(p.name);
+    setCols(
+      p.columns.map((c) => ({
+        label: c.label,
+        type: c.type,
+        filterable: !!c.filterable,
+        order: c.order,
+        badge: c.badge,
+        badgeVariant: c.badgeVariant,
+        defaultGroup: c.defaultGroup,
+      })),
+    );
+    setMode('manual');
+  };
 
   // ── import: parse pasted / uploaded table ──
   const parsed = useMemo(() => parseTable(raw), [raw]);
@@ -96,6 +121,23 @@ export default function CreateBase({
         <h2 className={styles.panelTitle}>{t(lang, 'newBase')}</h2>
         <span className={styles.panelHint}>{t(lang, 'fromScratch')}</span>
       </div>
+
+      {BASE_PRESETS.length > 0 && (
+        <div className={styles.presets}>
+          <span className={styles.presetsLabel}>{t(lang, 'presetLabel')}</span>
+          {BASE_PRESETS.map((p) => (
+            <button
+              type="button"
+              key={p.id}
+              className={styles.presetBtn}
+              onClick={() => applyPreset(p)}
+              title={p.blurb}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={styles.modeTabs}>
         <button

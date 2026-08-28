@@ -52,3 +52,20 @@ describe('/api/bases mutations', () => {
     expect(second.status).toBe(400);
   });
 });
+
+describe('/api/bases POST — preset column metadata survives normalizeColumns', () => {
+  it('keeps order / badge / badgeVariant / defaultGroup for a rich select column', async () => {
+    const { POST } = await import('./route');
+    const { implementationPreset } = await import('@/lib/presets');
+    const preset = implementationPreset();
+    const res = await POST(req('POST', { name: 'Внедрение-тест', columns: preset.columns }));
+    expect(res.status).toBe(200);
+    const cols = (await res.json()).base.columns as Array<Record<string, unknown>>;
+    const stage = cols.find((c) => c.label === 'Стадия')!;
+    expect(stage.type).toBe('select');
+    expect(stage.order).toEqual(['Изучение', 'Внедрение', 'Написание инструкции', 'Обучение', 'Проверка применения']);
+    expect(stage.badge).toBe(true);
+    expect((stage.badgeVariant as Record<string, string>)['Изучение']).toBe('blue');
+    expect(stage.defaultGroup).toBe(true);
+  });
+});

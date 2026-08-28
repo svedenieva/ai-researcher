@@ -19,6 +19,8 @@ export interface ColumnDef {
   badge?: boolean;
   /** value → colour variant (green|teal|blue|amber|red|purple|grey) */
   badgeVariant?: Record<string, string>;
+  /** open the base grouped by this column (a process board by «Стадия», §5.9) */
+  defaultGroup?: boolean;
 }
 
 export interface ListParams {

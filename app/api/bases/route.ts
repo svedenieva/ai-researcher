@@ -58,6 +58,10 @@ export async function GET(): Promise<Response> {
 }
 
 // normalize columns from the form into valid ColumnDef
+// the colour variants the grid knows; anything else is ignored so a bad value
+// can't smuggle arbitrary strings into the stored schema
+const BADGE_VARIANTS = new Set(['green', 'teal', 'blue', 'amber', 'red', 'purple', 'grey']);
+
 function normalizeColumns(input: unknown): ColumnDef[] {
   if (!Array.isArray(input)) return [];
   const cols: ColumnDef[] = [];
@@ -70,14 +74,35 @@ function normalizeColumns(input: unknown): ColumnDef[] {
     used.add(key);
     const type = (raw as { type?: unknown })?.type;
     const t: ColumnDef['type'] =
-      type === 'number' || type === 'url' || type === 'long-text' || type === 'select' || type === 'date' || type === 'checkbox' || type === 'rating' ? type : 'text';
-    cols.push({
+      type === 'number' || type === 'url' || type === 'long-text' || type === 'select' || type === 'multiselect' || type === 'date' || type === 'checkbox' || type === 'rating' ? type : 'text';
+    const col: ColumnDef = {
       key,
       label,
       type: t,
       sortable: true,
       filterable: Boolean((raw as { filterable?: unknown })?.filterable) && t !== 'long-text' && t !== 'url',
-    });
+    };
+    // preset / rich select columns carry display metadata (colours, stage order,
+    // default grouping). Keep it, validated, for select and multiselect columns —
+    // plain manual columns don't send these, so they're unaffected.
+    if (t === 'select' || t === 'multiselect') {
+      const order = (raw as { order?: unknown }).order;
+      if (Array.isArray(order)) {
+        const vals = order.map((v) => String(v ?? '').trim()).filter(Boolean).slice(0, 50);
+        if (vals.length) col.order = vals;
+      }
+      if ((raw as { badge?: unknown }).badge === true) col.badge = true;
+      const variant = (raw as { badgeVariant?: unknown }).badgeVariant;
+      if (variant && typeof variant === 'object' && !Array.isArray(variant)) {
+        const out: Record<string, string> = {};
+        for (const [k, v] of Object.entries(variant as Record<string, unknown>).slice(0, 50)) {
+          if (BADGE_VARIANTS.has(String(v))) out[String(k)] = String(v);
+        }
+        if (Object.keys(out).length) col.badgeVariant = out;
+      }
+    }
+    if ((raw as { defaultGroup?: unknown }).defaultGroup === true) col.defaultGroup = true;
+    cols.push(col);
   }
   return cols;
 }
