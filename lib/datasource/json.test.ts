@@ -104,3 +104,31 @@ describe('JsonDataSource', () => {
     expect(facets.region).toEqual(['EU', 'US']);
   });
 });
+
+describe('JsonDataSource — multiselect (tags)', () => {
+  const cols: ColumnDef[] = [
+    { key: 'name', label: 'N', type: 'text' },
+    { key: 'tags', label: 'Теги', type: 'multiselect', filterable: true },
+  ];
+  const rows: CatalogRecord[] = [
+    { id: '1', name: 'A', tags: 'ai, tooling' },
+    { id: '2', name: 'B', tags: 'ai' },
+    { id: '3', name: 'C', tags: 'design' },
+  ];
+  const src = () => new JsonDataSource(rows, cols);
+
+  it('facets split each tag so they list individually (§5.4/§5.7)', async () => {
+    const f = await src().facets();
+    expect(f.tags).toEqual(['ai', 'design', 'tooling']);
+  });
+
+  it('filtering by a tag matches rows that CONTAIN it, not the whole string', async () => {
+    const r = await src().list({ filters: { tags: 'ai' } });
+    expect(r.map((x) => x.id).sort()).toEqual(['1', '2']);
+  });
+
+  it('search matches a tag substring', async () => {
+    const r = await src().list({ search: 'tooling' });
+    expect(r.map((x) => x.id)).toEqual(['1']);
+  });
+});

@@ -10,6 +10,7 @@ import { isSafeUrlValue } from '@/lib/safe-url';
 import { checkPayload } from '@/lib/limits';
 import { publicError } from '@/lib/errors';
 import { sharingEnabled } from '@/lib/research/share';
+import { withTagsColumn } from '@/lib/tags';
 
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
 
@@ -117,7 +118,10 @@ export async function GET(request: Request): Promise<Response> {
           rows = rows.filter((r) => recordMode(r) === mode);
         }
 
-        const cols = descendants.length ? [...custom.columns, SOURCE_COL] : custom.columns;
+        // the «Теги» multiselect column is a system column shown on every custom
+        // base (like the mode flag), so tags can be edited, searched and grouped
+        const withTags = withTagsColumn(custom.columns);
+        const cols = descendants.length ? [...withTags, SOURCE_COL] : withTags;
         const ds = new JsonDataSource(rows, cols);
         const [records, facets] = await Promise.all([ds.list(params), ds.facets()]);
         const total = q || params.filters ? (await ds.list()).length : records.length;

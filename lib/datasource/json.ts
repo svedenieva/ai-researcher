@@ -1,4 +1,5 @@
 import type { CatalogRecord, ColumnDef, DataSource, ListParams } from './types';
+import { splitTags } from '../tags';
 
 export class JsonDataSource implements DataSource {
   constructor(
@@ -30,7 +31,14 @@ export class JsonDataSource implements DataSource {
     if (params?.filter) active.push([params.filter.key, params.filter.value]);
     if (params?.filters) active.push(...Object.entries(params.filters));
     for (const [key, value] of active) {
-      rows = rows.filter((r) => String(r[key] ?? '') === value);
+      const col = this.cols.find((c) => c.key === key);
+      // a multiselect cell holds several tags — match rows that CONTAIN the
+      // picked tag, not ones whose whole value equals it
+      if (col?.type === 'multiselect') {
+        rows = rows.filter((r) => splitTags(r[key]).includes(value));
+      } else {
+        rows = rows.filter((r) => String(r[key] ?? '') === value);
+      }
     }
 
     if (params?.sort) {
@@ -54,7 +62,9 @@ export class JsonDataSource implements DataSource {
       for (const record of this.records) {
         const value = record[col.key];
         if (value === null || value === undefined || value === '') continue;
-        set.add(String(value));
+        // a multiselect column's facet lists each tag on its own
+        if (col.type === 'multiselect') for (const t of splitTags(value)) set.add(t);
+        else set.add(String(value));
       }
       result[col.key] = [...set].sort((a, b) => a.localeCompare(b, 'ru'));
     }

@@ -113,7 +113,7 @@ const SERVER_OWNED = new Set(['id', '__pos', '__source']);
 
 // Column keys that would collide with a record's own fields. "ID" is a column
 // label in half the CRM exports out there, and its derived key is exactly `id`.
-export const RESERVED_COLUMN_KEYS = new Set(['id', '__mode', '__pos', '__source']);
+export const RESERVED_COLUMN_KEYS = new Set(['id', '__mode', '__tags', '__pos', '__source']);
 
 export function sanitizeRecordData(data: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};

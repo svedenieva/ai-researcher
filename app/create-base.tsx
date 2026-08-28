@@ -30,6 +30,7 @@ export default function CreateBase({
     text: t(lang, 'typeText'),
     number: t(lang, 'typeNumber'),
     select: t(lang, 'typeSelect'),
+    multiselect: t(lang, 'typeMultiselect'),
     'long-text': t(lang, 'typeLongText'),
     url: t(lang, 'typeUrl'),
     date: t(lang, 'typeDate'),

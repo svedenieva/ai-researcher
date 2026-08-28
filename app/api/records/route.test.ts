@@ -197,3 +197,27 @@ describe('DELETE /api/records', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('GET /api/records — tags (multiselect system column)', () => {
+  it('injects the «Теги» column, splits tag facets, and filters by a contained tag', async () => {
+    const store = getCustomStore();
+    const base = await store.createBase({ name: 'Tagged', columns: [{ key: 'name', label: 'N', type: 'text' }] });
+    await store.addRecord(base.id, { name: 'A', __tags: 'ai, tooling' });
+    await store.addRecord(base.id, { name: 'B', __tags: 'design' });
+
+    const res = await call(`http://localhost/api/records?base=${base.id}`);
+    const body = await res.json();
+    expect(body.columns.map((c: { key: string }) => c.key)).toContain('__tags');
+    expect(body.facets['__tags']).toEqual(['ai', 'design', 'tooling']);
+
+    // filter by a single tag → only rows that contain it
+    const filtered = await call(`http://localhost/api/records?base=${base.id}&f=${encodeURIComponent('__tags:ai')}`);
+    const fb = await filtered.json();
+    expect(fb.records.map((r: { name: string }) => r.name)).toEqual(['A']);
+
+    // search hits the tag text too
+    const searched = await call(`http://localhost/api/records?base=${base.id}&q=tooling`);
+    const sb = await searched.json();
+    expect(sb.records.map((r: { name: string }) => r.name)).toEqual(['A']);
+  });
+});

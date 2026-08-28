@@ -12,7 +12,7 @@
     "eval": "node --env-file=.env.local scripts/eval.mjs"
   },
   "dependencies": {
-    "@aivocado/mindsheet": "github:svedenieva/mindsheet#e09690f454dae3e63cbae27dd93a939eb9b91a3f",
+    "@aivocado/mindsheet": "github:svedenieva/mindsheet#c307cdc90f2db7a36c0f4bb0faab36dde88610ac",
     "@anthropic-ai/sdk": "^0.115.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
