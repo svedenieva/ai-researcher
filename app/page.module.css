@@ -546,4 +546,22 @@
     height: auto;
     min-height: 100dvh;
   }
+
+  /* the base view's top bar carries many actions (views, AI, check, dedupe,
+     share, export, new-research, lang, theme) — on a 375px phone they'd clip or
+     overflow off-screen. Let the bar wrap to as many rows as it needs. */
+  .topbar {
+    height: auto;
+    min-height: 52px;
+    flex-wrap: wrap;
+    gap: 6px;
+    row-gap: 8px;
+    padding: 8px 12px;
+  }
+  /* the crumb keeps the first row to itself; the actions wrap below it */
+  .spacer { flex-basis: 100%; height: 0; }
+
+  /* dvh so the grid fits the phone viewport under the address bar; tighter pad */
+  .app { height: 100dvh; }
+  .content { padding: 10px 12px 16px; }
 }
