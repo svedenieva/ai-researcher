@@ -19,6 +19,7 @@ import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
 import { recordsQuery } from '@/lib/records-query';
+import { MODE_RESEARCH, MODE_REFERENCE } from '@/lib/mode';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
 import { IconGlobe, IconMerge, IconFile, IconShare } from './icons';
@@ -56,6 +57,9 @@ export default function Home() {
   const [extraLevels, setExtraLevels] = useState<NonNullable<ListParams['sort']>[]>([]);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
+  // view mode: 'all' | MODE_RESEARCH | MODE_REFERENCE — filters rows by the
+  // system «Режим» column; default shows everything
+  const [mode, setMode] = useState('all');
   const [base, setBase] = useState<string>(DEFAULT_BASE);
   const [tabs, setTabs] = useState<BaseTab[]>(BUILTIN_TABS);
   const [loading, setLoading] = useState(true);
@@ -288,7 +292,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!ready) return;
-    const qs = recordsQuery({ base, sort, filters, search, mode: 'all' });
+    const qs = recordsQuery({ base, sort, filters, search, mode });
     setLoading(true);
     apiJson<{ columns?: ColumnDef[]; records?: CatalogRecord[]; total?: number; facets?: Record<string, string[]>; warning?: string; sharing?: boolean }>(`/api/records?${qs}`)
       .then((body) => {
@@ -311,7 +315,7 @@ export default function Home() {
         toast(e instanceof Error ? e.message : 'Не вдалося завантажити дані');
       })
       .finally(() => setLoading(false));
-  }, [sort, filters, search, base, ready, refreshTick, toast]);
+  }, [sort, filters, search, mode, base, ready, refreshTick, toast]);
 
   const onSortChange = useCallback((key: string) => {
     setSort((prev) =>
@@ -397,7 +401,7 @@ export default function Home() {
 
   // The export link mirrors the data request — same builder, so the file can't
   // describe a different slice than the screen
-  const exportQs = recordsQuery({ base, sort, filters, search, mode: 'all' });
+  const exportQs = recordsQuery({ base, sort, filters, search, mode });
   // Markdown report — a shareable write-up rather than a table dump
   const reportHref = `/api/records/export?${exportQs ? `${exportQs}&` : ''}format=md`;
 
@@ -546,6 +550,26 @@ export default function Home() {
         )}
 
         <div className={styles.content}>
+          {isCustom && (
+            <div className={styles.modeBar} role="tablist" aria-label={tr(lang, 'modeLabel')}>
+              {([
+                ['all', tr(lang, 'modeAll')],
+                [MODE_RESEARCH, tr(lang, 'modeResearch')],
+                [MODE_REFERENCE, tr(lang, 'modeReference')],
+              ] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === value}
+                  className={mode === value ? styles.modeSegOn : styles.modeSeg}
+                  onClick={() => setMode(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
           <MindSheet
             columns={displayColumns}
             records={shownRecords}
