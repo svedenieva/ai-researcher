@@ -128,6 +128,27 @@ describe('GET /api/records — a base that cannot be read is never swapped for t
     expect(body.custom).toBe(true);
     expect(body.records.map((r: { name: string }) => r.name)).toEqual(['моя строка']);
   });
+
+  it('tags every row with __baseId so a nested row is edited in its own base', async () => {
+    const store = getCustomStore();
+    const parent = await store.createBase({ name: 'Родитель', columns: [{ key: 'name', label: 'N', type: 'text' }] });
+    const child = await store.createBase({
+      name: 'Ребёнок',
+      columns: [{ key: 'name', label: 'N', type: 'text' }],
+      parent: parent.id,
+    });
+    await store.addRecord(parent.id, { name: 'своя' });
+    await store.addRecord(child.id, { name: 'вложенная' });
+
+    const res = await call(`http://localhost/api/records?base=${parent.id}`);
+    const body = await res.json();
+    const byName = Object.fromEntries(
+      body.records.map((r: Record<string, unknown>) => [r.name, r]),
+    );
+    // the parent's own row points at the parent; the nested row points at the child
+    expect(byName['своя'].__baseId).toBe(parent.id);
+    expect(byName['вложенная'].__baseId).toBe(child.id);
+  });
 });
 
 describe('GET /api/records — research/reference mode', () => {

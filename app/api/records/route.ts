@@ -103,10 +103,12 @@ export async function GET(request: Request): Promise<Response> {
         const nameById = new Map(all.map((b) => [b.id, b.name]));
         // the mode is normalised AFTER the spread so rows written before the
         // rename show the current label instead of the legacy one
-        let rows = (await store.listRecords(baseId)).map((r) => ({ ...r, [MODE_KEY]: recordMode(r), __source: custom.name }));
+        // every row carries the base it actually lives in (__baseId), so an edit
+        // to a row pulled in from a nested base updates THAT base, not this parent
+        let rows = (await store.listRecords(baseId)).map((r) => ({ ...r, [MODE_KEY]: recordMode(r), __source: custom.name, __baseId: baseId }));
         for (const id of descendants) {
           const sub = await store.listRecords(id);
-          rows = rows.concat(sub.map((r) => ({ ...r, [MODE_KEY]: recordMode(r), __source: nameById.get(id) ?? id })));
+          rows = rows.concat(sub.map((r) => ({ ...r, [MODE_KEY]: recordMode(r), __source: nameById.get(id) ?? id, __baseId: id })));
         }
 
         // research/reference mode filter: the top switch narrows to one kind

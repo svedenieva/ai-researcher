@@ -88,7 +88,11 @@ export default function Home() {
 
   const onCellEdit = useCallback(
     (record: CatalogRecord, key: string, value: string) => {
-      apiSend('/api/records', 'PATCH', { base, id: record.id, data: { [key]: coerce(key, value) } })
+      // a row pulled in from a nested base carries its real base in __baseId;
+      // edit it THERE, or the PATCH won't find the row in the parent and the
+      // change is silently lost
+      const targetBase = typeof record.__baseId === 'string' ? record.__baseId : base;
+      apiSend('/api/records', 'PATCH', { base: targetBase, id: record.id, data: { [key]: coerce(key, value) } })
         .then(() => setRefreshTick((t) => t + 1))
         .catch((e) => toast(e instanceof Error ? e.message : 'Не вдалося зберегти'));
     },
