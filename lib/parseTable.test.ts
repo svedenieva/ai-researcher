@@ -47,3 +47,31 @@ describe('inferType', () => {
     expect(inferType(['https://a.com', 'https://b.com'])).toBe('url');
   });
 });
+
+describe('parseTable — Markdown table import (§5.2 decision A, .md overlay)', () => {
+  it('parses a GitHub-style Markdown table with outer pipes', () => {
+    const md = ['| Name | Price |', '| --- | --- |', '| Figma | 15 |', '| Framer | 30 |'].join('\n');
+    const t = parseTable(md);
+    expect(t.headers).toEqual(['Name', 'Price']);
+    expect(t.rows).toEqual([['Figma', '15'], ['Framer', '30']]);
+  });
+
+  it('parses a Markdown table without outer pipes and with alignment separators', () => {
+    const md = ['Назва | Ціна', ':--- | ---:', 'Товар | 29,99'].join('\n');
+    const t = parseTable(md);
+    expect(t.headers).toEqual(['Назва', 'Ціна']);
+    expect(t.rows).toEqual([['Товар', '29,99']]);
+  });
+
+  it('keeps an escaped pipe inside a cell', () => {
+    const md = ['| a | b |', '| --- | --- |', String.raw`| x\|y | z |`].join('\n');
+    const t = parseTable(md);
+    expect(t.rows).toEqual([['x|y', 'z']]);
+  });
+
+  it('does NOT treat a comma CSV as a Markdown table', () => {
+    const t = parseTable('name,price\nFigma,15');
+    expect(t.headers).toEqual(['name', 'price']);
+    expect(t.rows).toEqual([['Figma', '15']]);
+  });
+});

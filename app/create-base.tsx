@@ -228,7 +228,7 @@ export default function CreateBase({
               {t(lang, 'uploadCsv')}
               <input
                 type="file"
-                accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"
+                accept=".csv,.tsv,.txt,.md,text/csv,text/tab-separated-values,text/markdown"
                 hidden
                 onChange={(e) => onFile(e.target.files?.[0])}
               />

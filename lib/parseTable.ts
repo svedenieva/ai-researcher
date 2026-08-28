@@ -39,7 +39,32 @@ function sniffDelimiter(t: string): string {
   return best;
 }
 
+// A Markdown table is the round-trippable, human-readable «.md» table format
+// (decision A: Postgres source + a .md overlay for portability). It's a pipe row,
+// a separator row of dashes (optionally `:` for alignment), then data rows:
+//   | Name | Price |
+//   | --- | --- |
+//   | Figma | 15 |
+// Returns null when the text isn't a Markdown table, so plain CSV/TSV falls
+// through to the delimiter parser below.
+const MD_SEP_ROW = /^\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)*\|?$/;
+function splitPipeRow(line: string): string[] {
+  let s = line.trim();
+  if (s.startsWith('|')) s = s.slice(1);
+  if (s.endsWith('|') && !s.endsWith('\\|')) s = s.slice(0, -1);
+  return s.split(/(?<!\\)\|/).map((c) => c.replace(/\\\|/g, '|').trim());
+}
+function parseMarkdownTable(text: string): ParsedTable | null {
+  const lines = text.replace(/^﻿/, '').split(/\r?\n/).map((l) => l.trim()).filter((l) => l !== '');
+  if (lines.length < 2 || !lines[0].includes('|') || !MD_SEP_ROW.test(lines[1])) return null;
+  const headers = splitPipeRow(lines[0]);
+  const rows = lines.slice(2).map(splitPipeRow).filter((r) => r.some((c) => c !== ''));
+  return { headers, rows };
+}
+
 export function parseTable(text: string): ParsedTable {
+  const md = parseMarkdownTable(text);
+  if (md) return md;
   // Excel adds the BOM; in the first column's name it would be invisible junk
   const t = text.replace(/^﻿/, '').replace(/(\r\n|\n)+$/, '');
   if (!t.trim()) return { headers: [], rows: [] };
