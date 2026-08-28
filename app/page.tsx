@@ -630,12 +630,15 @@ export default function Home() {
             onFavoritesOnlyChange={setFavoritesOnly}
             onFiltersChange={setFilters}
             onSearchChange={setSearch}
-            onRowOpen={isCustom ? undefined : (record) => {
-              // a custom row merged into the catalog carries its base id — open
-              // its base, not /product/<id> (that route only knows catalog slugs)
-              const baseId = (record as Record<string, unknown>).__baseId;
-              if (typeof baseId === 'string' && baseId) router.push(`/?base=${baseId}`);
-              else router.push(`/product/${record.id}`);
+            onRowOpen={(record) => {
+              // §5.5: a knowledge-base record opens as its own reading view
+              // (the "статья"). A custom row — native or merged into the catalog
+              // — carries the base it truly lives in via __baseId; catalog
+              // products have no base and keep the /product/<slug> page.
+              const r = record as Record<string, unknown>;
+              const baseId = typeof r.__baseId === 'string' && r.__baseId ? r.__baseId : (isCustom ? base : undefined);
+              if (baseId) router.push(`/topic/${baseId}/${r.id}`);
+              else router.push(`/product/${r.id}`);
             }}
             editable={isCustom}
             onCellEdit={onCellEdit}
