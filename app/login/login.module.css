@@ -43,7 +43,7 @@
   box-shadow: var(--shadow-card), var(--ring);
 }
 
-/* soft green halo behind the mascot */
+/* soft green halo at the top of the card */
 .glow {
   position: absolute;
   top: -18px;
@@ -55,16 +55,6 @@
   background: radial-gradient(circle, color-mix(in srgb, var(--sage) 34%, transparent), transparent 68%);
   filter: blur(6px);
   pointer-events: none;
-}
-
-.mascot {
-  position: relative;
-  display: block;
-  width: 104px;
-  height: 104px;
-  margin: 0 auto 8px;
-  object-fit: contain;
-  filter: drop-shadow(0 8px 22px color-mix(in srgb, var(--sage) 40%, transparent));
 }
 
 .title {
