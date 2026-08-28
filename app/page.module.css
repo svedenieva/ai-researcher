@@ -489,6 +489,30 @@
   padding: 12px 20px 16px;
 }
 
+/* clickable breadcrumbs above the grid — the path to the current (nested) base */
+.crumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.crumbNode { display: inline-flex; align-items: center; gap: 2px; }
+.crumbSep { color: var(--ink-25); margin: 0 4px; }
+.crumbLink {
+  padding: 2px 6px;
+  border: none;
+  border-radius: var(--radius);
+  background: none;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--ink-45);
+  cursor: pointer;
+}
+.crumbLink:hover { color: var(--ink); background: var(--wash); }
+.crumbNow { padding: 2px 6px; font-weight: 600; color: var(--ink); }
+
 /* view-mode toggle above the grid: Все / Исследование / Эталон */
 .modeBar {
   display: inline-flex;

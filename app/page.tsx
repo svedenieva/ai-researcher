@@ -20,6 +20,7 @@ import { t as tr, mindsheetStrings } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
 import { recordsQuery } from '@/lib/records-query';
 import { MODE_RESEARCH, MODE_REFERENCE } from '@/lib/mode';
+import { basePath } from '@/lib/datasource/tree';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
 import { IconGlobe, IconMerge, IconFile, IconShare } from './icons';
@@ -550,6 +551,30 @@ export default function Home() {
         )}
 
         <div className={styles.content}>
+          {(() => {
+            // clickable path to the current base; only shown when it's nested
+            const path = basePath(tabs, base);
+            if (path.length <= 1) return null;
+            return (
+              <nav className={styles.crumbs} aria-label="breadcrumbs">
+                {path.map((node, i) => {
+                  const last = i === path.length - 1;
+                  return (
+                    <span key={node.id} className={styles.crumbNode}>
+                      {i > 0 && <span className={styles.crumbSep} aria-hidden="true">/</span>}
+                      {last ? (
+                        <span className={styles.crumbNow} aria-current="page">{node.name}</span>
+                      ) : (
+                        <button type="button" className={styles.crumbLink} onClick={() => onBaseChange(node.id)}>
+                          {node.name}
+                        </button>
+                      )}
+                    </span>
+                  );
+                })}
+              </nav>
+            );
+          })()}
           {isCustom && (
             <div className={styles.modeBar} role="tablist" aria-label={tr(lang, 'modeLabel')}>
               {([

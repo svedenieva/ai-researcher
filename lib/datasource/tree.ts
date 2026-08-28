@@ -27,3 +27,20 @@ export function descendantsOf(bases: Pick<CustomBase, 'id' | 'parent'>[], id: st
   walk(id);
   return out;
 }
+
+// The chain from the top level down to `id` — the breadcrumb path. Cycle-safe
+// (a parent loop stops when a node repeats) and returns [] for an unknown id.
+// Generic so both the base tabs (BaseTab) and CustomBase can use it without
+// duplicating the walk.
+export function basePath<T extends { id: string; parent: string | null }>(items: T[], id: string): T[] {
+  const byId = new Map(items.map((i) => [i.id, i]));
+  const out: T[] = [];
+  const seen = new Set<string>();
+  let cur = byId.get(id);
+  while (cur && !seen.has(cur.id)) {
+    seen.add(cur.id);
+    out.unshift(cur);
+    cur = cur.parent ? byId.get(cur.parent) : undefined;
+  }
+  return out;
+}

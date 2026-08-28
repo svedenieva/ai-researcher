@@ -5,6 +5,7 @@ import BaseTree from './base-tree';
 import { useLang } from './lang-provider';
 import { t, tGoTo, tShowInside } from '@/lib/i18n';
 import { toneColor } from '@/lib/tone';
+import { basePath } from '@/lib/datasource/tree';
 import { IconFolder } from './icons';
 import styles from './base-picker.module.css';
 
@@ -42,18 +43,9 @@ export default function BasePicker({
   // direction, not only from the common root.
   const [focus, setFocus] = useState<string | undefined>(undefined);
   const ref = useRef<HTMLDivElement>(null);
-  const byId = useMemo(() => new Map(tabs.map((t) => [t.id, t])), [tabs]);
 
-  // path from the top level down to the selected base
-  const path = useMemo(() => {
-    const out: BaseTab[] = [];
-    let cur = byId.get(base);
-    while (cur) {
-      out.unshift(cur);
-      cur = cur.parent ? byId.get(cur.parent) : undefined;
-    }
-    return out;
-  }, [base, byId]);
+  // path from the top level down to the selected base (shared tree walk)
+  const path = useMemo(() => basePath(tabs, base), [tabs, base]);
 
   // a click outside the panel and Esc close the tree
   useEffect(() => {
