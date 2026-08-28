@@ -159,6 +159,8 @@
 }
 
 .create {
+  /* nudge slightly to the right, in step with the section links below it */
+  margin-left: 8px;
   padding: 8px 14px;
   border: 1px solid var(--sage);
   border-radius: var(--radius);
