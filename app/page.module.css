@@ -67,7 +67,8 @@
   flex: none;
 }
 .sideNavLink {
-  padding: 7px 11px;
+  /* a touch more left indent so the section links sit slightly to the right */
+  padding: 7px 11px 7px 18px;
   border-radius: var(--radius);
   color: var(--ink-70);
   font-size: 13px;
