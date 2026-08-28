@@ -5,13 +5,18 @@ import type { ColumnDef } from './datasource/types';
 // lives on every record, in every base, and can't be deleted like a normal
 // column. Default for a new record is "draft".
 export const MODE_KEY = '__mode';
-export const MODE_RESEARCH = 'Черновик';
-export const MODE_REFERENCE = 'Проверено';
+// Display labels use the customer's ТЗ vocabulary. They are display-only: the
+// grid renders recordMode() (the normalised value), never the raw stored one,
+// so switching the labels here does NOT require touching stored data.
+export const MODE_RESEARCH = 'Исследование';
+export const MODE_REFERENCE = 'Эталон';
 export const MODE_VALUES = [MODE_RESEARCH, MODE_REFERENCE] as const;
 
-// Values written before the rename — still present in stored records, so they
-// are mapped onto the current pair instead of being treated as unknown.
-const LEGACY_REFERENCE = 'Эталон';
+// Every spelling the reference mode was ever stored under — mapped onto the
+// current pair on read so no migration is needed: 'Эталон' (original + current)
+// and 'Проверено' (the intermediate rename we are now reverting at the display
+// level). Anything else — 'Черновик', 'Исследование', absent — is research.
+const REFERENCE_ALIASES = new Set<string>([MODE_REFERENCE, 'Проверено']);
 
 export type RecordMode = typeof MODE_RESEARCH | typeof MODE_REFERENCE;
 
@@ -39,5 +44,5 @@ export function withModeColumn(columns: ColumnDef[]): ColumnDef[] {
 // (old rows, built-in catalog rows).
 export function recordMode(r: Record<string, unknown>): RecordMode {
   const v = r[MODE_KEY];
-  return v === MODE_REFERENCE || v === LEGACY_REFERENCE ? MODE_REFERENCE : MODE_RESEARCH;
+  return typeof v === 'string' && REFERENCE_ALIASES.has(v) ? MODE_REFERENCE : MODE_RESEARCH;
 }

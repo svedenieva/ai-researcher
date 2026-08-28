@@ -28,8 +28,6 @@ const UI = {
   },
   modeLabel: { uk: 'Режим', ru: 'Режим', en: 'Mode' },
   modeAll: { uk: 'Усі', ru: 'Все', en: 'All' },
-  modeResearch: { uk: 'Дослідження', ru: 'Исследование', en: 'Research' },
-  modeReference: { uk: 'Еталон', ru: 'Эталон', en: 'Reference' },
   sites: { uk: 'Сайти', ru: 'Сайты', en: 'Sites' },
   trash: { uk: 'Кошик', ru: 'Корзина', en: 'Trash' },
   showcase: { uk: 'Вітрина', ru: 'Витрина', en: 'Showcase' },

@@ -577,10 +577,12 @@ export default function Home() {
           })()}
           {isCustom && (
             <div className={styles.modeBar} role="tablist" aria-label={tr(lang, 'modeLabel')}>
+              {/* the two mode labels ARE the stored constants, so the toggle
+                  matches the grid's «Режим» badges exactly (ТЗ vocabulary) */}
               {([
                 ['all', tr(lang, 'modeAll')],
-                [MODE_RESEARCH, tr(lang, 'modeResearch')],
-                [MODE_REFERENCE, tr(lang, 'modeReference')],
+                [MODE_RESEARCH, MODE_RESEARCH],
+                [MODE_REFERENCE, MODE_REFERENCE],
               ] as const).map(([value, label]) => (
                 <button
                   key={value}
