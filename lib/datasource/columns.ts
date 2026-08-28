@@ -59,6 +59,7 @@ export const CATALOG_COLUMNS: ColumnDef[] = [
   { key: 'tasks', label: 'Задачи', type: 'long-text' },
   { key: 'plans_detail', label: 'Тарифы', type: 'long-text' },
   { key: 'reddit', label: 'Reddit', type: 'long-text' },
+  { key: 'twitter', label: 'Twitter / X', type: 'long-text' },
   { key: 'deep_verdict', label: 'Вердикт (глубокий)', type: 'long-text' },
   { key: 'deep_market', label: 'Рынок', type: 'long-text' },
   { key: 'deep_competition', label: 'Конкуренты', type: 'long-text' },
