@@ -160,3 +160,17 @@ describe('column mutations (data-retention rules)', () => {
     expect(col.filterable).toBe(true);
   });
 });
+
+describe('MemoryCustomStore — honest coercion on retype to number (§5.2)', () => {
+  it('turns parseable stored values into numbers and keeps the rest as-is', async () => {
+    const s = fresh();
+    const b = await s.createBase({ name: 'Prices', columns: [{ key: 'цена', label: 'Цена', type: 'text' }] });
+    await s.addRecord(b.id, { 'цена': '29,99' });
+    await s.addRecord(b.id, { 'цена': 'по запросу' });
+    await s.updateColumn(b.id, 'цена', { type: 'number' });
+    const rows = await s.listRecords(b.id);
+    const vals = rows.map((r) => r['цена']);
+    expect(vals).toContain(29.99); // parseable → real number (sortable/summable)
+    expect(vals).toContain('по запросу'); // unparseable → kept, not dropped
+  });
+});

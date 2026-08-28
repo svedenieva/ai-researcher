@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { ColumnDef, CatalogRecord } from './types';
 import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE } from '../mode';
+import { coerceToNumber } from '../coerce';
 
 // User bases (goal #1): log in → create a base → define columns → fill with rows.
 // Base definitions and their rows are stored separately from the product catalog.
@@ -257,7 +258,18 @@ export class MemoryCustomStore implements CustomStore {
   async moveBase(id: string, parent: string | null) { const b = this.bases.find((x) => x.id === id); if (!b || this.deletedBases.has(id)) return null; b.parent = parent; return b; }
   async addColumn(baseId: string, col: NewColumn) { return this.mutateColumns(baseId, (cols) => [...cols, normalizeNewColumn(col, cols)]); }
   async updateColumn(baseId: string, key: string, patch: ColumnPatch) {
-    return this.mutateColumns(baseId, (cols) => cols.map((c) => c.key === key ? applyColumnPatch(c, patch) : c));
+    const b = this.bases.find((x) => x.id === baseId);
+    if (!b || this.deletedBases.has(baseId)) return null;
+    const before = b.columns.find((c) => c.key === key);
+    b.columns = b.columns.map((c) => c.key === key ? applyColumnPatch(c, patch) : c);
+    // switching to number coerces the stored values — parity with the Supabase
+    // store, so dev/tests behave like prod (honest: unparseable values are kept)
+    if (patch.type === 'number' && before && before.type !== 'number') {
+      for (const r of this.rows[baseId] ?? []) {
+        if (key in r) (r as Record<string, unknown>)[key] = coerceToNumber(r[key]);
+      }
+    }
+    return b;
   }
   async deleteColumn(baseId: string, key: string) { return this.mutateColumns(baseId, (cols) => cols.filter((c) => c.key !== key)); }
   async reorderColumns(baseId: string, keys: string[]) { return this.mutateColumns(baseId, (cols) => reorderByKeys(cols, keys)); }
@@ -542,9 +554,8 @@ class SupabaseCustomStore implements CustomStore {
     for (const r of data ?? []) {
       const row = r as { id: string; data: Record<string, unknown> };
       const v = row.data?.[key];
-      if (v === undefined || v === null || typeof v === 'number') continue;
-      const n = Number(String(v).replace(',', '.'));
-      if (!Number.isFinite(n) || String(v).trim() === '') continue;
+      const n = coerceToNumber(v);
+      if (n === v) continue; // unchanged (unparseable, empty, already a number, or absent)
       const merged = { ...row.data, [key]: n };
       const { error: ue } = await this.client.from('base_records').update({ data: merged }).eq('id', row.id);
       if (ue) throw new Error(`Supabase (base_records): ${ue.message}`);
