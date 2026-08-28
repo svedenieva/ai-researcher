@@ -67,9 +67,13 @@ export function researchInstruction(topic: string, baseId: string): string {
     `3. Save the result as a TABLE into base="${baseId}":
 ` +
     `   • Decide for yourself on the 3–6 columns that best describe the answer to THIS question ` +
-    `and add them with add_column (the base already has «Название», «Цитата» and «Источники» — ` +
-    `use those and add what is missing). The «Цитата» and «Источники» columns must not be deleted ` +
-    `and must not be left empty — they are what a human checks the row against.
+    `and add them with add_column (the base already has «Название», «Платформа», «Цитата» and ` +
+    `«Источники» — use those and add what is missing). The «Цитата» and «Источники» columns must ` +
+    `not be deleted and must not be left empty — they are what a human checks the row against.
+` +
+    `   • Fill «Платформа» for every row with the TYPE of source the fact came from, so the base ` +
+    `can be sorted/grouped by it — one of: «Официальный сайт», «Reddit», «Twitter / X», «YouTube», ` +
+    `«Форум», «Медиа», «Другое» (use these exact values).
 ` +
     `   • Fill the rows with add_rows: one row = one object / fact / point, by the sense of the ` +
     `question; values keyed by the column keys. Call add_rows with verify:"flag" — the server ` +
