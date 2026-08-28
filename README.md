@@ -71,7 +71,6 @@ Tests run against an **in-memory** data store by default (no Supabase needed). S
 | `MCP_TOKENS` | for HTTP MCP | `token:email` pairs (`tok1:a@x.com,tok2:b@y.com`) — auth for `/api/mcp` |
 | `ANTHROPIC_API_KEY` | optional | Enables Claude-based decomposition in the `research_decompose` tool (falls back to a heuristic otherwise) |
 | `RESEARCH_MODEL` | optional | Model for decomposition (default `claude-opus-5`) |
-| `OPENROUTER_API_KEY` | optional | OpenRouter fallback for the stdio MCP `research_decompose` tool |
 
 > The service-role key and `MCP_TOKENS` are secrets — never expose them to the browser. In Vercel, set all of these under Project → Settings → Environment Variables, then redeploy for changes to take effect.
 
