@@ -415,6 +415,16 @@ export default function Home() {
             <span className={styles.mark} aria-hidden="true">AiR</span>
           )}
           <Link href="/" className={styles.brandName}>AI Researcher</Link>
+          {/* phone only: a burger inside the open off-canvas sidebar to close it —
+              the top-bar burger is hidden behind the panel while it's open */}
+          <button
+            type="button"
+            className={styles.sideBurger}
+            onClick={() => setSideOpen(false)}
+            aria-label="Згорнути панель"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+          </button>
         </div>
         <GlobalSearch
           onNavigate={(baseId, query) => {

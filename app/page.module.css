@@ -54,6 +54,9 @@
   border-bottom: 1px solid var(--rule);
   flex: none;
 }
+/* a burger to close the sidebar — only meaningful on phones, where the sidebar
+   is an overlay and the top-bar burger is hidden behind it while it's open */
+.sideBurger { display: none; }
 /* section links moved out of the crowded top bar into the sidebar */
 .sideNav {
   display: flex;
@@ -176,6 +179,21 @@
     z-index: 55;
     background: rgba(20, 20, 20, 0.4);
   }
+  /* show the in-sidebar burger on phones, pushed to the right of the brand */
+  .sideBurger {
+    display: inline-grid;
+    place-items: center;
+    margin-left: auto;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius);
+    border: none;
+    background: none;
+    color: var(--ink-45);
+    cursor: pointer;
+    flex: none;
+  }
+  .sideBurger:hover { background: var(--wash); color: var(--ink); }
 }
 @media (prefers-reduced-motion: reduce) {
   .side { transition: none; }
