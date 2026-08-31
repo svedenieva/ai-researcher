@@ -17,3 +17,16 @@ describe('MCP instructions — base-first gate (§9)', () => {
     expect(INSTRUCTIONS).toMatch(/only new/i);
   });
 });
+
+// §5.8: the «AI-сфера» base (id "ai") is pinned as the Researcher's RAG store —
+// retrieve from it first, and file new AI research beneath it (§5.1).
+describe('MCP instructions — AI-сфера RAG role (§5.8)', () => {
+  it('names AI-сфера / "ai" as the knowledge base to retrieve from', () => {
+    expect(INSTRUCTIONS).toMatch(/AI-сфера[\s\S]*knowledge base|knowledge base[\s\S]*ai/i);
+    expect(INSTRUCTIONS).toContain('query_records');
+  });
+
+  it('files new AI research as a child base under parent "ai"', () => {
+    expect(INSTRUCTIONS).toMatch(/parent "ai"/);
+  });
+});
