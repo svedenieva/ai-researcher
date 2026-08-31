@@ -4,22 +4,22 @@ import { LANGS, t } from '@/lib/i18n';
 import { useLang } from './lang-provider';
 import styles from './lang-switch.module.css';
 
-// Language switcher: segments УКР | РУС | ENG. Ukrainian is the default.
+// One button that cycles the interface language on each click:
+// УКР → РУС → ENG → УКР. It shows the current language.
 export default function LangSwitch() {
   const { lang, setLang } = useLang();
+  const idx = LANGS.findIndex((l) => l.id === lang);
+  const current = LANGS[idx] ?? LANGS[0];
+  const next = LANGS[(idx + 1) % LANGS.length] ?? LANGS[0];
   return (
-    <div className={styles.group} role="group" aria-label={t(lang, 'langTitle')} title={t(lang, 'langTitle')}>
-      {LANGS.map((l) => (
-        <button
-          key={l.id}
-          type="button"
-          className={`${styles.seg} ${lang === l.id ? styles.on : ''}`}
-          aria-pressed={lang === l.id}
-          onClick={() => setLang(l.id)}
-        >
-          {l.short}
-        </button>
-      ))}
-    </div>
+    <button
+      type="button"
+      className={styles.cycle}
+      title={`${t(lang, 'langTitle')} → ${next.short}`}
+      aria-label={`${t(lang, 'langTitle')}: ${current.short}`}
+      onClick={() => setLang(next.id)}
+    >
+      {current.short}
+    </button>
   );
 }
