@@ -165,10 +165,11 @@
 }
 .spacer { flex: 1; }
 
-/* language switch placement: desktop keeps it by the base name (unchanged);
-   narrow screens move it to the right group next to the theme toggle */
-.langNearName { display: inline-flex; flex: none; }
-.langRight { display: none; flex: none; }
+/* language switch lives in the right group next to the theme, right-aligned.
+   Desktop shows the УКР|РУС|ENG segments; narrow screens show the compact cycle. */
+.langRight { display: inline-flex; align-items: center; flex: none; }
+.langSegments { display: inline-flex; }
+.langCycle { display: none; }
 
 /* action buttons. Transparent on desktop (children lay out directly in the
    topbar, unchanged); a full-width second row in responsive, so the language +
@@ -196,8 +197,9 @@
     padding-bottom: 9px;
   }
   .spacer { display: none; }
-  .langNearName { display: none; }
-  .langRight { display: inline-flex; margin-left: auto; }
+  .langRight { margin-left: auto; }
+  .langSegments { display: none; }
+  .langCycle { display: inline-flex; }
   .topActions {
     display: flex;
     align-items: center;

@@ -501,9 +501,6 @@ export default function Home() {
             <span className={styles.crumbName}>{tabs.find((t) => t.id === base)?.name ?? tr(lang, 'rootFolder')}</span>
             {!loading && <span className={styles.crumbCount}>{records.length}</span>}
           </span>
-          {/* desktop: language switch stays by the base name (unchanged).
-              On narrow screens the copy in the right group takes over. */}
-          <span className={styles.langNearName}><LangSwitch variant="segments" /></span>
           <div className={styles.spacer} />
           {/* the action buttons. On desktop this wrapper is display:contents,
               so the layout is unchanged; in responsive it becomes a full-width
@@ -568,8 +565,12 @@ export default function Home() {
           )}
           <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>
           </div>
-          {/* narrow screens only: language switch joins the theme on the right */}
-          <span className={styles.langRight}><LangSwitch variant="cycle" /></span>
+          {/* language on the right, next to the theme: segments on desktop,
+              the compact cycle button on narrow screens */}
+          <span className={styles.langRight}>
+            <span className={styles.langSegments}><LangSwitch variant="segments" /></span>
+            <span className={styles.langCycle}><LangSwitch variant="cycle" /></span>
+          </span>
           <ThemeToggle />
         </header>
 
