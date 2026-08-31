@@ -22,9 +22,9 @@ const UI = {
     en: 'Export what’s on screen to CSV (RFC 4180)',
   },
   mdHint: {
-    uk: 'Вивантажити звіт у Markdown — назва, цитата, джерело для кожного рядка',
-    ru: 'Выгрузить отчёт в Markdown — название, цитата, источник по каждой строке',
-    en: 'Export a Markdown report — name, quote and source per row',
+    uk: 'Вивантажити базу у Markdown-таблицю (.md) — її можна імпортувати назад',
+    ru: 'Выгрузить базу в Markdown-таблицу (.md) — её можно импортировать обратно',
+    en: 'Export the base as a Markdown table (.md) — re-importable',
   },
   modeLabel: { uk: 'Режим', ru: 'Режим', en: 'Mode' },
   sites: { uk: 'Сайти', ru: 'Сайты', en: 'Sites' },

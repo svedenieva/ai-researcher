@@ -4,6 +4,7 @@ import { BASES, baseById } from '@/lib/datasource/bases';
 import { getCustomStore } from '@/lib/datasource/customStore';
 import type { ColumnDef } from '@/lib/datasource/types';
 import { toMarkdown } from '@/lib/research/report';
+import { toMarkdownTable } from '@/lib/markdownTable';
 
 // Content-Disposition for a non-CSV download (attachmentHeader hardcodes .csv).
 function attachment(name: string, ext: string): string {
@@ -54,14 +55,28 @@ export async function GET(request: Request): Promise<Response> {
     }
   }
 
+  const format = url.searchParams.get('format');
+
+  // Markdown table: the round-trippable «.md» export — the exact inverse of the
+  // Markdown import, so a base can be exported and re-imported (decision A). Same
+  // slice as the screen, same columns/values as the CSV, just pipe-formatted.
+  if (format === 'md') {
+    return new Response(toMarkdownTable(table), {
+      headers: {
+        'Content-Type': 'text/markdown; charset=utf-8',
+        'Content-Disposition': attachment(name, 'md'),
+      },
+    });
+  }
+
   // Markdown report: a shareable write-up (name → quote → aspects → source),
-  // the same slice the screen shows. CSV stays the default.
-  if (url.searchParams.get('format') === 'md') {
+  // the same slice the screen shows. Not re-importable — a narrative, not a table.
+  if (format === 'md-report') {
     const md = toMarkdown(name, columns, body.records ?? []);
     return new Response(md, {
       headers: {
         'Content-Type': 'text/markdown; charset=utf-8',
-        'Content-Disposition': attachment(name, 'md'),
+        'Content-Disposition': attachment(`${name} — звіт`, 'md'),
       },
     });
   }
