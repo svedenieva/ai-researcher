@@ -15,6 +15,10 @@ import styles from './article.module.css';
 // side rail that pops open on demand, so the article body never shifts. Read-only
 // by design: editing stays in the grid. Access is base-level (canAccessBase).
 
+// This page depends on the signed-in user (base access) — it must never be
+// cached and served to another visitor, and must always run per request.
+export const dynamic = 'force-dynamic';
+
 export default async function TopicPage({
   params,
 }: {
@@ -25,7 +29,18 @@ export default async function TopicPage({
   const store = getCustomStore();
   const me = await currentEmail();
   const custom = await store.getBase(baseId);
-  if (!custom || !canAccessBase(custom, me)) notFound();
+  // TEMP diagnostic (no email in the log): why does a topic 404 while its grid
+  // loads? Compares access without exposing the address.
+  if (!custom || !canAccessBase(custom, me)) {
+    console.error('[topic diag] denied', {
+      baseId,
+      hasMe: me !== null,
+      found: Boolean(custom),
+      ownerless: custom ? custom.owner === null : null,
+      meMatchesOwner: custom ? me === custom.owner : null,
+    });
+    notFound();
+  }
 
   const record = (await store.listRecords(baseId)).find((r) => String(r.id) === recordId);
 
