@@ -8,7 +8,9 @@ import { renderMarkdown } from '@/lib/markdown';
 import { recordMode, MODE_KEY, MODE_REFERENCE, MODE_VALUES } from '@/lib/mode';
 import { TAGS_KEY } from '@/lib/tags';
 import { apiSend } from '@/lib/api';
+import { articleToOutline } from '@/lib/mindmap/topicOutline';
 import ThemeToggle from '../../../theme-toggle';
+import TopicMindMap from './TopicMindMap';
 import styles from './article.module.css';
 
 type Rec = Record<string, unknown>;
@@ -33,7 +35,9 @@ export default function ArticleClient({
   baseName: string;
 }) {
   const [rec, setRec] = useState<Rec>(record);
-  const [editing, setEditing] = useState(false);
+  // read = the calm article, edit = per-field editor, map = the mind-map canvas
+  const [view, setView] = useState<'read' | 'edit' | 'map'>('read');
+  const editing = view === 'edit';
   const [save, setSave] = useState<SaveState>('idle');
   const [error, setError] = useState<string | null>(null);
 
@@ -77,8 +81,15 @@ export default function ArticleClient({
           {save === 'error' && <span className={styles.saveError}>{error}</span>}
           <button
             type="button"
+            className={view === 'map' ? styles.editOn : styles.editBtn}
+            onClick={() => setView((v) => (v === 'map' ? 'read' : 'map'))}
+          >
+            {view === 'map' ? 'Статья' : 'Карта'}
+          </button>
+          <button
+            type="button"
             className={editing ? styles.editOn : styles.editBtn}
-            onClick={() => setEditing((v) => !v)}
+            onClick={() => setView((v) => (v === 'edit' ? 'read' : 'edit'))}
           >
             {editing ? 'Готово' : 'Редактировать'}
           </button>
@@ -92,7 +103,7 @@ export default function ArticleClient({
             <span className={isReference ? styles.modeReference : styles.modeDraft}>
               {isReference ? MODE_REFERENCE : 'Черновик'}
             </span>
-            {!editing &&
+            {view === 'read' &&
               article.badges.map((b, i) => (
                 <Link
                   key={`${b.column}-${i}`}
@@ -107,7 +118,9 @@ export default function ArticleClient({
           <h1 className={styles.title}>{article.title || 'Без названия'}</h1>
         </div>
 
-        {editing ? (
+        {view === 'map' ? (
+          <TopicMindMap outline={articleToOutline(article)} title={article.title} />
+        ) : editing ? (
           <div className={styles.editForm}>
             {/* status flag first — the same pair the grid toggles */}
             <label className={styles.field}>
