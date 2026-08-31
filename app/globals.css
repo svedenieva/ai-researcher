@@ -6,38 +6,41 @@
 :root {
   color-scheme: light dark;
 
-  /* fonts — Plus Jakarta Sans (UI/headings) + JetBrains Mono (data), loaded via
-     a stylesheet link in layout.tsx; every value keeps a system fallback chain
-     so text still renders if the web fonts fail to load. */
-  --font-ui: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* fonts — DM Sans (UI/headings) + JetBrains Mono (data), matching mind-doc-pro.
+     Loaded via a stylesheet link in layout.tsx; every value keeps a system
+     fallback chain so text still renders if the web fonts fail to load. */
+  --font-ui: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
-  --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
-  /* ink — warm neutrals instead of a blue-grey */
-  --ink: light-dark(#1a1a18, #e8ecee);
-  --ink-70: light-dark(#56534c, #b7bec5);
-  --ink-45: light-dark(#8c887f, #8b959c);
-  --ink-25: light-dark(#a8a49b, #5b656c);
+  /* ink — mind-doc-pro blue-grey text (primary / secondary / muted) */
+  --ink: light-dark(#1a2138, #e2e8f0);
+  --ink-70: light-dark(#4a5578, #94a3b8);
+  --ink-45: light-dark(#565f78, #8b95af);
+  --ink-25: light-dark(#8791ab, #6b7590);
 
-  --rule: light-dark(#e8e5e0, #232a2e);
-  --rule-soft: light-dark(#f2efeb, #1b2125);
+  /* two-tier borders from mind-doc-pro (--line2 / --line) */
+  --rule: light-dark(rgba(120, 135, 175, 0.28), rgba(255, 255, 255, 0.10));
+  --rule-soft: light-dark(rgba(120, 135, 175, 0.14), rgba(255, 255, 255, 0.05));
 
-  --paper: light-dark(#faf9f7, #0e1113);
-  --paper-raised: light-dark(#ffffff, #14181b);
-  --wash: light-dark(#f5f3f0, #171c20);
+  /* surfaces — cool page bg + card/menu bg (glass base, opaque fallback) */
+  --paper: light-dark(#eef2f9, #0a0e1a);
+  --paper-raised: light-dark(#ffffff, #161d2e);
+  --wash: light-dark(#e6ecf7, #12172a);
 
-  /* accent — deeper, less grey teal */
-  --sage: light-dark(#3f6b6e, #8fc6b8);
-  --sage-soft: light-dark(#e3ebe9, #1a2a26);
-  --sage-hover: light-dark(#35595c, #a3d3c6);
+  /* accent — mind-doc-pro blue (kept under the --sage name so every module
+     that references the accent restyles without renaming) */
+  --sage: light-dark(#4f7cff, #6f97ff);
+  --sage-soft: light-dark(#e8eeff, rgba(79, 124, 255, 0.18));
+  --sage-hover: light-dark(#2451d6, #8fb0ff);
 
   /* base "tone" — the accent colour each base carries (teal/blue/amber/sage),
      shown as the branch marker in the base tree */
-  --tone-sage: light-dark(#3f6b6e, #8fc6b8);
-  --tone-teal: light-dark(#2f8f95, #4fb8c2);
-  --tone-blue: light-dark(#6d7fa0, #86a6d3);
-  --tone-amber: light-dark(#b08c4a, #d3a765);
+  --tone-sage: light-dark(#4f7cff, #6f97ff);
+  --tone-teal: light-dark(#2dba8e, #48d3a6);
+  --tone-blue: light-dark(#a87bff, #bd98ec);
+  --tone-amber: light-dark(#f5944e, #f7a86a);
 
   /* type tints — kept from the reference palette; also used as the
      breakdown-bar segment colors for the catalog's "vertical" facet */
@@ -78,15 +81,15 @@
 
   --error: light-dark(#b8332a, #f0837a);
 
-  /* one soft card shadow + a hairline ring, used instead of 1px borders */
-  --ring: inset 0 0 0 1px light-dark(#e8e5e0, #1f262a);
-  --shadow-card: 0 1px 2px light-dark(rgb(26 26 24 / 0.04), rgb(0 0 0 / 0.3));
-  --shadow-panel: 0 14px 28px -10px light-dark(rgb(26 26 24 / 0.14), rgb(0 0 0 / 0.5)),
-    0 2px 6px -2px light-dark(rgb(26 26 24 / 0.07), rgb(0 0 0 / 0.4));
+  /* cool glassy shadows + a hairline ring (mind-doc-pro) */
+  --ring: inset 0 0 0 1px light-dark(rgba(120, 135, 175, 0.22), rgba(255, 255, 255, 0.08));
+  --shadow-card: 0 1px 2px light-dark(rgba(100, 120, 180, 0.10), rgb(0 0 0 / 0.3));
+  --shadow-panel: 0 14px 28px -10px light-dark(rgba(100, 120, 180, 0.20), rgb(0 0 0 / 0.5)),
+    0 2px 6px -2px light-dark(rgba(100, 120, 180, 0.10), rgb(0 0 0 / 0.4));
 
-  /* very soft, rounded look throughout — buttons, chips, cards, inputs */
-  --radius: 13px;
-  --radius-lg: 20px;
+  /* rounder, mind-doc-pro geometry */
+  --radius: 12px;
+  --radius-lg: 16px;
   /* status badges are full rounded pills */
   --badge-radius: 999px;
   --row-pad-y: 6px;
