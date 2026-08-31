@@ -149,7 +149,7 @@ export function mindsheetStrings(lang: Lang): MindSheetStrings {
     uk: {
       searchPlaceholder: 'Пошук…', searchAria: 'Пошук', filterAll: 'Усі',
       filterAria: (l) => `Фільтр ${l}`, filtersHead: 'Фільтри',
-      favoritesOnly: 'Тільки обране', addToFav: 'В обране', removeFromFav: 'Прибрати з обраного',
+      favoritesOnly: 'Обране', addToFav: 'В обране', removeFromFav: 'Прибрати з обраного',
       reset: 'Скинути', clearSort: 'Прибрати сортування',
       shownOf: (s, t2) => `показано ${s} з ${t2}`, countRecords: (t2) => `${t2} записів`,
       viewButton: 'Вигляд', viewButtonTitle: 'Як показувати текст у клітинках', viewDialogAria: 'Вигляд таблиці',
@@ -185,7 +185,7 @@ export function mindsheetStrings(lang: Lang): MindSheetStrings {
     ru: {
       searchPlaceholder: 'Поиск…', searchAria: 'Поиск', filterAll: 'Все',
       filterAria: (l) => `Фильтр ${l}`, filtersHead: 'Фильтры',
-      favoritesOnly: 'Только избранные', addToFav: 'В избранное', removeFromFav: 'Убрать из избранного',
+      favoritesOnly: 'Избранные', addToFav: 'В избранное', removeFromFav: 'Убрать из избранного',
       reset: 'Сбросить', clearSort: 'Убрать сортировку',
       shownOf: (s, t2) => `показано ${s} из ${t2}`, countRecords: (t2) => `${t2} записей`,
       viewButton: 'Вид', viewButtonTitle: 'Как показывать текст в ячейках', viewDialogAria: 'Вид таблицы',
@@ -221,7 +221,7 @@ export function mindsheetStrings(lang: Lang): MindSheetStrings {
     en: {
       searchPlaceholder: 'Search…', searchAria: 'Search', filterAll: 'All',
       filterAria: (l) => `Filter ${l}`, filtersHead: 'Filters',
-      favoritesOnly: 'Favorites only', addToFav: 'Add to favorites', removeFromFav: 'Remove from favorites',
+      favoritesOnly: 'Favorites', addToFav: 'Add to favorites', removeFromFav: 'Remove from favorites',
       reset: 'Reset', clearSort: 'Clear sorting',
       shownOf: (s, t2) => `${s} of ${t2} shown`, countRecords: (t2) => `${t2} records`,
       viewButton: 'View', viewButtonTitle: 'How cell text is shown', viewDialogAria: 'Table view',
