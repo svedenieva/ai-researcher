@@ -200,7 +200,9 @@
     padding-bottom: 9px;
   }
   .spacer { display: none; }
-  .langRight { margin-left: auto; }
+  /* «+ New research» + language + theme cluster on the right of row 1 */
+  .newResearch { margin-left: auto; }
+  .langRight { margin-left: 0; }
   .langSegments { display: none; }
   .langCycle { display: inline-flex; }
   .topActions {

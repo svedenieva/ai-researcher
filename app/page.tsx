@@ -550,8 +550,10 @@ export default function Home() {
               <IconFile size={16} />
             </a>
           )}
-          <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>
           </div>
+          {/* «+ New research» sits by the language button (in responsive it joins
+              the language + theme on the first row, not the actions row below) */}
+          <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>
           {/* language on the right, next to the theme: segments on desktop,
               the compact cycle button on narrow screens */}
           <span className={styles.langRight}>
