@@ -165,10 +165,6 @@
 }
 .spacer { flex: 1; }
 
-/* language switch: next to the base name on desktop, on the right when narrow */
-.langNearName { display: inline-flex; flex: none; }
-.langRight { display: none; flex: none; }
-
 /* scrim behind the mobile off-canvas sidebar (desktop: never shown) */
 .scrim { display: none; }
 
@@ -178,9 +174,6 @@
    becomes an off-canvas overlay the hamburger slides in. ── */
 @media (max-width: 1024px) {
   .app { grid-template-columns: minmax(0, 1fr); }
-  /* narrow: the language switch lives in the right group, not by the name */
-  .langNearName { display: none; }
-  .langRight { display: inline-flex; }
   .side {
     position: fixed;
     inset: 0 auto 0 0;

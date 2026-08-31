@@ -501,9 +501,6 @@ export default function Home() {
             <span className={styles.crumbName}>{tabs.find((t) => t.id === base)?.name ?? tr(lang, 'rootFolder')}</span>
             {!loading && <span className={styles.crumbCount}>{records.length}</span>}
           </span>
-          {/* desktop: language switch sits next to the base name (hidden on
-              narrow screens, where the copy on the right takes over) */}
-          <span className={styles.langNearName}><LangSwitch /></span>
           <div className={styles.spacer} />
           <SavedViews
             base={base}
@@ -562,8 +559,7 @@ export default function Home() {
             </a>
           )}
           <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>
-          {/* narrow screens: language switch moves to the right group */}
-          <span className={styles.langRight}><LangSwitch /></span>
+          <LangSwitch />
           <ThemeToggle />
         </header>
 
