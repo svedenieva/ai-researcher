@@ -507,19 +507,6 @@ export default function Home() {
               second row, letting the language + theme sit on the first row next
               to the base name. */}
           <div className={styles.topActions}>
-          <SavedViews
-            base={base}
-            sort={sort}
-            extraLevels={extraLevels}
-            filters={filters}
-            search={search}
-            onApply={(v) => {
-              setSort(v.sort);
-              setExtraLevels(v.extraLevels ?? []);
-              setFilters(v.filters ?? {});
-              setSearch(v.search ?? '');
-            }}
-          />
           {isCustom && (
             <BaseAiActions baseId={base} baseName={tabs.find((t) => t.id === base)?.name ?? tr(lang, 'rootFolder')} columns={displayColumns} />
           )}
@@ -643,6 +630,21 @@ export default function Home() {
             total={total}
             loading={loading}
             filtersPosition="menu"
+            toolbarLead={
+              <SavedViews
+                base={base}
+                sort={sort}
+                extraLevels={extraLevels}
+                filters={filters}
+                search={search}
+                onApply={(v) => {
+                  setSort(v.sort);
+                  setExtraLevels(v.extraLevels ?? []);
+                  setFilters(v.filters ?? {});
+                  setSearch(v.search ?? '');
+                }}
+              />
+            }
             forceDisplay={{ wrap: 'shrink' }}
             sort={sort}
             filters={filters}
