@@ -36,6 +36,69 @@
   margin-left: auto;
 }
 
+/* edit toggle + save status */
+.editBtn,
+.editOn {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--radius, 10px);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--rule);
+  background: var(--paper-raised);
+  color: var(--ink-70);
+}
+.editBtn:hover { color: var(--ink); border-color: var(--ink-25); }
+.editOn {
+  background: var(--sage);
+  border-color: var(--sage);
+  color: #fff;
+}
+.saveHint { font-size: 12px; color: var(--ink-45); }
+.saveError { font-size: 12px; color: light-dark(#b23a2e, #e59a91); max-width: 240px; }
+
+/* edit form — every field of the record, by its type */
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 720px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fieldLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+.fieldInput,
+.fieldArea {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius, 10px);
+  border: 1px solid var(--rule);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+}
+.fieldInput:focus,
+.fieldArea:focus { border-color: var(--sage); }
+.fieldArea {
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 96px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 13.5px;
+}
+
 .body {
   max-width: 1000px;
   margin: 0 auto;
