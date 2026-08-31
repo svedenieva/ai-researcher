@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getCustomStore } from '@/lib/datasource/customStore';
-import { RUNS_FOLDER, RUN_SEED_COLUMNS, listRuns, researchFolder, runName, tidyRuns } from './runs';
+import { AI_SPHERE_BASE, RUNS_FOLDER, RUN_SEED_COLUMNS, listRuns, researchFolder, runName, tidyRuns } from './runs';
 
 const ME = 'runner@example.com';
 const OTHER = 'someone@example.com';
@@ -24,13 +24,27 @@ describe('runName', () => {
 });
 
 describe('researchFolder', () => {
-  it('creates the folder once and reuses it', async () => {
+  it('creates the folder once, under AI-сфера, and reuses it', async () => {
     const me = 'folder-once@example.com';
     const a = await researchFolder(me);
     const b = await researchFolder(me);
     expect(a.id).toBe(b.id);
     expect(a.name).toBe(RUNS_FOLDER);
-    expect(a.parent).toBeNull();
+    expect(a.parent).toBe(AI_SPHERE_BASE); // §5.1: filed under AI-сфера, not at the root
+  });
+
+  it('migrates an older root-level folder under AI-сфера', async () => {
+    const me = 'legacy-folder@example.com';
+    // an existing folder from before §5.1, sitting at the root
+    const legacy = await getCustomStore().createBase({
+      name: RUNS_FOLDER,
+      columns: RUN_SEED_COLUMNS,
+      owner: me,
+      parent: null,
+    });
+    const folder = await researchFolder(me);
+    expect(folder.id).toBe(legacy.id); // same folder, moved not duplicated
+    expect(folder.parent).toBe(AI_SPHERE_BASE);
   });
 
   it('gives each person their own folder', async () => {

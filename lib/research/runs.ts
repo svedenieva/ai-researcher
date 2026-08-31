@@ -11,6 +11,13 @@ import type { ColumnDef } from '@/lib/datasource/types';
 
 export const RUNS_FOLDER = 'Исследования';
 
+// §5.1: the Researcher doesn't keep a separate tree — its runs live UNDER the
+// built-in «AI-сфера» base (id 'ai', see lib/datasource/bases.ts). The runs
+// folder is filed there, so opening AI-сфера shows the research beneath it and
+// the RAG scope is one tree, not two. 'ai' is a stable built-in id; buildTree
+// nests a custom base under it because /api/bases keeps a built-in parent.
+export const AI_SPHERE_BASE = 'ai';
+
 // A run base starts with just these; Claude adds the columns that fit the
 // question. The folder carries the same pair so the merged view is readable.
 export const RUN_SEED_COLUMNS: ColumnDef[] = [
@@ -53,20 +60,26 @@ export function runName(topic: string, when: Date): string {
   return `${RUN_PREFIX} ${topic.slice(0, 48)} (${stamp})`;
 }
 
-/** The caller's runs folder, created on first use. */
+/** The caller's runs folder, created on first use — always filed under AI-сфера.
+    An older folder that still sits at the root is migrated there in passing. */
 export async function researchFolder(me: string | null): Promise<CustomBase> {
   const store = getCustomStore();
   const mine = await store.listBases(me);
-  const found = mine.find((b) => b.parent === null && b.name === RUNS_FOLDER && b.owner === me);
-  if (found) return found;
-  return store.createBase({ name: RUNS_FOLDER, columns: RUN_SEED_COLUMNS, parent: null, owner: me });
+  const found = mine.find((b) => b.name === RUNS_FOLDER && b.owner === me);
+  if (found) {
+    if (found.parent !== AI_SPHERE_BASE) {
+      return (await store.moveBase(found.id, AI_SPHERE_BASE)) ?? found;
+    }
+    return found;
+  }
+  return store.createBase({ name: RUNS_FOLDER, columns: RUN_SEED_COLUMNS, parent: AI_SPHERE_BASE, owner: me });
 }
 
 /** Runs already filed in the folder, plus older ones still loose at the root. */
 export async function listRuns(me: string | null): Promise<CustomBase[]> {
   const store = getCustomStore();
   const mine = await store.listBases(me);
-  const folder = mine.find((b) => b.parent === null && b.name === RUNS_FOLDER && b.owner === me);
+  const folder = mine.find((b) => b.name === RUNS_FOLDER && b.owner === me);
   return mine.filter(
     (b) =>
       (folder && b.parent === folder.id) ||
