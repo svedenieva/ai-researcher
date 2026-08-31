@@ -28,7 +28,36 @@ export default async function TopicPage({
   if (!custom || !canAccessBase(custom, me)) notFound();
 
   const record = (await store.listRecords(baseId)).find((r) => String(r.id) === recordId);
-  if (!record) notFound();
+
+  // The base is accessible but this row is gone — most often it was deleted
+  // (soft-deleted rows are excluded from listRecords, so its old link now points
+  // at nothing). Show a calm "not found" with a way back to the base instead of
+  // the bare framework 404, which reads like the whole app broke.
+  if (!record) {
+    return (
+      <div className={styles.shell}>
+        <header className={styles.header}>
+          <Link href={`/?base=${baseId}`} className={styles.back}>
+            <span aria-hidden="true">←</span> {custom.name}
+          </Link>
+          <div className={styles.headerActions}>
+            <ThemeToggle />
+          </div>
+        </header>
+        <main className={styles.body}>
+          <div className={styles.missing}>
+            <h1 className={styles.missingTitle}>Тему не знайдено</h1>
+            <p className={styles.missingText}>
+              Схоже, цей запис видалено. Якщо це сталося помилково, його можна повернути з кошика.
+            </p>
+            <Link href={`/?base=${encodeURIComponent(baseId)}`} className={styles.missingBack}>
+              ← Повернутися до бази «{custom.name}»
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const columns = withTagsColumn(custom.columns);
   const article = buildArticle(columns, record);
