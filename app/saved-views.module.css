@@ -130,3 +130,9 @@
   line-height: 1.4;
   color: var(--ink-45);
 }
+
+/* responsive: the trigger sits on the left of the second toolbar row, so the
+   menu must open to the RIGHT (anchoring right:0 pushed it off the left edge) */
+@media (max-width: 1024px) {
+  .menu { right: auto; left: 0; }
+}
