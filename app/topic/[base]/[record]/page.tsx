@@ -19,28 +19,31 @@ import styles from './article.module.css';
 // cached and served to another visitor, and must always run per request.
 export const dynamic = 'force-dynamic';
 
+function safeDecode(v: string): string {
+  try {
+    return decodeURIComponent(v);
+  } catch {
+    return v;
+  }
+}
+
 export default async function TopicPage({
   params,
 }: {
   params: Promise<{ base: string; record: string }>;
 }) {
-  const { base: baseId, record: recordId } = await params;
+  const { base: rawBase, record: rawRecord } = await params;
+  // Next hands path params still percent-encoded. Base ids can be Cyrillic
+  // («ауц», «исследования»…), so without decoding, getBase() looks up the
+  // literal "%D0%B0…" and always 404s. Decode defensively — a malformed value
+  // just falls back to the raw string and 404s cleanly rather than throwing.
+  const baseId = safeDecode(rawBase);
+  const recordId = safeDecode(rawRecord);
 
   const store = getCustomStore();
   const me = await currentEmail();
   const custom = await store.getBase(baseId);
-  // TEMP diagnostic (no email in the log): why does a topic 404 while its grid
-  // loads? Compares access without exposing the address.
-  if (!custom || !canAccessBase(custom, me)) {
-    console.error('[topic diag] denied', {
-      baseId,
-      hasMe: me !== null,
-      found: Boolean(custom),
-      ownerless: custom ? custom.owner === null : null,
-      meMatchesOwner: custom ? me === custom.owner : null,
-    });
-    notFound();
-  }
+  if (!custom || !canAccessBase(custom, me)) notFound();
 
   const record = (await store.listRecords(baseId)).find((r) => String(r.id) === recordId);
 
