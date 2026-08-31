@@ -8,10 +8,12 @@
   width: 340px;
   max-height: 70vh;
   padding: 10px;
-  background: var(--paper-raised);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--rule);
   border-radius: var(--radius-lg);
-  box-shadow: 0 12px 32px rgba(26, 26, 24, 0.16), var(--ring);
+  box-shadow: var(--shadow-panel);
 }
 
 /* embedded variant: a persistent sidebar panel, not a floating drop-down */

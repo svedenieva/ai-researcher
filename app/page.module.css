@@ -27,7 +27,10 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  background: var(--paper-raised);
+  /* glass panel */
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-right: 1px solid var(--rule);
 }
 .sideClosed .side { border-right-color: transparent; }
@@ -306,17 +309,20 @@
 
 .brandName {
   padding: 0;
-  background: none;
   border: none;
   font-family: inherit;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--ink);
   text-align: left;
   cursor: pointer;
+  /* signature mind-doc-pro gradient wordmark */
+  background: var(--gradient-header);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
-.brandName:hover { color: var(--sage); }
+.brandName:hover { opacity: 0.82; }
 
 .brandKicker {
   font-family: var(--font-mono), monospace;

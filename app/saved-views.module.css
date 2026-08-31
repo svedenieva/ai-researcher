@@ -45,10 +45,12 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px;
-  background: var(--paper-raised);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--rule);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card), var(--ring);
+  box-shadow: var(--shadow-panel);
 }
 
 .empty {
