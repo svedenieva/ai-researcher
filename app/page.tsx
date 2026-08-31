@@ -32,6 +32,8 @@ const DEFAULT_SORT = { key: 'pop', dir: 'asc' as const };
 
 const FILTER_KEYS = new Set(CATALOG_COLUMNS.filter((c) => c.filterable).map((c) => c.key));
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
+// URL params that steer navigation, not filtering — never read as filters
+const NAV_PARAMS = new Set(['base', 'q', 'sort']);
 
 interface BaseTab {
   id: string;
@@ -273,9 +275,16 @@ export default function Home() {
       // order (otherwise the initial DEFAULT_SORT by "pop" would create a phantom group)
       setSort(undefined);
     }
+    // Filters arrive as query params keyed by column. For the catalog only the
+    // known filterable columns count (FILTER_KEYS). A custom base has its own
+    // columns, unknown here at load time, so accept any non-navigation param as
+    // a filter — this is what makes a tag/status badge on a topic page a working
+    // deep link back into its base, filtered by that value.
+    const customBase = Boolean(b && !BUILTIN_IDS.has(b));
     const f: Record<string, string> = {};
     for (const [key, value] of p.entries()) {
-      if (FILTER_KEYS.has(key)) f[key] = value;
+      if (NAV_PARAMS.has(key)) continue;
+      if (FILTER_KEYS.has(key) || customBase) f[key] = value;
     }
     if (Object.keys(f).length) setFilters(f);
     setReady(true);

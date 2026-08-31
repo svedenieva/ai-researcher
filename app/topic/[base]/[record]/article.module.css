@@ -78,7 +78,7 @@
   background: var(--sage-soft);
 }
 
-/* select/tag values — calm wiki pills, read-only in the MVP */
+/* select/tag values — calm wiki pills that link back into the base, filtered */
 .tag {
   display: inline-flex;
   align-items: center;
@@ -89,6 +89,11 @@
   color: var(--ink-70);
   background: var(--rule-soft);
   box-shadow: var(--ring);
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.tag:hover {
+  color: var(--ink);
+  background: var(--sage-soft);
 }
 
 .title {

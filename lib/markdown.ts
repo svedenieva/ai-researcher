@@ -19,18 +19,45 @@ function safeUrl(u: string): string {
   return /^(https?:|mailto:)/i.test(url) ? url : '';
 }
 
-// inline formatting on ALREADY-ESCAPED text, so injected tags can't appear
+function anchor(url: string, text: string): string {
+  return `<a href="${url}" target="_blank" rel="noreferrer noopener">${text}</a>`;
+}
+
+// A sentinel that cannot occur in escaped prose (escapeHtml never emits it, and
+// the source is Markdown typed by people, never binary), so held slots survive
+// the formatting passes untouched and the digits inside them aren't mistaken for
+// content. Built at runtime so no control byte lives in this source file.
+const H = String.fromCharCode(0);
+const HELD = new RegExp(`${H}(\\d+)${H}`, 'g');
+const BARE_URL = new RegExp(`https?://[^\\s<${H}]+`, 'g');
+
+// inline formatting on ALREADY-ESCAPED text, so injected tags can't appear.
+// Code spans and links are lifted out to placeholders first, so their contents
+// are never re-processed (a URL inside `code` isn't auto-linked, a markdown
+// link's target isn't linked twice), then restored at the end.
 function inline(escaped: string): string {
+  const held: string[] = [];
+  const hold = (html: string) => `${H}${held.push(html) - 1}${H}`;
+
   let s = escaped;
-  s = s.replace(/`([^`]+)`/g, (_m, c) => `<code>${c}</code>`);
-  // links [text](url) — url is escaped already; only safe schemes become <a>
+  // inline code first — nothing inside it is touched again
+  s = s.replace(/`([^`]+)`/g, (_m, c: string) => hold(`<code>${c}</code>`));
+  // explicit markdown links [text](url); only safe schemes become anchors
   s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_m, t: string, u: string) => {
     const url = safeUrl(u);
-    return url ? `<a href="${url}" target="_blank" rel="noreferrer noopener">${t}</a>` : t;
+    return url ? hold(anchor(url, t)) : t;
+  });
+  // bare URLs left in the prose become links too. Trailing punctuation (and a
+  // closing paren) is left out of the link and kept as text.
+  s = s.replace(BARE_URL, (m: string) => {
+    const url = m.replace(/[.,;:!?)]+$/, '');
+    const tail = m.slice(url.length);
+    return hold(anchor(url, url.replace(/^https?:\/\//, ''))) + tail;
   });
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/__([^_]+)__/g, '<strong>$1</strong>');
   s = s.replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>');
-  return s;
+  // restore held code/link html
+  return s.replace(HELD, (_m, i: string) => held[Number(i)]);
 }
 
 export function renderMarkdown(src: string): string {

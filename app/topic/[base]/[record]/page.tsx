@@ -58,9 +58,14 @@ export default async function TopicPage({
               {isReference ? MODE_REFERENCE : 'Черновик'}
             </span>
             {article.badges.map((b, i) => (
-              <span key={`${b.column}-${i}`} className={styles.tag} title={b.label}>
+              <Link
+                key={`${b.column}-${i}`}
+                href={`/?base=${encodeURIComponent(baseId)}&${encodeURIComponent(b.column)}=${encodeURIComponent(b.value)}`}
+                className={styles.tag}
+                title={`${b.label}: ${b.value} — показать в базе`}
+              >
                 {b.value}
-              </span>
+              </Link>
             ))}
           </div>
           <h1 className={styles.title}>{article.title || 'Без названия'}</h1>
