@@ -5,7 +5,7 @@ import type { BaseTab } from './base-picker';
 import { toneColor } from '@/lib/tone';
 import { apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
-import { IconFolder, IconFile, IconPencil, IconMove, IconTrash } from './icons';
+import { IconFolder, IconFile, IconPencil, IconMove, IconTrash, IconPlus } from './icons';
 import styles from './base-tree.module.css';
 
 export interface TreeNode extends BaseTab {
@@ -48,7 +48,9 @@ export default function BaseTree({
   focus?: string;
   onPick: (id: string) => void;
   onClose: () => void;
-  onCreate: () => void;
+  /** open the create-base form; a parentId preselects that node as the parent
+      (a per-node «+»), no argument creates at the root */
+  onCreate: (parentId?: string) => void;
   /** base renamed/deleted — the base list needs to be re-read */
   onMutated?: () => void;
   /** render as a persistent sidebar panel (no dialog head / close / autofocus)
@@ -259,11 +261,18 @@ export default function BaseTree({
               {node.builtin && <span className={styles.tag}>вбудована</span>}
             </button>
           )}
-          {!node.builtin && editingId !== node.id && movingId !== node.id && (
+          {editingId !== node.id && movingId !== node.id && (
             <span className={styles.actions}>
-              <button type="button" title="Перейменувати" onClick={(e) => { e.stopPropagation(); startRename(node); }}><IconPencil size={14} /></button>
-              <button type="button" title="Перенести до іншої гілки" onClick={(e) => { e.stopPropagation(); setMovingId(node.id); }}><IconMove size={14} /></button>
-              <button type="button" title="Видалити базу до кошика" onClick={(e) => { e.stopPropagation(); deleteBase(node); }}><IconTrash size={14} /></button>
+              {/* «+» on every node — including built-in ones — so a base can be
+                  added under any node right where you are */}
+              <button type="button" title={`Додати підбазу в «${node.name}»`} onClick={(e) => { e.stopPropagation(); onCreate(node.id); }}><IconPlus size={14} /></button>
+              {!node.builtin && (
+                <>
+                  <button type="button" title="Перейменувати" onClick={(e) => { e.stopPropagation(); startRename(node); }}><IconPencil size={14} /></button>
+                  <button type="button" title="Перенести до іншої гілки" onClick={(e) => { e.stopPropagation(); setMovingId(node.id); }}><IconMove size={14} /></button>
+                  <button type="button" title="Видалити базу до кошика" onClick={(e) => { e.stopPropagation(); deleteBase(node); }}><IconTrash size={14} /></button>
+                </>
+              )}
             </span>
           )}
         </div>

@@ -70,6 +70,9 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const [refreshTick, setRefreshTick] = useState(0);
   const [creating, setCreating] = useState(false);
+  // when the create form is opened from a node's «+», that node preselects the
+  // parent, so a base lands where you clicked
+  const [createParent, setCreateParent] = useState<string | undefined>(undefined);
   // favorite sources of the current base
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -464,7 +467,7 @@ export default function Home() {
           base={base}
           onPick={onBaseChange}
           onClose={() => {}}
-          onCreate={() => setCreating(true)}
+          onCreate={(parentId) => { setCreateParent(parentId); setCreating(true); }}
           onMutated={loadBases}
         />
         <nav className={styles.sideNav} aria-label="Розділи">
@@ -562,9 +565,11 @@ export default function Home() {
         {creating && (
           <CreateBase
             parents={tabs.map((t) => ({ id: t.id, name: t.name }))}
-            onCancel={() => setCreating(false)}
+            initialParent={createParent}
+            onCancel={() => { setCreating(false); setCreateParent(undefined); }}
             onCreated={async (id) => {
               setCreating(false);
+              setCreateParent(undefined);
               await loadBases();
               onBaseChange(id);
             }}

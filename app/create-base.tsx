@@ -26,10 +26,13 @@ export default function CreateBase({
   onCancel,
   onCreated,
   parents = [],
+  initialParent,
 }: {
   onCancel: () => void;
   onCreated: (id: string) => void;
   parents?: { id: string; name: string }[];
+  /** preselect the parent base (e.g. opened from a node's «+» in the tree) */
+  initialParent?: string;
 }) {
   const { lang } = useLang();
   const toast = useToast();
@@ -46,7 +49,7 @@ export default function CreateBase({
   };
   const [mode, setMode] = useState<'manual' | 'import'>('manual');
   const [name, setName] = useState('');
-  const [parent, setParent] = useState('');
+  const [parent, setParent] = useState(initialParent ?? '');
   const [cols, setCols] = useState<ColDraft[]>(() => [{ label: t(lang, 'defaultColName'), type: 'text', filterable: false }]);
   const [raw, setRaw] = useState('');
   const [busy, setBusy] = useState(false);
