@@ -27,7 +27,6 @@ const UI = {
     en: 'Export a Markdown report — name, quote and source per row',
   },
   modeLabel: { uk: 'Режим', ru: 'Режим', en: 'Mode' },
-  modeAll: { uk: 'Усі', ru: 'Все', en: 'All' },
   sites: { uk: 'Сайти', ru: 'Сайты', en: 'Sites' },
   trash: { uk: 'Кошик', ru: 'Корзина', en: 'Trash' },
   showcase: { uk: 'Вітрина', ru: 'Витрина', en: 'Showcase' },

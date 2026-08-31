@@ -598,10 +598,12 @@ export default function Home() {
           })()}
           {isCustom && (
             <div className={styles.modeBar} role="tablist" aria-label={tr(lang, 'modeLabel')}>
-              {/* the two mode labels ARE the stored constants, so the toggle
-                  matches the grid's «Режим» badges exactly (ТЗ vocabulary) */}
+              {/* the two mode labels ARE the stored constants (ТЗ vocabulary,
+                  fixed Russian and not translatable), so the whole toggle stays
+                  Russian — «Все» is hardcoded to match, not i18n'd, otherwise it
+                  reads «Усі» in uk next to Russian modes */}
               {([
-                ['all', tr(lang, 'modeAll')],
+                ['all', 'Все'],
                 [MODE_RESEARCH, MODE_RESEARCH],
                 [MODE_REFERENCE, MODE_REFERENCE],
               ] as const).map(([value, label]) => (
