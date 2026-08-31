@@ -141,6 +141,17 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--ink);
+  /* allow the crumb to shrink instead of collapsing to min-content, which made
+     a long base name wrap into a cramped multi-line block */
+  min-width: 0;
+  overflow: hidden;
+}
+/* the base name truncates to one line rather than wrapping */
+.crumbName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .crumbDot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .crumbCount {
@@ -157,10 +168,11 @@
 /* scrim behind the mobile off-canvas sidebar (desktop: never shown) */
 .scrim { display: none; }
 
-/* ── phone: the 248px sidebar can't sit next to the table on a narrow screen,
-   so below 760px the main column takes the full width and the sidebar becomes
-   an off-canvas overlay the hamburger slides in. ── */
-@media (max-width: 760px) {
+/* ── narrow screens (phones + tablets/small laptops): the sidebar can't sit
+   next to the table without squeezing the toolbar into an overflowing, wrapping
+   mess. Below 1024px the main column takes the full width and the sidebar
+   becomes an off-canvas overlay the hamburger slides in. ── */
+@media (max-width: 1024px) {
   .app { grid-template-columns: minmax(0, 1fr); }
   .side {
     position: fixed;

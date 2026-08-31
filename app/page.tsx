@@ -83,10 +83,11 @@ export default function Home() {
   // apply a base's default grouping (e.g. «Стадия» for the «Внедрение» preset)
   // once when the base is entered, then leave sorting to the user
   const pendingDefaultGroup = useRef(true);
-  // on a phone the sidebar is an overlay — start it collapsed so the table is
-  // the first thing you see; the hamburger slides it in on demand
+  // on phones and tablets/small laptops the sidebar is an overlay — start it
+  // collapsed so the table (and its toolbar) get the full width; the hamburger
+  // slides it in on demand. Must match the off-canvas breakpoint in the CSS.
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches) setSideOpen(false);
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches) setSideOpen(false);
   }, []);
 
   const isCustom = !BUILTIN_IDS.has(base);
@@ -497,7 +498,7 @@ export default function Home() {
           </button>
           <span className={styles.crumb}>
             <span className={styles.crumbDot} style={{ background: toneColor(tabs.find((t) => t.id === base)?.tone) }} aria-hidden="true" />
-            {tabs.find((t) => t.id === base)?.name ?? tr(lang, 'rootFolder')}
+            <span className={styles.crumbName}>{tabs.find((t) => t.id === base)?.name ?? tr(lang, 'rootFolder')}</span>
             {!loading && <span className={styles.crumbCount}>{records.length}</span>}
           </span>
           <div className={styles.spacer} />
