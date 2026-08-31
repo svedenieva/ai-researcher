@@ -1,11 +1,9 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
 import { currentEmail } from '@/lib/current-user';
 import { withTagsColumn } from '@/lib/tags';
-import ThemeToggle from '../../../theme-toggle';
 import ArticleClient from './ArticleClient';
-import styles from './article.module.css';
+import TopicNotFound from './TopicNotFound';
 
 // §5.5 reading view. A single base record ("тема") shown as a calm, structured
 // article — the §4.5 triad first (описание · инструкции · чек-листы), extra
@@ -51,29 +49,7 @@ export default async function TopicPage({
   // at nothing). Show a calm "not found" with a way back to the base instead of
   // the bare framework 404, which reads like the whole app broke.
   if (!record) {
-    return (
-      <div className={styles.shell}>
-        <header className={styles.header}>
-          <Link href={`/?base=${baseId}`} className={styles.back}>
-            <span aria-hidden="true">←</span> {custom.name}
-          </Link>
-          <div className={styles.headerActions}>
-            <ThemeToggle />
-          </div>
-        </header>
-        <main className={styles.body}>
-          <div className={styles.missing}>
-            <h1 className={styles.missingTitle}>Тему не знайдено</h1>
-            <p className={styles.missingText}>
-              Схоже, цей запис видалено. Якщо це сталося помилково, його можна повернути з кошика.
-            </p>
-            <Link href={`/?base=${encodeURIComponent(baseId)}`} className={styles.missingBack}>
-              ← Повернутися до бази «{custom.name}»
-            </Link>
-          </div>
-        </main>
-      </div>
-    );
+    return <TopicNotFound baseId={baseId} baseName={custom.name} />;
   }
 
   const columns = withTagsColumn(custom.columns);

@@ -7,7 +7,147 @@ import { formatBytes, isJunk, validateUpload, type SiteMeta } from '@/lib/sites/
 import { unzipEntries } from '@/lib/sites/zip';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast } from '../ui';
+import { useLang } from '../lang-provider';
 import styles from './sites.module.css';
+
+// co-located UI dictionary: uk is the source wording, ru/en translated
+const S = {
+  uk: {
+    errGeneric: 'Помилка',
+    defaultSiteName: 'Сайт',
+    errUnzip: 'Не вдалося розпакувати архів — він пошкоджений або це не zip',
+    errUpload: 'Помилка завантаження',
+    confirmDelete: (name: string) => `Видалити «${name}» разом з усіма файлами? Відновити не буде звідки.`,
+    errDelete: 'Помилка видалення',
+    backToCatalog: 'До каталогу',
+    title: 'Сайти',
+    leadA: 'Готові статичні сторінки: залити папкою або архівом, відкрити наживо, завантажити назад. Усередині сайту шляхи мають бути відносними — ',
+    leadB: ', а не ',
+    leadC: '.',
+    pickFolder: 'Обрати папку',
+    pickZip: 'Обрати .zip',
+    files: (n: number) => `${n} файл(ів)`,
+    startLabel: 'старт:',
+    labelName: 'Назва *',
+    labelClient: 'Клієнт',
+    labelTags: 'Теги через кому',
+    labelNote: 'Нотатка',
+    uploading: (done: number, total: number) => `Завантажую ${done} з ${total}…`,
+    uploadSite: 'Завантажити сайт',
+    cancel: 'Скасувати',
+    searchPlaceholder: 'Пошук за назвою, клієнтом, нотаткою…',
+    ariaTag: 'Тег',
+    allTags: 'Усі теги',
+    ariaSort: 'Сортування',
+    sortNewest: 'Спочатку нові',
+    sortName: 'За назвою',
+    sitesCount: (n: number) => `${n} сайтів`,
+    shownOf: (shown: number, total: number) => `показано ${shown} з ${total}`,
+    loadingText: 'Завантажую…',
+    nothingFound: 'Нічого не знайдено',
+    noSites: 'Поки що жодного сайту',
+    thName: 'Назва',
+    thClient: 'Клієнт',
+    thTags: 'Теги',
+    thUploaded: 'Завантажено',
+    thSize: 'Розмір',
+    thOwner: 'Залив',
+    filesShort: (n: number) => `${n} ф.`,
+    openSite: 'Відкрити',
+    downloadSite: 'Завантажити',
+    deleteSite: 'Видалити',
+  },
+  ru: {
+    errGeneric: 'Ошибка',
+    defaultSiteName: 'Сайт',
+    errUnzip: 'Не удалось распаковать архив — он повреждён или это не zip',
+    errUpload: 'Ошибка загрузки',
+    confirmDelete: (name: string) => `Удалить «${name}» вместе со всеми файлами? Восстановить будет неоткуда.`,
+    errDelete: 'Ошибка удаления',
+    backToCatalog: 'В каталог',
+    title: 'Сайты',
+    leadA: 'Готовые статические страницы: залить папкой или архивом, открыть вживую, скачать обратно. Внутри сайта пути должны быть относительными — ',
+    leadB: ', а не ',
+    leadC: '.',
+    pickFolder: 'Выбрать папку',
+    pickZip: 'Выбрать .zip',
+    files: (n: number) => `${n} файл(ов)`,
+    startLabel: 'старт:',
+    labelName: 'Название *',
+    labelClient: 'Клиент',
+    labelTags: 'Теги через запятую',
+    labelNote: 'Заметка',
+    uploading: (done: number, total: number) => `Загружаю ${done} из ${total}…`,
+    uploadSite: 'Загрузить сайт',
+    cancel: 'Отменить',
+    searchPlaceholder: 'Поиск по названию, клиенту, заметке…',
+    ariaTag: 'Тег',
+    allTags: 'Все теги',
+    ariaSort: 'Сортировка',
+    sortNewest: 'Сначала новые',
+    sortName: 'По названию',
+    sitesCount: (n: number) => `${n} сайтов`,
+    shownOf: (shown: number, total: number) => `показано ${shown} из ${total}`,
+    loadingText: 'Загружаю…',
+    nothingFound: 'Ничего не найдено',
+    noSites: 'Пока ни одного сайта',
+    thName: 'Название',
+    thClient: 'Клиент',
+    thTags: 'Теги',
+    thUploaded: 'Загружено',
+    thSize: 'Размер',
+    thOwner: 'Залил',
+    filesShort: (n: number) => `${n} ф.`,
+    openSite: 'Открыть',
+    downloadSite: 'Скачать',
+    deleteSite: 'Удалить',
+  },
+  en: {
+    errGeneric: 'Error',
+    defaultSiteName: 'Site',
+    errUnzip: 'Could not unzip the archive — it is corrupted or not a zip',
+    errUpload: 'Upload error',
+    confirmDelete: (name: string) => `Delete "${name}" along with all its files? There will be no way to restore it.`,
+    errDelete: 'Delete error',
+    backToCatalog: 'To catalog',
+    title: 'Sites',
+    leadA: 'Ready static pages: upload as a folder or archive, open live, download back. Inside the site, paths must be relative — ',
+    leadB: ', not ',
+    leadC: '.',
+    pickFolder: 'Choose folder',
+    pickZip: 'Choose .zip',
+    files: (n: number) => `${n} file(s)`,
+    startLabel: 'start:',
+    labelName: 'Name *',
+    labelClient: 'Client',
+    labelTags: 'Tags, comma-separated',
+    labelNote: 'Note',
+    uploading: (done: number, total: number) => `Uploading ${done} of ${total}…`,
+    uploadSite: 'Upload site',
+    cancel: 'Cancel',
+    searchPlaceholder: 'Search by name, client, note…',
+    ariaTag: 'Tag',
+    allTags: 'All tags',
+    ariaSort: 'Sorting',
+    sortNewest: 'Newest first',
+    sortName: 'By name',
+    sitesCount: (n: number) => `${n} sites`,
+    shownOf: (shown: number, total: number) => `showing ${shown} of ${total}`,
+    loadingText: 'Loading…',
+    nothingFound: 'Nothing found',
+    noSites: 'No sites yet',
+    thName: 'Name',
+    thClient: 'Client',
+    thTags: 'Tags',
+    thUploaded: 'Uploaded',
+    thSize: 'Size',
+    thOwner: 'Uploaded by',
+    filesShort: (n: number) => `${n} files`,
+    openSite: 'Open',
+    downloadSite: 'Download',
+    deleteSite: 'Delete',
+  },
+} as const;
 
 // a file ready to be sent: path within the site + the content itself
 interface Picked {
@@ -19,6 +159,7 @@ type SortKey = 'date' | 'name';
 
 export default function Sites() {
   const toast = useToast();
+  const { lang } = useLang();
   const [sites, setSites] = useState<SiteMeta[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,11 +187,11 @@ export default function Sites() {
       const body = await apiJson<{ sites?: SiteMeta[] }>('/api/sites');
       setSites(body.sites ?? []);
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Помилка');
+      toast(e instanceof Error ? e.message : S[lang].errGeneric);
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, lang]);
 
   useEffect(() => {
     load();
@@ -79,7 +220,7 @@ export default function Sites() {
       path: f.webkitRelativePath || f.name,
       blob: f,
     }));
-    const root = raw[0]?.path.split('/')[0] ?? 'Сайт';
+    const root = raw[0]?.path.split('/')[0] ?? S[lang].defaultSiteName;
     accept(raw, root);
   };
 
@@ -95,7 +236,7 @@ export default function Sites() {
       accept(raw, file.name.replace(/\.zip$/i, ''));
     } catch {
       setPicked(null);
-      setPickError('Не вдалося розпакувати архів — він пошкоджений або це не zip');
+      setPickError(S[lang].errUnzip);
     }
   };
 
@@ -138,18 +279,18 @@ export default function Sites() {
       reset();
       await load();
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Помилка завантаження');
+      toast(e instanceof Error ? e.message : S[lang].errUpload);
       setProgress(null);
     }
   };
 
   const remove = async (site: SiteMeta) => {
-    if (!confirm(`Видалити «${site.name}» разом з усіма файлами? Відновити не буде звідки.`)) return;
+    if (!confirm(S[lang].confirmDelete(site.name))) return;
     try {
       await apiJson(`/api/sites/${encodeURIComponent(site.id)}`, { method: 'DELETE' });
       await load();
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Помилка видалення');
+      toast(e instanceof Error ? e.message : S[lang].errDelete);
     }
   };
 
@@ -179,7 +320,7 @@ export default function Sites() {
     <div className={styles.shell}>
       <header className={styles.header}>
         <Link href="/" className={styles.back}>
-          <span aria-hidden="true">←</span> До каталогу
+          <span aria-hidden="true">←</span> {S[lang].backToCatalog}
         </Link>
         <div className={styles.headerActions}>
           <ThemeToggle />
@@ -187,10 +328,9 @@ export default function Sites() {
       </header>
 
       <main className={styles.body}>
-        <h1 className={styles.title}>Сайти</h1>
+        <h1 className={styles.title}>{S[lang].title}</h1>
         <p className={styles.lead}>
-          Готові статичні сторінки: залити папкою або архівом, відкрити наживо, завантажити назад.
-          Усередині сайту шляхи мають бути відносними — <code>style.css</code>, а не <code>/style.css</code>.
+          {S[lang].leadA}<code>style.css</code>{S[lang].leadB}<code>/style.css</code>{S[lang].leadC}
         </p>
 
         <section className={styles.uploader}>
@@ -201,7 +341,7 @@ export default function Sites() {
               onClick={() => folderInput.current?.click()}
               disabled={busy}
             >
-              Обрати папку
+              {S[lang].pickFolder}
             </button>
             <button
               type="button"
@@ -209,11 +349,11 @@ export default function Sites() {
               onClick={() => zipInput.current?.click()}
               disabled={busy}
             >
-              Обрати .zip
+              {S[lang].pickZip}
             </button>
             {picked && (
               <span className={styles.pickInfo}>
-                {picked.length} файл(ів) · {formatBytes(picked.reduce((s, p) => s + p.blob.size, 0))} · старт:{' '}
+                {S[lang].files(picked.length)} · {formatBytes(picked.reduce((s, p) => s + p.blob.size, 0))} · {S[lang].startLabel}{' '}
                 <code>{entry}</code>
               </span>
             )}
@@ -235,29 +375,29 @@ export default function Sites() {
             <>
               <div className={styles.fields}>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Назва *</span>
+                  <span className={styles.fieldLabel}>{S[lang].labelName}</span>
                   <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} disabled={busy} />
                 </label>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Клієнт</span>
+                  <span className={styles.fieldLabel}>{S[lang].labelClient}</span>
                   <input className={styles.input} value={client} onChange={(e) => setClient(e.target.value)} disabled={busy} />
                 </label>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Теги через кому</span>
+                  <span className={styles.fieldLabel}>{S[lang].labelTags}</span>
                   <input className={styles.input} value={tags} onChange={(e) => setTags(e.target.value)} disabled={busy} />
                 </label>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Нотатка</span>
+                  <span className={styles.fieldLabel}>{S[lang].labelNote}</span>
                   <input className={styles.input} value={note} onChange={(e) => setNote(e.target.value)} disabled={busy} />
                 </label>
               </div>
 
               <div className={styles.uploadActions}>
                 <button type="button" className={styles.primary} onClick={upload} disabled={busy || !name.trim()}>
-                  {busy ? `Завантажую ${progress!.done} з ${progress!.total}…` : 'Завантажити сайт'}
+                  {busy ? S[lang].uploading(progress!.done, progress!.total) : S[lang].uploadSite}
                 </button>
                 <button type="button" className={styles.ghost} onClick={reset} disabled={busy}>
-                  Скасувати
+                  {S[lang].cancel}
                 </button>
                 {busy && (
                   <span className={styles.bar}>
@@ -273,12 +413,12 @@ export default function Sites() {
           <input
             type="search"
             className={styles.search}
-            placeholder="Пошук за назвою, клієнтом, нотаткою…"
+            placeholder={S[lang].searchPlaceholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <select className={styles.select} value={tag} onChange={(e) => setTag(e.target.value)} aria-label="Тег">
-            <option value="">Усі теги</option>
+          <select className={styles.select} value={tag} onChange={(e) => setTag(e.target.value)} aria-label={S[lang].ariaTag}>
+            <option value="">{S[lang].allTags}</option>
             {allTags.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
@@ -287,31 +427,31 @@ export default function Sites() {
             className={styles.select}
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
-            aria-label="Сортування"
+            aria-label={S[lang].ariaSort}
           >
-            <option value="date">Спочатку нові</option>
-            <option value="name">За назвою</option>
+            <option value="date">{S[lang].sortNewest}</option>
+            <option value="name">{S[lang].sortName}</option>
           </select>
           <span className={styles.count}>
-            {shown.length === sites.length ? `${sites.length} сайтів` : `показано ${shown.length} з ${sites.length}`}
+            {shown.length === sites.length ? S[lang].sitesCount(sites.length) : S[lang].shownOf(shown.length, sites.length)}
           </span>
         </div>
 
         {loading ? (
-          <p className={styles.empty}>Завантажую…</p>
+          <p className={styles.empty}>{S[lang].loadingText}</p>
         ) : shown.length === 0 ? (
-          <p className={styles.empty}>{sites.length ? 'Нічого не знайдено' : 'Поки що жодного сайту'}</p>
+          <p className={styles.empty}>{sites.length ? S[lang].nothingFound : S[lang].noSites}</p>
         ) : (
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Назва</th>
-                  <th>Клієнт</th>
-                  <th>Теги</th>
-                  <th>Завантажено</th>
-                  <th>Розмір</th>
-                  <th>Залив</th>
+                  <th>{S[lang].thName}</th>
+                  <th>{S[lang].thClient}</th>
+                  <th>{S[lang].thTags}</th>
+                  <th>{S[lang].thUploaded}</th>
+                  <th>{S[lang].thSize}</th>
+                  <th>{S[lang].thOwner}</th>
                   <th />
                 </tr>
               </thead>
@@ -341,18 +481,18 @@ export default function Sites() {
                     <td className={styles.mono}>{s.createdAt ? s.createdAt.slice(0, 10) : '—'}</td>
                     <td className={styles.mono}>
                       {formatBytes(s.sizeBytes)}
-                      <span className={styles.dim}> · {s.fileCount} ф.</span>
+                      <span className={styles.dim}> · {S[lang].filesShort(s.fileCount)}</span>
                     </td>
                     <td className={styles.dim}>{s.owner ?? '—'}</td>
                     <td className={styles.rowActions}>
                       <a className={styles.action} href={`/s/${encodeURIComponent(s.id)}`} target="_blank" rel="noreferrer">
-                        Відкрити
+                        {S[lang].openSite}
                       </a>
                       <a className={styles.action} href={`/api/sites/${encodeURIComponent(s.id)}/download`}>
-                        Завантажити
+                        {S[lang].downloadSite}
                       </a>
                       <button type="button" className={styles.danger} onClick={() => remove(s)}>
-                        Видалити
+                        {S[lang].deleteSite}
                       </button>
                     </td>
                   </tr>

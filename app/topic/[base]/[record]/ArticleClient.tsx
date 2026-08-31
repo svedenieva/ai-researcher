@@ -10,11 +10,77 @@ import { TAGS_KEY } from '@/lib/tags';
 import { apiSend } from '@/lib/api';
 import { articleToOutline } from '@/lib/mindmap/topicOutline';
 import ThemeToggle from '../../../theme-toggle';
+import { useLang } from '../../../lang-provider';
 import TopicMindMap from './TopicMindMap';
 import styles from './article.module.css';
 
 type Rec = Record<string, unknown>;
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+
+// UI-chrome strings for the reading view, one key per user-facing label.
+// Data-driven text (column labels, values, the MODE_REFERENCE tag) is not here.
+const S = {
+  uk: {
+    saving: 'Зберігаю…',
+    saved: 'Збережено',
+    saveFailed: 'Не вдалося зберегти',
+    map: 'Карта',
+    article: 'Стаття',
+    edit: 'Редагувати',
+    done: 'Готово',
+    draft: 'Чернетка',
+    showInBase: 'показати в базі',
+    untitled: 'Без назви',
+    mode: 'Режим',
+    empty: 'У цієї теми поки немає текстового наповнення.',
+    sources: 'Джерела',
+    quotes: 'Цитати',
+    links: 'Посилання',
+    fields: 'Поля',
+    mdSupported: 'Підтримується Markdown',
+    tagsPlaceholder: 'тег, тег, тег',
+  },
+  ru: {
+    saving: 'Сохраняю…',
+    saved: 'Сохранено',
+    saveFailed: 'Не удалось сохранить',
+    map: 'Карта',
+    article: 'Статья',
+    edit: 'Редактировать',
+    done: 'Готово',
+    draft: 'Черновик',
+    showInBase: 'показать в базе',
+    untitled: 'Без названия',
+    mode: 'Режим',
+    empty: 'У этой темы пока нет текстового наполнения.',
+    sources: 'Источники',
+    quotes: 'Цитаты',
+    links: 'Ссылки',
+    fields: 'Поля',
+    mdSupported: 'Markdown поддерживается',
+    tagsPlaceholder: 'тег, тег, тег',
+  },
+  en: {
+    saving: 'Saving…',
+    saved: 'Saved',
+    saveFailed: 'Couldn’t save',
+    map: 'Map',
+    article: 'Article',
+    edit: 'Edit',
+    done: 'Done',
+    draft: 'Draft',
+    showInBase: 'show in base',
+    untitled: 'Untitled',
+    mode: 'Mode',
+    empty: 'This topic has no text content yet.',
+    sources: 'Sources',
+    quotes: 'Quotes',
+    links: 'Links',
+    fields: 'Fields',
+    mdSupported: 'Markdown supported',
+    tagsPlaceholder: 'tag, tag, tag',
+  },
+} as const;
 
 const str = (v: unknown) => (v === null || v === undefined ? '' : String(v));
 
@@ -48,6 +114,7 @@ export default function ArticleClient({
   baseId: string;
   baseName: string;
 }) {
+  const { lang } = useLang();
   const [rec, setRec] = useState<Rec>(record);
   // read = the calm article, edit = per-field editor, map = the mind-map canvas
   const [view, setView] = useState<'read' | 'edit' | 'map'>('read');
@@ -79,7 +146,7 @@ export default function ArticleClient({
       setTimeout(() => setSave('idle'), 1500);
     } catch (e) {
       setSave('error');
-      setError(e instanceof Error ? e.message : 'Не удалось сохранить');
+      setError(e instanceof Error ? e.message : S[lang].saveFailed);
     }
   }
 
@@ -90,22 +157,22 @@ export default function ArticleClient({
           <span aria-hidden="true">←</span> {baseName}
         </Link>
         <div className={styles.headerActions}>
-          {save === 'saving' && <span className={styles.saveHint}>Сохраняю…</span>}
-          {save === 'saved' && <span className={styles.saveHint}>Сохранено</span>}
+          {save === 'saving' && <span className={styles.saveHint}>{S[lang].saving}</span>}
+          {save === 'saved' && <span className={styles.saveHint}>{S[lang].saved}</span>}
           {save === 'error' && <span className={styles.saveError}>{error}</span>}
           <button
             type="button"
             className={view === 'map' ? styles.editOn : styles.editBtn}
             onClick={() => setView((v) => (v === 'map' ? 'read' : 'map'))}
           >
-            {view === 'map' ? 'Статья' : 'Карта'}
+            {view === 'map' ? S[lang].article : S[lang].map}
           </button>
           <button
             type="button"
             className={editing ? styles.editOn : styles.editBtn}
             onClick={() => setView((v) => (v === 'edit' ? 'read' : 'edit'))}
           >
-            {editing ? 'Готово' : 'Редактировать'}
+            {editing ? S[lang].done : S[lang].edit}
           </button>
           <ThemeToggle />
         </div>
@@ -115,7 +182,7 @@ export default function ArticleClient({
         <div className={styles.head}>
           <div className={styles.badgeRow}>
             <span className={isReference ? styles.modeReference : styles.modeDraft}>
-              {isReference ? MODE_REFERENCE : 'Черновик'}
+              {isReference ? MODE_REFERENCE : S[lang].draft}
             </span>
             {view === 'read' &&
               article.badges.map((b, i) => (
@@ -123,13 +190,13 @@ export default function ArticleClient({
                   key={`${b.column}-${i}`}
                   href={`/?base=${encodeURIComponent(baseId)}&${encodeURIComponent(b.column)}=${encodeURIComponent(b.value)}`}
                   className={styles.tag}
-                  title={`${b.label}: ${b.value} — показать в базе`}
+                  title={`${b.label}: ${b.value} — ${S[lang].showInBase}`}
                 >
                   {b.value}
                 </Link>
               ))}
           </div>
-          <h1 className={styles.title}>{article.title || 'Без названия'}</h1>
+          <h1 className={styles.title}>{article.title || S[lang].untitled}</h1>
         </div>
 
         {view === 'map' ? (
@@ -138,7 +205,7 @@ export default function ArticleClient({
           <div className={styles.editForm}>
             {/* status flag first — the same pair the grid toggles */}
             <label className={styles.field}>
-              <span className={styles.fieldLabel}>Режим</span>
+              <span className={styles.fieldLabel}>{S[lang].mode}</span>
               <select
                 className={styles.fieldInput}
                 value={recordMode(rec)}
@@ -161,7 +228,7 @@ export default function ArticleClient({
           <div className={hasSidebar ? styles.layout : styles.layoutWide}>
             <article className={styles.sections}>
               {article.sections.length === 0 && (
-                <p className={styles.empty}>У этой темы пока нет текстового наполнения.</p>
+                <p className={styles.empty}>{S[lang].empty}</p>
               )}
               {article.sections.map((s) =>
                 s.kind === 'checklist' ? (
@@ -213,7 +280,7 @@ export default function ArticleClient({
               <aside className={styles.rail}>
                 {sidebar.sources.length > 0 && (
                   <details className={styles.pop} open>
-                    <summary className={styles.popTitle}>Источники</summary>
+                    <summary className={styles.popTitle}>{S[lang].sources}</summary>
                     <ul className={styles.popList}>
                       {sidebar.sources.map((src, i) => (
                         <li key={i}>
@@ -232,7 +299,7 @@ export default function ArticleClient({
 
                 {sidebar.quotes.length > 0 && (
                   <details className={styles.pop} open>
-                    <summary className={styles.popTitle}>Цитаты</summary>
+                    <summary className={styles.popTitle}>{S[lang].quotes}</summary>
                     <div className={styles.quotes}>
                       {sidebar.quotes.map((q, i) => (
                         <blockquote key={i} className={styles.quote}>{q}</blockquote>
@@ -243,7 +310,7 @@ export default function ArticleClient({
 
                 {sidebar.links.length > 0 && (
                   <details className={styles.pop} open>
-                    <summary className={styles.popTitle}>Ссылки</summary>
+                    <summary className={styles.popTitle}>{S[lang].links}</summary>
                     <ul className={styles.popList}>
                       {sidebar.links.map((l, i) => (
                         <li key={i}>
@@ -258,7 +325,7 @@ export default function ArticleClient({
 
                 {sidebar.raw.length > 0 && (
                   <details className={styles.pop}>
-                    <summary className={styles.popTitle}>Поля</summary>
+                    <summary className={styles.popTitle}>{S[lang].fields}</summary>
                     <dl className={styles.raw}>
                       {sidebar.raw.map((f, i) => (
                         <div key={i} className={styles.rawRow}>
@@ -289,6 +356,7 @@ function FieldEditor({
   value: string;
   onCommit: (v: string) => void;
 }) {
+  const { lang } = useLang();
   const [draft, setDraft] = useState(value);
   // keep the field in sync if the record changed under it (e.g. another save)
   const [seen, setSeen] = useState(value);
@@ -302,7 +370,7 @@ function FieldEditor({
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => onCommit(draft)}
-        placeholder="Markdown поддерживается"
+        placeholder={S[lang].mdSupported}
       />
     );
   }
@@ -324,7 +392,7 @@ function FieldEditor({
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => onCommit(draft)}
-        placeholder="тег, тег, тег"
+        placeholder={S[lang].tagsPlaceholder}
       />
     );
   }

@@ -3,13 +3,21 @@
 import dynamic from 'next/dynamic';
 import '@xyflow/react/dist/style.css';
 import type { MindMapNode } from '@/lib/mindmap/components/mind-map/types';
+import { useLang } from '../../../lang-provider';
 import styles from './article.module.css';
+
+const LOADING = { uk: 'Завантаження карти…', ru: 'Загрузка карты…', en: 'Loading map…' } as const;
+
+function CanvasLoading() {
+  const { lang } = useLang();
+  return <div className={styles.canvasLoading}>{LOADING[lang]}</div>;
+}
 
 // The vendored React-Flow canvas is client-only (it touches window/measure on
 // mount), so it's loaded with ssr:false — same as its original hosts do.
 const RfMindMap = dynamic(
   () => import('@/lib/mindmap/components/mind-map/rf/rf-mind-map').then((m) => ({ default: m.RfMindMap })),
-  { ssr: false, loading: () => <div className={styles.canvasLoading}>Загрузка карты…</div> },
+  { ssr: false, loading: () => <CanvasLoading /> },
 );
 
 export default function TopicMindMap({ outline, title }: { outline: MindMapNode[]; title?: string }) {
