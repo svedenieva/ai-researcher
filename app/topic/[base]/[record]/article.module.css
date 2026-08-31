@@ -305,6 +305,18 @@
   line-height: 1.5;
   flex: none;
 }
+.checkInput {
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+  flex: none;
+  accent-color: var(--sage);
+  cursor: pointer;
+}
+.checkDone {
+  color: var(--ink-45);
+  text-decoration: line-through;
+}
 
 /* side rail — extra material that pops open to the side, never inline */
 .rail {

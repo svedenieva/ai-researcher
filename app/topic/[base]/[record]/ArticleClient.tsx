@@ -18,6 +18,20 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 const str = (v: unknown) => (v === null || v === undefined ? '' : String(v));
 
+// A Markdown task line: «- [ ] label» / «- [x] label» (also * and +).
+const CHECK_RE = /^(\s*[-*+]\s+)\[([ xX])\](\s.*)$/;
+
+// Flip the checkbox on one line of a checklist's raw text and return the new text.
+function toggleChecklistLine(content: string, lineIndex: number): string {
+  const lines = content.split(/\r?\n/);
+  const m = CHECK_RE.exec(lines[lineIndex] ?? '');
+  if (m) {
+    const checked = m[2].toLowerCase() === 'x';
+    lines[lineIndex] = `${m[1]}[${checked ? ' ' : 'x'}]${m[3]}`;
+  }
+  return lines.join('\n');
+}
+
 // §5.5 follow-up: the reading view becomes editable in place. Read mode is the
 // calm article; the «Редактировать» toggle turns the body into a per-field
 // editor (every column, by its type). Each field saves on blur via the same
@@ -154,12 +168,31 @@ export default function ArticleClient({
                   <section key={s.key} className={styles.section}>
                     <h2 className={styles.sectionTitle}>{s.heading}</h2>
                     <ul className={styles.checklist}>
-                      {(s.items ?? []).map((item, i) => (
-                        <li key={i} className={styles.checkItem}>
-                          <span aria-hidden="true" className={styles.checkBox}>☐</span>
-                          <span>{item}</span>
-                        </li>
-                      ))}
+                      {s.content.split(/\r?\n/).map((line, i) => {
+                        if (line.trim() === '') return null;
+                        const m = CHECK_RE.exec(line);
+                        if (m) {
+                          const checked = m[2].toLowerCase() === 'x';
+                          return (
+                            <li key={i} className={styles.checkItem}>
+                              <input
+                                type="checkbox"
+                                className={styles.checkInput}
+                                checked={checked}
+                                onChange={() => commit(s.key, toggleChecklistLine(s.content, i))}
+                              />
+                              <span className={checked ? styles.checkDone : undefined}>{m[3].trim()}</span>
+                            </li>
+                          );
+                        }
+                        // a plain line (no «[ ]») — show it as a bullet, not a box
+                        return (
+                          <li key={i} className={styles.checkItem}>
+                            <span aria-hidden="true" className={styles.checkBox}>•</span>
+                            <span>{line.replace(/^\s*[-*+]\s+/, '')}</span>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </section>
                 ) : (
