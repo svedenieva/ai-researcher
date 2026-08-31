@@ -381,3 +381,35 @@
   .layout { grid-template-columns: 1fr; gap: 26px; }
   .rail { position: static; order: 1; }
 }
+
+/* phone: the header must never push the page into a horizontal scroll — let it
+   wrap and shrink, truncate a long base name, and drop the save-status text
+   (the buttons already carry the state). Type and canvas scale down. */
+@media (max-width: 560px) {
+  .header {
+    height: auto;
+    min-height: 52px;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding: 8px 12px;
+  }
+  .back {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .headerActions { gap: 8px; }
+  .saveHint, .saveError { display: none; }
+  .editBtn, .editOn { height: 28px; padding: 0 11px; font-size: 12px; }
+
+  .body { padding: 18px 14px 48px; }
+  .head { padding-bottom: 16px; margin-bottom: 18px; }
+  .title { font-size: 25px; }
+  .sections { gap: 22px; }
+
+  .canvas { height: 66vh; min-height: 360px; }
+  .layoutWide { max-width: 100%; }
+  .editForm { gap: 14px; }
+}
