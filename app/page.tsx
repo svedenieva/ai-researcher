@@ -503,7 +503,7 @@ export default function Home() {
           </span>
           {/* desktop: language switch stays by the base name (unchanged).
               On narrow screens the copy in the right group takes over. */}
-          <span className={styles.langNearName}><LangSwitch /></span>
+          <span className={styles.langNearName}><LangSwitch variant="segments" /></span>
           <div className={styles.spacer} />
           {/* the action buttons. On desktop this wrapper is display:contents,
               so the layout is unchanged; in responsive it becomes a full-width
@@ -569,7 +569,7 @@ export default function Home() {
           <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>
           </div>
           {/* narrow screens only: language switch joins the theme on the right */}
-          <span className={styles.langRight}><LangSwitch /></span>
+          <span className={styles.langRight}><LangSwitch variant="cycle" /></span>
           <ThemeToggle />
         </header>
 
