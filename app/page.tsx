@@ -501,7 +501,6 @@ export default function Home() {
             <span className={styles.crumbName}>{tabs.find((t) => t.id === base)?.name ?? tr(lang, 'rootFolder')}</span>
             {!loading && <span className={styles.crumbCount}>{records.length}</span>}
           </span>
-          <LangSwitch />
           <div className={styles.spacer} />
           <SavedViews
             base={base}
@@ -560,6 +559,7 @@ export default function Home() {
             </a>
           )}
           <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>
+          <LangSwitch />
           <ThemeToggle />
         </header>
 
