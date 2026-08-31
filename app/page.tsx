@@ -505,6 +505,11 @@ export default function Home() {
               On narrow screens the copy in the right group takes over. */}
           <span className={styles.langNearName}><LangSwitch /></span>
           <div className={styles.spacer} />
+          {/* the action buttons. On desktop this wrapper is display:contents,
+              so the layout is unchanged; in responsive it becomes a full-width
+              second row, letting the language + theme sit on the first row next
+              to the base name. */}
+          <div className={styles.topActions}>
           <SavedViews
             base={base}
             sort={sort}
@@ -562,6 +567,7 @@ export default function Home() {
             </a>
           )}
           <Link href="/research" className={styles.newResearch}>{tr(lang, 'newResearch')}</Link>
+          </div>
           {/* narrow screens only: language switch joins the theme on the right */}
           <span className={styles.langRight}><LangSwitch /></span>
           <ThemeToggle />

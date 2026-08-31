@@ -170,6 +170,11 @@
 .langNearName { display: inline-flex; flex: none; }
 .langRight { display: none; flex: none; }
 
+/* action buttons. Transparent on desktop (children lay out directly in the
+   topbar, unchanged); a full-width second row in responsive, so the language +
+   theme rise to the first row next to the base name. */
+.topActions { display: contents; }
+
 /* scrim behind the mobile off-canvas sidebar (desktop: never shown) */
 .scrim { display: none; }
 
@@ -179,9 +184,28 @@
    becomes an off-canvas overlay the hamburger slides in. ── */
 @media (max-width: 1024px) {
   .app { grid-template-columns: minmax(0, 1fr); }
-  /* responsive: language switch moves to the right, next to the theme */
+  /* two-row topbar: base name + language/theme on the top row (the language
+     switch pushed to the right by an auto margin, opposite the name), and the
+     action buttons dropped onto a full-width second row */
+  .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 58px;
+    row-gap: 8px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+  .spacer { display: none; }
   .langNearName { display: none; }
-  .langRight { display: inline-flex; }
+  .langRight { display: inline-flex; margin-left: auto; }
+  .topActions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    order: 99;
+    width: 100%;
+    flex-wrap: wrap;
+  }
   .side {
     position: fixed;
     inset: 0 auto 0 0;
