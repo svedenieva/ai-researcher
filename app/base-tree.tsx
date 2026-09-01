@@ -246,6 +246,7 @@ export default function BaseTree({
           ) : (
             <button
               type="button"
+              title={node.name}
               className={`${styles.node} ${node.id === base ? styles.nodeActive : ''}`}
               style={{ ['--tone']: toneColor(node.tone) } as CSSProperties}
               // like a file explorer: clicking a branch both loads its table and expands
