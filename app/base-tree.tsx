@@ -200,7 +200,7 @@ export default function BaseTree({
     const hasKids = node.children.length > 0;
     return (
       <div key={node.id}>
-        <div className={styles.row} style={{ paddingLeft: `${8 + depth * 18}px` }}>
+        <div className={styles.row} style={{ paddingLeft: `${8 + depth * 14}px` }}>
           {hasKids ? (
             <button
               type="button"

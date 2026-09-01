@@ -33,6 +33,9 @@
   max-height: none;
 }
 .embedded .search { margin-bottom: 10px; }
+/* the sidebar panel is narrow — trim the per-row overhead (node padding, inner
+   gaps) so the name keeps as much width as possible on deep/nested nodes */
+.embedded .node { padding: 7px 6px; gap: 6px; }
 
 .search {
   width: 100%;
