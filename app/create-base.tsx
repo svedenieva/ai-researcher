@@ -53,12 +53,17 @@ export default function CreateBase({
   const [cols, setCols] = useState<ColDraft[]>(() => [{ label: t(lang, 'defaultColName'), type: 'text', filterable: false }]);
   const [raw, setRaw] = useState('');
   const [busy, setBusy] = useState(false);
+  // rows a template ships pre-filled (positional to its columns). Dropped the
+  // moment the user edits the columns, so seeded rows never end up misaligned.
+  const [presetRows, setPresetRows] = useState<Array<Array<string | number>> | null>(null);
 
   // ── manual columns ──
-  const setCol = (i: number, patch: Partial<ColDraft>) =>
+  const setCol = (i: number, patch: Partial<ColDraft>) => {
+    setPresetRows(null);
     setCols((prev) => prev.map((c, j) => (j === i ? { ...c, ...patch } : c)));
-  const addCol = () => setCols((prev) => [...prev, { label: '', type: 'text', filterable: false }]);
-  const removeCol = (i: number) => setCols((prev) => prev.filter((_, j) => j !== i));
+  };
+  const addCol = () => { setPresetRows(null); setCols((prev) => [...prev, { label: '', type: 'text', filterable: false }]); };
+  const removeCol = (i: number) => { setPresetRows(null); setCols((prev) => prev.filter((_, j) => j !== i)); };
 
   // a template fills the column schema (and the name, if empty) in one click,
   // then drops into the manual editor so the columns can still be tweaked
@@ -75,6 +80,7 @@ export default function CreateBase({
         defaultGroup: c.defaultGroup,
       })),
     );
+    setPresetRows(p.rows ?? null);
     setMode('manual');
   };
 
@@ -104,7 +110,7 @@ export default function CreateBase({
         name: name.trim(),
         columns,
         parent: parent || undefined,
-        rows: mode === 'import' ? parsed.rows : undefined,
+        rows: mode === 'import' ? parsed.rows : (presetRows ?? undefined),
       });
       onCreated(body.base.id);
     } catch (e) {
