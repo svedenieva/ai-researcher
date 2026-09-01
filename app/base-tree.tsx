@@ -442,13 +442,18 @@ export default function BaseTree({
         </div>
       )}
 
-      <input
-        className={styles.search}
-        placeholder={s.search}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        autoFocus={!embedded}
-      />
+      {/* the persistent sidebar already has the global search above it (which
+          finds bases too), so the tree's own search box would be a duplicate —
+          keep it only in the floating picker window, which has no global search */}
+      {!embedded && (
+        <input
+          className={styles.search}
+          placeholder={s.search}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          autoFocus
+        />
+      )}
 
       <div className={styles.tree} onScroll={closeMenu}>
         <div className={styles.group}>
