@@ -16,7 +16,11 @@ export default async function PublicBase({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ t?: string }>;
 }) {
-  const { id } = await params;
+  const { id: rawId } = await params;
+  // path params arrive percent-encoded (base ids are cyrillic). The token was
+  // signed against the decoded id, and the store is keyed by it, so decode
+  // before verifying or looking up — otherwise every cyrillic base 404s.
+  const id = safeDecode(rawId);
   const { t = '' } = await searchParams;
   if (!sharingEnabled() || !verifyShareToken(id, t)) notFound();
 
@@ -58,6 +62,11 @@ export default async function PublicBase({
       <footer className={styles.foot}>AI-Researcher · спільний доступ лише для читання</footer>
     </div>
   );
+}
+
+// decodeURIComponent throws on a malformed % sequence — fall back to the raw id
+function safeDecode(v: string): string {
+  try { return decodeURIComponent(v); } catch { return v; }
 }
 
 const URL_RE = /^https?:\/\/\S+$/i;
