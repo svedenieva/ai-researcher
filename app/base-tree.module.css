@@ -225,25 +225,80 @@
   }
 }
 
-/* the action strip is overlaid, not in the flow: in flow it reserved its width
-   even at opacity:0, which on a narrow panel (deep indent + 4 buttons) squeezed
-   the name to zero. Absolute keeps the name at full width; the strip fades in on
-   hover over the name's (already ellipsised) tail, like a file explorer. */
+/* a single «⋯» trigger, overlaid (not in the flow) so it never steals width
+   from the name on a narrow sidebar. Shows on row hover, or while its menu is
+   open; on touch (no hover) it stays faintly visible so it's reachable. */
 .actions {
   position: absolute;
   right: 4px;
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
-  gap: 4px;
-  padding: 3px 4px 3px 10px;
-  border-radius: var(--radius);
-  background: linear-gradient(90deg, transparent, var(--wash) 22%);
   opacity: 0;
   pointer-events: none;
   transition: opacity .1s;
 }
-.row:hover .actions { opacity: 1; pointer-events: auto; }
-.actions button { display: inline-flex; align-items: center; border: 0; background: none; cursor: pointer; color: var(--ink-45); }
-.actions button:hover { color: var(--ink); }
-.actions button:hover { opacity: 1; }
+.row:hover .actions,
+.actionsOpen { opacity: 1; pointer-events: auto; }
+@media (hover: none) { .actions { opacity: .55; pointer-events: auto; } }
+
+.more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  color: var(--ink-45);
+  cursor: pointer;
+}
+.more:hover,
+.actionsOpen .more { background: var(--wash); color: var(--ink); }
+
+/* «⋯» dropdown — positioned fixed (JS) so the tree's overflow can't clip it */
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+.menu {
+  position: fixed;
+  z-index: 71;
+  width: 210px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+}
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.menuItem svg { color: var(--ink-45); flex: none; }
+.menuItem:hover { background: var(--wash); border-color: var(--rule); }
+.menuItem.danger { color: var(--error); }
+.menuItem.danger svg { color: currentColor; }
+.menuItem.danger:hover {
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  border-color: color-mix(in srgb, var(--error) 30%, transparent);
+}

@@ -5,7 +5,7 @@ import type { BaseTab } from './base-picker';
 import { toneColor } from '@/lib/tone';
 import { apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
-import { IconFolder, IconFile, IconPencil, IconMove, IconTrash, IconPlus } from './icons';
+import { IconFolder, IconFile, IconPencil, IconMove, IconTrash, IconPlus, IconDots } from './icons';
 import styles from './base-tree.module.css';
 
 export interface TreeNode extends BaseTab {
@@ -68,6 +68,16 @@ export default function BaseTree({
   // inline move: the id of the base being moved. The row turns into a parent
   // picker, mirroring how rename turns it into an input.
   const [movingId, setMovingId] = useState<string | null>(null);
+
+  // «⋯» actions menu: which node's menu is open and where to anchor it. The tree
+  // scrolls (overflow), so the menu is positioned fixed off the trigger's rect
+  // rather than absolutely inside the row (which would clip).
+  const [menu, setMenu] = useState<{ id: string; right: number; top: number; bottom: number } | null>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
+  const openMenu = (id: string, el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    setMenu((m) => (m?.id === id ? null : { id, right: r.right, top: r.top, bottom: r.bottom }));
+  };
 
   // Where may this base go? Anywhere except itself and its own branch —
   // otherwise the tree becomes cyclic. The server checks this too (it is the
@@ -159,14 +169,16 @@ export default function BaseTree({
     return path;
   });
 
-  // Esc closes
+  // Esc closes the «⋯» menu first (if open), otherwise the whole tree
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key !== 'Escape') return;
+      if (menu) setMenu(null);
+      else onClose();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, menu]);
 
   const toggle = (id: string) =>
     setExpanded((prev) => {
@@ -263,17 +275,20 @@ export default function BaseTree({
             </button>
           )}
           {editingId !== node.id && movingId !== node.id && (
-            <span className={styles.actions}>
-              {/* «+» on every node — including built-in ones — so a base can be
-                  added under any node right where you are */}
-              <button type="button" title={`Додати підбазу в «${node.name}»`} onClick={(e) => { e.stopPropagation(); onCreate(node.id); }}><IconPlus size={14} /></button>
-              {!node.builtin && (
-                <>
-                  <button type="button" title="Перейменувати" onClick={(e) => { e.stopPropagation(); startRename(node); }}><IconPencil size={14} /></button>
-                  <button type="button" title="Перенести до іншої гілки" onClick={(e) => { e.stopPropagation(); setMovingId(node.id); }}><IconMove size={14} /></button>
-                  <button type="button" title="Видалити базу до кошика" onClick={(e) => { e.stopPropagation(); deleteBase(node); }}><IconTrash size={14} /></button>
-                </>
-              )}
+            <span className={`${styles.actions} ${menu?.id === node.id ? styles.actionsOpen : ''}`}>
+              {/* one «⋯» trigger instead of a strip of icons — it stays out of the
+                  name's way (a narrow sidebar has no room for four buttons) and
+                  opens a menu with add-subbase / rename / move / delete */}
+              <button
+                type="button"
+                className={styles.more}
+                aria-haspopup="menu"
+                aria-expanded={menu?.id === node.id}
+                title={`Дії з базою «${node.name}»`}
+                onClick={(e) => { e.stopPropagation(); openMenu(node.id, e.currentTarget); }}
+              >
+                <IconDots size={16} />
+              </button>
             </span>
           )}
         </div>
@@ -308,10 +323,46 @@ export default function BaseTree({
         autoFocus={!embedded}
       />
 
-      <div className={styles.tree}>
+      <div className={styles.tree} onScroll={closeMenu}>
         {roots.map((n) => renderNode(n, 0))}
         {matches && matches.size === 0 && <div className={styles.empty}>Нічого не знайдено</div>}
       </div>
+
+      {/* «⋯» actions menu, positioned fixed off the trigger's rect so the tree's
+          overflow doesn't clip it */}
+      {menu && (() => {
+        const node = byId.get(menu.id);
+        if (!node) return null;
+        const W = 210;
+        const left = Math.max(8, Math.min(menu.right - W, window.innerWidth - W - 8));
+        const openUp = menu.bottom + 200 > window.innerHeight;
+        const pos: CSSProperties = openUp
+          ? { left, bottom: window.innerHeight - menu.top + 6 }
+          : { left, top: menu.bottom + 6 };
+        return (
+          <>
+            <div className={styles.menuBackdrop} onClick={closeMenu} aria-hidden="true" />
+            <div className={styles.menu} role="menu" style={pos} aria-label={`Дії з базою «${node.name}»`}>
+              <button type="button" role="menuitem" className={styles.menuItem} onClick={() => { closeMenu(); onCreate(node.id); }}>
+                <IconPlus size={15} /> Додати підбазу
+              </button>
+              {!node.builtin && (
+                <>
+                  <button type="button" role="menuitem" className={styles.menuItem} onClick={() => { closeMenu(); startRename(node); }}>
+                    <IconPencil size={15} /> Перейменувати
+                  </button>
+                  <button type="button" role="menuitem" className={styles.menuItem} onClick={() => { closeMenu(); setMovingId(node.id); }}>
+                    <IconMove size={15} /> Перенести
+                  </button>
+                  <button type="button" role="menuitem" className={`${styles.menuItem} ${styles.danger}`} onClick={() => { closeMenu(); deleteBase(node); }}>
+                    <IconTrash size={15} /> Видалити
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        );
+      })()}
 
       <div className={styles.foot}>
         <button
