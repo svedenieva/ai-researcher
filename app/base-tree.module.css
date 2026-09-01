@@ -56,6 +56,7 @@
 }
 
 .row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -221,8 +222,25 @@
   }
 }
 
-.actions { display: inline-flex; gap: 4px; margin-left: auto; opacity: 0; transition: opacity .1s; }
-.row:hover .actions { opacity: .8; }
+/* the action strip is overlaid, not in the flow: in flow it reserved its width
+   even at opacity:0, which on a narrow panel (deep indent + 4 buttons) squeezed
+   the name to zero. Absolute keeps the name at full width; the strip fades in on
+   hover over the name's (already ellipsised) tail, like a file explorer. */
+.actions {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px 4px 3px 10px;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, transparent, var(--wash) 22%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .1s;
+}
+.row:hover .actions { opacity: 1; pointer-events: auto; }
 .actions button { display: inline-flex; align-items: center; border: 0; background: none; cursor: pointer; color: var(--ink-45); }
 .actions button:hover { color: var(--ink); }
 .actions button:hover { opacity: 1; }
