@@ -58,6 +58,22 @@
   padding: 0 6px;
 }
 
+/* the two top-level groups: «Дослідник» and «База знань» */
+.group + .group { margin-top: 10px; }
+.groupLabel {
+  padding: 4px 10px 5px;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-45);
+}
+.groupEmpty {
+  padding: 4px 12px 8px;
+  font-size: 12px;
+  color: var(--ink-25);
+}
+
 .row {
   position: relative;
   display: flex;

@@ -20,6 +20,9 @@ const S: Record<Lang, {
   actionsFor: (n: string) => string; movePick: (n: string) => string;
   renamedTo: (n: string) => string; deleted: (n: string) => string; delTitle: (n: string) => string;
   movedTo: (n: string, w: string) => string; movedRoot: (n: string) => string;
+  groupResearch: string; groupKnowledge: string; groupEmpty: string;
+  toKnowledge: string; toResearch: string;
+  movedToGroup: (n: string, g: string) => string;
 }> = {
   uk: {
     bases: 'Бази даних', close: 'Закрити', search: 'Пошук бази…', empty: 'Нічого не знайдено',
@@ -34,6 +37,9 @@ const S: Record<Lang, {
     renamedTo: (n) => `Перейменовано на «${n}»`, deleted: (n) => `Базу «${n}» видалено`,
     delTitle: (n) => `Видалити базу «${n}»?`,
     movedTo: (n, w) => `«${n}» → «${w}»`, movedRoot: (n) => `«${n}» — до кореня`,
+    groupResearch: 'Дослідник', groupKnowledge: 'База знань', groupEmpty: 'Порожньо — створіть базу',
+    toKnowledge: 'До «Бази знань»', toResearch: 'До «Дослідника»',
+    movedToGroup: (n, g) => `«${n}» → ${g}`,
   },
   ru: {
     bases: 'Базы данных', close: 'Закрыть', search: 'Поиск базы…', empty: 'Ничего не найдено',
@@ -48,6 +54,9 @@ const S: Record<Lang, {
     renamedTo: (n) => `Переименовано в «${n}»`, deleted: (n) => `База «${n}» удалена`,
     delTitle: (n) => `Удалить базу «${n}»?`,
     movedTo: (n, w) => `«${n}» → «${w}»`, movedRoot: (n) => `«${n}» — в корень`,
+    groupResearch: 'Исследователь', groupKnowledge: 'База знаний', groupEmpty: 'Пусто — создайте базу',
+    toKnowledge: 'В «Базу знаний»', toResearch: 'В «Исследователь»',
+    movedToGroup: (n, g) => `«${n}» → ${g}`,
   },
   en: {
     bases: 'Databases', close: 'Close', search: 'Search a base…', empty: 'Nothing found',
@@ -62,6 +71,9 @@ const S: Record<Lang, {
     renamedTo: (n) => `Renamed to “${n}”`, deleted: (n) => `Base “${n}” deleted`,
     delTitle: (n) => `Delete base “${n}”?`,
     movedTo: (n, w) => `“${n}” → “${w}”`, movedRoot: (n) => `“${n}” — to root`,
+    groupResearch: 'Researcher', groupKnowledge: 'Knowledge base', groupEmpty: 'Empty — create a base',
+    toKnowledge: 'To “Knowledge base”', toResearch: 'To “Researcher”',
+    movedToGroup: (n, g) => `“${n}” → ${g}`,
   },
 };
 
@@ -87,6 +99,35 @@ export function buildTree(tabs: BaseTab[]) {
     return 0;
   });
   return { roots, byId };
+}
+
+// Which sidebar group a base belongs to: «Дослідник» (working bases you make)
+// or «База знань» (curated). The assignment is a per-viewer preference kept in
+// localStorage (no DB column yet); the default splits built-in vs your own.
+export type BaseKind = 'research' | 'knowledge';
+export function defaultKind(node: { builtin?: boolean }): BaseKind {
+  return node.builtin ? 'knowledge' : 'research';
+}
+
+// Forest of one kind only: a base whose parent sits in the OTHER kind (or is
+// missing) becomes a top-level node here, so the two groups read as separate
+// while nesting is preserved within a group.
+function buildForest(tabs: BaseTab[], kindOf: (t: BaseTab) => BaseKind, want: BaseKind): TreeNode[] {
+  const mine = tabs.filter((t) => kindOf(t) === want);
+  const byId = new Map<string, TreeNode>(mine.map((t) => [t.id, { ...t, children: [] }]));
+  const roots: TreeNode[] = [];
+  for (const node of byId.values()) {
+    const parent = node.parent ? byId.get(node.parent) : undefined;
+    if (parent) parent.children.push(node);
+    else roots.push(node);
+  }
+  roots.sort((a, b) => {
+    if (a.builtin && b.builtin) return BUILTIN_ORDER.indexOf(a.id) - BUILTIN_ORDER.indexOf(b.id);
+    if (a.builtin) return -1;
+    if (b.builtin) return 1;
+    return 0;
+  });
+  return roots;
 }
 
 export default function BaseTree({
@@ -116,8 +157,23 @@ export default function BaseTree({
 }) {
   const { lang } = useLang();
   const s = S[lang] ?? S.uk;
-  const { roots, byId } = useMemo(() => buildTree(tabs), [tabs]);
+  const { byId } = useMemo(() => buildTree(tabs), [tabs]);
   const [query, setQuery] = useState('');
+
+  // per-viewer group assignment (research vs knowledge), kept in localStorage
+  const [kinds, setKinds] = useState<Record<string, BaseKind>>({});
+  useEffect(() => {
+    try { const raw = localStorage.getItem('baseKinds'); if (raw) setKinds(JSON.parse(raw)); } catch {}
+  }, []);
+  const kindOf = useCallback((t: BaseTab): BaseKind => kinds[t.id] ?? defaultKind(t), [kinds]);
+  const setKindFor = (id: string, kind: BaseKind) =>
+    setKinds((prev) => {
+      const next = { ...prev, [id]: kind };
+      try { localStorage.setItem('baseKinds', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  const researchRoots = useMemo(() => buildForest(tabs, kindOf, 'research'), [tabs, kindOf]);
+  const knowledgeRoots = useMemo(() => buildForest(tabs, kindOf, 'knowledge'), [tabs, kindOf]);
   const toast = useToast();
   const confirm = useConfirm();
   // inline rename: the id of the base being renamed, and its draft name
@@ -383,7 +439,15 @@ export default function BaseTree({
       />
 
       <div className={styles.tree} onScroll={closeMenu}>
-        {roots.map((n) => renderNode(n, 0))}
+        <div className={styles.group}>
+          <div className={styles.groupLabel}>{s.groupResearch}</div>
+          {researchRoots.map((n) => renderNode(n, 0))}
+          {researchRoots.length === 0 && !matches && <div className={styles.groupEmpty}>{s.groupEmpty}</div>}
+        </div>
+        <div className={styles.group}>
+          <div className={styles.groupLabel}>{s.groupKnowledge}</div>
+          {knowledgeRoots.map((n) => renderNode(n, 0))}
+        </div>
         {matches && matches.size === 0 && <div className={styles.empty}>{s.empty}</div>}
       </div>
 
@@ -404,6 +468,19 @@ export default function BaseTree({
             <div className={styles.menu} role="menu" style={pos} aria-label={s.actionsFor(node.name)}>
               <button type="button" role="menuitem" className={styles.menuItem} onClick={() => { closeMenu(); onCreate(node.id); }}>
                 <IconPlus size={15} /> {s.addSub}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className={styles.menuItem}
+                onClick={() => {
+                  closeMenu();
+                  const to: BaseKind = kindOf(node) === 'research' ? 'knowledge' : 'research';
+                  setKindFor(node.id, to);
+                  toast(s.movedToGroup(node.name, to === 'knowledge' ? s.groupKnowledge : s.groupResearch));
+                }}
+              >
+                <IconFolder size={15} /> {kindOf(node) === 'research' ? s.toKnowledge : s.toResearch}
               </button>
               {!node.builtin && (
                 <>
