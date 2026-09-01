@@ -87,6 +87,17 @@ export async function listRuns(me: string | null): Promise<CustomBase[]> {
   );
 }
 
+/** How many server runs this person started in the last `windowMs` (default 24h).
+    Used to rate-limit the server agent so it can't bill our key without bound.
+    Counted from run bases' createdAt — a soft quota: deleting a run frees a slot,
+    which is acceptable to stop runaway billing (a hard cap needs an append-only
+    log, i.e. a DB table we don't have yet). */
+export async function runsInWindow(me: string | null, windowMs = 24 * 60 * 60 * 1000): Promise<number> {
+  const cutoff = Date.now() - windowMs;
+  const runs = await listRuns(me);
+  return runs.filter((r) => r.createdAt && Date.parse(r.createdAt) >= cutoff).length;
+}
+
 /** Move older root-level runs into the folder. Returns how many were filed. */
 export async function tidyRuns(me: string | null): Promise<number> {
   const store = getCustomStore();

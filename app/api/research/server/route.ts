@@ -1,6 +1,6 @@
 import { getCustomStore } from '@/lib/datasource/customStore';
 import { currentEmail } from '@/lib/current-user';
-import { RUN_SEED_COLUMNS, researchFolder, runName } from '@/lib/research/runs';
+import { RUN_SEED_COLUMNS, researchFolder, runName, runsInWindow } from '@/lib/research/runs';
 import { serverAgentStatus, runServerResearch } from '@/lib/research/server-agent';
 
 export const dynamic = 'force-dynamic';
@@ -20,12 +20,6 @@ export async function POST(request: Request): Promise<Response> {
   if (!status.enabled) {
     return Response.json({ error: 'Server research is disabled', reason: status.reason }, { status: 403 });
   }
-  // NOTE: no per-user rate limit / quota yet. Each run is bounded (maxTurns in
-  // runServerResearch), but a user could trigger many runs and bill our key
-  // without limit. The only current mitigation is that this path is OFF unless
-  // the flag is set. Before enabling it in production, add a store-backed quota
-  // (runs-per-user-per-day) — an in-memory counter is useless on serverless.
-
   let body: { prompt?: unknown };
   try { body = await request.json(); } catch { return Response.json({ error: 'Malformed request' }, { status: 400 }); }
   const topic = String(body?.prompt ?? '').trim();
@@ -35,6 +29,19 @@ export async function POST(request: Request): Promise<Response> {
   // owner===null = a base visible to everyone (canAccessBase); never mint one
   // from an unauthenticated request.
   if (!me) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Per-user quota: each server run bills our key, so cap how many one person
+  // can start per rolling 24h (RESEARCH_SERVER_DAILY_LIMIT, default 5). Soft cap
+  // (counted from run bases) — enough to stop runaway billing.
+  const dailyLimit = Math.max(1, Number(process.env.RESEARCH_SERVER_DAILY_LIMIT ?? 5) || 5);
+  const usedToday = await runsInWindow(me);
+  if (usedToday >= dailyLimit) {
+    return Response.json(
+      { error: `Досягнуто денний ліміт досліджень (${dailyLimit}/добу). Спробуйте завтра.`, reason: 'quota', limit: dailyLimit },
+      { status: 429 },
+    );
+  }
+
   const store = getCustomStore();
 
   try {
