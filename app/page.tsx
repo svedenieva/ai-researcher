@@ -499,19 +499,19 @@ export default function Home() {
         </div>
         <nav className={styles.sideNav} aria-label="Розділи">
           <Link href="/bases" className={styles.sideNavLink} title={tr(lang, 'showcase')}>
-            <IconGrid size={17} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'showcase')}</span>
+            <IconGrid size={15} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'showcase')}</span>
           </Link>
           <Link href="/connect" className={styles.sideNavLink} title={tr(lang, 'connect')}>
-            <IconPlug size={17} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'connect')}</span>
+            <IconPlug size={15} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'connect')}</span>
           </Link>
           <Link href="/sources" className={styles.sideNavLink} title={tr(lang, 'sources')}>
-            <IconInbox size={17} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'sources')}</span>
+            <IconInbox size={15} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'sources')}</span>
           </Link>
           <Link href="/sites" className={styles.sideNavLink} title={tr(lang, 'sites')}>
-            <IconGlobe size={17} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'sites')}</span>
+            <IconGlobe size={15} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'sites')}</span>
           </Link>
           <Link href="/bin" className={styles.sideNavLink} title={tr(lang, 'trash')}>
-            <IconTrash size={17} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'trash')}</span>
+            <IconTrash size={15} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'trash')}</span>
           </Link>
         </nav>
         <div className={styles.sideFoot}>
