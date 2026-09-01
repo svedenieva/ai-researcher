@@ -134,6 +134,19 @@
   white-space: nowrap;
 }
 
+/* in the persistent left sidebar the panel is narrow — let base names show in
+   full (wrap instead of clipping) and drop the «вбудована» tag that ate the
+   width, so every name is readable */
+.embedded .name {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+.embedded .tag { display: none; }
+.embedded .node { align-items: flex-start; }
+
 .tag {
   margin-left: auto;
   flex: none;
