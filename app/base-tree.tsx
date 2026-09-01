@@ -174,6 +174,18 @@ export default function BaseTree({
     });
   const researchRoots = useMemo(() => buildForest(tabs, kindOf, 'research'), [tabs, kindOf]);
   const knowledgeRoots = useMemo(() => buildForest(tabs, kindOf, 'knowledge'), [tabs, kindOf]);
+
+  // each group can be collapsed; remembered per viewer
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<BaseKind, boolean>>({ research: false, knowledge: false });
+  useEffect(() => {
+    try { const raw = localStorage.getItem('baseGroupsCollapsed'); if (raw) setCollapsedGroups((p) => ({ ...p, ...JSON.parse(raw) })); } catch {}
+  }, []);
+  const toggleGroup = (g: BaseKind) =>
+    setCollapsedGroups((prev) => {
+      const next = { ...prev, [g]: !prev[g] };
+      try { localStorage.setItem('baseGroupsCollapsed', JSON.stringify(next)); } catch {}
+      return next;
+    });
   const toast = useToast();
   const confirm = useConfirm();
   // inline rename: the id of the base being renamed, and its draft name
@@ -440,13 +452,29 @@ export default function BaseTree({
 
       <div className={styles.tree} onScroll={closeMenu}>
         <div className={styles.group}>
-          <div className={styles.groupLabel}>{s.groupResearch}</div>
-          {researchRoots.map((n) => renderNode(n, 0))}
-          {researchRoots.length === 0 && !matches && <div className={styles.groupEmpty}>{s.groupEmpty}</div>}
+          <button
+            type="button"
+            className={styles.groupLabel}
+            onClick={() => toggleGroup('research')}
+            aria-expanded={!collapsedGroups.research}
+          >
+            <span className={styles.groupTwist} aria-hidden="true">{collapsedGroups.research && !matches ? '▸' : '▾'}</span>
+            {s.groupResearch}
+          </button>
+          {(!collapsedGroups.research || matches) && researchRoots.map((n) => renderNode(n, 0))}
+          {(!collapsedGroups.research || matches) && researchRoots.length === 0 && !matches && <div className={styles.groupEmpty}>{s.groupEmpty}</div>}
         </div>
         <div className={styles.group}>
-          <div className={styles.groupLabel}>{s.groupKnowledge}</div>
-          {knowledgeRoots.map((n) => renderNode(n, 0))}
+          <button
+            type="button"
+            className={styles.groupLabel}
+            onClick={() => toggleGroup('knowledge')}
+            aria-expanded={!collapsedGroups.knowledge}
+          >
+            <span className={styles.groupTwist} aria-hidden="true">{collapsedGroups.knowledge && !matches ? '▸' : '▾'}</span>
+            {s.groupKnowledge}
+          </button>
+          {(!collapsedGroups.knowledge || matches) && knowledgeRoots.map((n) => renderNode(n, 0))}
         </div>
         {matches && matches.size === 0 && <div className={styles.empty}>{s.empty}</div>}
       </div>
