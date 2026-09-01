@@ -24,7 +24,7 @@ import { basePath } from '@/lib/datasource/tree';
 import { defaultGroupSort } from '@/lib/presets';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
-import { IconGlobe, IconMerge, IconFile, IconShare } from './icons';
+import { IconGlobe, IconMerge, IconFile, IconShare, IconGrid, IconPlug, IconInbox, IconTrash, IconSidebar } from './icons';
 
 import styles from './page.module.css';
 
@@ -80,6 +80,19 @@ export default function Home() {
   const [deduping, setDeduping] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [sideOpen, setSideOpen] = useState(true);
+  // desktop «rail» mode: the sidebar collapses to a narrow icon strip (section
+  // icons only, tree/search hidden). Persisted; only affects screens ≥1025px.
+  const [rail, setRail] = useState(false);
+  useEffect(() => {
+    try { setRail(localStorage.getItem('sideRail') === '1'); } catch {}
+  }, []);
+  const toggleRail = useCallback(() => {
+    setRail((v) => {
+      const n = !v;
+      try { localStorage.setItem('sideRail', n ? '1' : '0'); } catch {}
+      return n;
+    });
+  }, []);
   // apply a base's default grouping (e.g. «Стадия» for the «Внедрение» preset)
   // once when the base is entered, then leave sorting to the user
   const pendingDefaultGroup = useRef(true);
@@ -433,7 +446,7 @@ export default function Home() {
 
 
   return (
-    <div className={`${styles.app} ${sideOpen ? '' : styles.sideClosed}`}>
+    <div className={`${styles.app} ${sideOpen ? '' : styles.sideClosed} ${rail ? styles.sideRail : ''}`}>
       <Shortcuts />
       {/* ── persistent left sidebar: brand + base tree ── */}
       <aside className={styles.side}>
@@ -445,6 +458,17 @@ export default function Home() {
             <span className={styles.mark} aria-hidden="true">AiR</span>
           )}
           <Link href="/" className={styles.brandName}>AI Researcher</Link>
+          {/* desktop only: collapse the sidebar to a narrow icon rail (and back) */}
+          <button
+            type="button"
+            className={styles.railToggle}
+            onClick={toggleRail}
+            aria-label={rail ? 'Розгорнути панель' : 'Згорнути в смужку'}
+            aria-pressed={rail}
+            title={rail ? 'Розгорнути панель' : 'Згорнути в смужку'}
+          >
+            <IconSidebar size={17} />
+          </button>
           {/* phone only: a burger inside the open off-canvas sidebar to close it —
               the top-bar burger is hidden behind the panel while it's open */}
           <button
@@ -456,30 +480,42 @@ export default function Home() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
         </div>
-        <GlobalSearch
-          onNavigate={(baseId, query) => {
-            onBaseChange(baseId);
-            setSearch(query);
-          }}
-        />
-        <BaseTree
-          embedded
-          tabs={tabs}
-          base={base}
-          onPick={onBaseChange}
-          onClose={() => {}}
-          onCreate={(parentId) => { setCreateParent(parentId); setCreating(true); }}
-          onMutated={loadBases}
-        />
+        <div className={styles.sideBody}>
+          <GlobalSearch
+            onNavigate={(baseId, query) => {
+              onBaseChange(baseId);
+              setSearch(query);
+            }}
+          />
+          <BaseTree
+            embedded
+            tabs={tabs}
+            base={base}
+            onPick={onBaseChange}
+            onClose={() => {}}
+            onCreate={(parentId) => { setCreateParent(parentId); setCreating(true); }}
+            onMutated={loadBases}
+          />
+        </div>
         <nav className={styles.sideNav} aria-label="Розділи">
-          <Link href="/bases" className={styles.sideNavLink}>{tr(lang, 'showcase')}</Link>
-          <Link href="/connect" className={styles.sideNavLink}>{tr(lang, 'connect')}</Link>
-          <Link href="/sources" className={styles.sideNavLink}>{tr(lang, 'sources')}</Link>
-          <Link href="/sites" className={styles.sideNavLink}>{tr(lang, 'sites')}</Link>
-          <Link href="/bin" className={styles.sideNavLink}>{tr(lang, 'trash')}</Link>
+          <Link href="/bases" className={styles.sideNavLink} title={tr(lang, 'showcase')}>
+            <IconGrid size={17} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'showcase')}</span>
+          </Link>
+          <Link href="/connect" className={styles.sideNavLink} title={tr(lang, 'connect')}>
+            <IconPlug size={17} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'connect')}</span>
+          </Link>
+          <Link href="/sources" className={styles.sideNavLink} title={tr(lang, 'sources')}>
+            <IconInbox size={17} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'sources')}</span>
+          </Link>
+          <Link href="/sites" className={styles.sideNavLink} title={tr(lang, 'sites')}>
+            <IconGlobe size={17} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'sites')}</span>
+          </Link>
+          <Link href="/bin" className={styles.sideNavLink} title={tr(lang, 'trash')}>
+            <IconTrash size={17} className={styles.sideNavIcon} /><span className={styles.sideNavText}>{tr(lang, 'trash')}</span>
+          </Link>
         </nav>
         <div className={styles.sideFoot}>
-          <span className={styles.live} aria-hidden="true" /> {loading ? 'Синхронізація…' : 'Синхронізовано · Online'}
+          <span className={styles.live} aria-hidden="true" /> <span className={styles.sideFootText}>{loading ? 'Синхронізація…' : 'Синхронізовано · Online'}</span>
         </div>
       </aside>
       {sideOpen && <div className={styles.scrim} onClick={() => setSideOpen(false)} aria-hidden="true" />}

@@ -28,6 +28,18 @@ function Svg({ size = 16, children, ...rest }: IconProps & { children: React.Rea
 export const IconDots = (p: IconProps) => (
   <Svg {...p}><circle cx="12" cy="5" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="12" cy="19" r="1" /></Svg>
 );
+// showcase — a grid of cards
+export const IconGrid = (p: IconProps) => (
+  <Svg {...p}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></Svg>
+);
+// connector — a plug
+export const IconPlug = (p: IconProps) => (
+  <Svg {...p}><path d="M9 2v6" /><path d="M15 2v6" /><path d="M6 8h12v3a6 6 0 0 1-12 0z" /><path d="M12 17v5" /></Svg>
+);
+// collapse the sidebar to a rail — a panel with a left bar
+export const IconSidebar = (p: IconProps) => (
+  <Svg {...p}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /></Svg>
+);
 export const IconFolder = (p: IconProps) => (
   <Svg {...p}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></Svg>
 );
