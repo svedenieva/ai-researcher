@@ -6,7 +6,64 @@ import { toneColor } from '@/lib/tone';
 import { apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
 import { IconFolder, IconFile, IconPencil, IconMove, IconTrash, IconPlus, IconDots } from './icons';
+import { useLang } from './lang-provider';
+import type { Lang } from '@/lib/i18n';
 import styles from './base-tree.module.css';
+
+// all user-facing strings, in the three site languages (default uk)
+const S: Record<Lang, {
+  bases: string; close: string; search: string; empty: string; create: string;
+  collapse: string; expand: string; builtin: string; newName: string;
+  moveTo: string; toRoot: string; addSub: string; rename: string; move: string; del: string;
+  undo: string; restored: string; delMsg: string;
+  errMove: string; errRename: string; errRestore: string; errDelete: string;
+  actionsFor: (n: string) => string; movePick: (n: string) => string;
+  renamedTo: (n: string) => string; deleted: (n: string) => string; delTitle: (n: string) => string;
+  movedTo: (n: string, w: string) => string; movedRoot: (n: string) => string;
+}> = {
+  uk: {
+    bases: 'Бази даних', close: 'Закрити', search: 'Пошук бази…', empty: 'Нічого не знайдено',
+    create: '+ Створити базу', collapse: 'Згорнути', expand: 'Розгорнути', builtin: 'вбудована',
+    newName: 'Нова назва бази', moveTo: 'Перенести до…', toRoot: 'До кореня',
+    addSub: 'Додати підбазу', rename: 'Перейменувати', move: 'Перенести', del: 'Видалити',
+    undo: 'Скасувати', restored: 'Відновлено',
+    delMsg: 'База та її рядки підуть до кошика — звідти можна повернути.',
+    errMove: 'Не вдалося перенести базу', errRename: 'Не вдалося перейменувати',
+    errRestore: 'Не вдалося відновити', errDelete: 'Не вдалося видалити базу',
+    actionsFor: (n) => `Дії з базою «${n}»`, movePick: (n) => `Перенести базу «${n}»`,
+    renamedTo: (n) => `Перейменовано на «${n}»`, deleted: (n) => `Базу «${n}» видалено`,
+    delTitle: (n) => `Видалити базу «${n}»?`,
+    movedTo: (n, w) => `«${n}» → «${w}»`, movedRoot: (n) => `«${n}» — до кореня`,
+  },
+  ru: {
+    bases: 'Базы данных', close: 'Закрыть', search: 'Поиск базы…', empty: 'Ничего не найдено',
+    create: '+ Создать базу', collapse: 'Свернуть', expand: 'Развернуть', builtin: 'встроенная',
+    newName: 'Новое название базы', moveTo: 'Перенести в…', toRoot: 'В корень',
+    addSub: 'Добавить подбазу', rename: 'Переименовать', move: 'Перенести', del: 'Удалить',
+    undo: 'Отменить', restored: 'Восстановлено',
+    delMsg: 'База и её строки уйдут в корзину — оттуда можно вернуть.',
+    errMove: 'Не удалось перенести базу', errRename: 'Не удалось переименовать',
+    errRestore: 'Не удалось восстановить', errDelete: 'Не удалось удалить базу',
+    actionsFor: (n) => `Действия с базой «${n}»`, movePick: (n) => `Перенести базу «${n}»`,
+    renamedTo: (n) => `Переименовано в «${n}»`, deleted: (n) => `База «${n}» удалена`,
+    delTitle: (n) => `Удалить базу «${n}»?`,
+    movedTo: (n, w) => `«${n}» → «${w}»`, movedRoot: (n) => `«${n}» — в корень`,
+  },
+  en: {
+    bases: 'Databases', close: 'Close', search: 'Search a base…', empty: 'Nothing found',
+    create: '+ New base', collapse: 'Collapse', expand: 'Expand', builtin: 'built-in',
+    newName: 'New base name', moveTo: 'Move to…', toRoot: 'To root',
+    addSub: 'Add sub-base', rename: 'Rename', move: 'Move', del: 'Delete',
+    undo: 'Undo', restored: 'Restored',
+    delMsg: 'The base and its rows go to the bin — you can restore them from there.',
+    errMove: 'Could not move the base', errRename: 'Could not rename',
+    errRestore: 'Could not restore', errDelete: 'Could not delete the base',
+    actionsFor: (n) => `Actions for “${n}”`, movePick: (n) => `Move base “${n}”`,
+    renamedTo: (n) => `Renamed to “${n}”`, deleted: (n) => `Base “${n}” deleted`,
+    delTitle: (n) => `Delete base “${n}”?`,
+    movedTo: (n, w) => `“${n}” → “${w}”`, movedRoot: (n) => `“${n}” — to root`,
+  },
+};
 
 export interface TreeNode extends BaseTab {
   children: TreeNode[];
@@ -57,6 +114,8 @@ export default function BaseTree({
       instead of the drop-down window */
   embedded?: boolean;
 }) {
+  const { lang } = useLang();
+  const s = S[lang] ?? S.uk;
   const { roots, byId } = useMemo(() => buildTree(tabs), [tabs]);
   const [query, setQuery] = useState('');
   const toast = useToast();
@@ -104,9 +163,9 @@ export default function BaseTree({
       await apiSend('/api/bases', 'PATCH', { id: node.id, parent });
       onMutated?.();
       const where = parent ? tabs.find((t) => t.id === parent)?.name : null;
-      toast(where ? `«${node.name}» → «${where}»` : `«${node.name}» — до кореня`);
+      toast(where ? s.movedTo(node.name, where) : s.movedRoot(node.name));
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Не вдалося перенести базу');
+      toast(e instanceof Error ? e.message : s.errMove);
     }
   };
 
@@ -119,9 +178,9 @@ export default function BaseTree({
     try {
       await apiSend('/api/bases', 'PATCH', { id: node.id, name });
       onMutated?.();
-      toast(`Перейменовано на «${name}»`);
+      toast(s.renamedTo(name));
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Не вдалося перейменувати');
+      toast(e instanceof Error ? e.message : s.errRename);
     }
   };
 
@@ -129,16 +188,16 @@ export default function BaseTree({
     try {
       await apiSend('/api/bases', 'DELETE', { id, restore: true });
       onMutated?.();
-      toast('Відновлено');
+      toast(s.restored);
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Не вдалося відновити');
+      toast(e instanceof Error ? e.message : s.errRestore);
     }
   };
   const deleteBase = async (node: TreeNode) => {
     const ok = await confirm({
-      title: `Видалити базу «${node.name}»?`,
-      message: 'База та її рядки підуть до кошика — звідти можна повернути.',
-      confirmLabel: 'Видалити',
+      title: s.delTitle(node.name),
+      message: s.delMsg,
+      confirmLabel: s.del,
       danger: true,
     });
     if (!ok) return;
@@ -148,9 +207,9 @@ export default function BaseTree({
       // deleted the base that's currently open — fall back to the parent (or the
       // default built-in one), otherwise the screen sits on a base that's gone
       if (node.id === base) onPick(node.parent ?? 'market');
-      toast(`Базу «${node.name}» видалено`, { action: { label: 'Скасувати', onClick: () => restoreBase(node.id) } });
+      toast(s.deleted(node.name), { action: { label: s.undo, onClick: () => restoreBase(node.id) } });
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Не вдалося видалити базу');
+      toast(e instanceof Error ? e.message : s.errDelete);
     }
   };
 
@@ -218,7 +277,7 @@ export default function BaseTree({
               type="button"
               className={styles.twist}
               onClick={() => toggle(node.id)}
-              aria-label={isOpen ? 'Згорнути' : 'Розгорнути'}
+              aria-label={isOpen ? s.collapse : s.expand}
             >
               {isOpen ? '▾' : '▸'}
             </button>
@@ -230,13 +289,13 @@ export default function BaseTree({
               className={styles.renameInput}
               defaultValue=""
               autoFocus
-              aria-label={`Перенести базу «${node.name}»`}
+              aria-label={s.movePick(node.name)}
               onChange={(e) => commitMove(node, e.target.value || null)}
               onBlur={() => setMovingId(null)}
               onClick={(e) => e.stopPropagation()}
             >
-              <option value="" disabled>Перенести до…</option>
-              {node.parent && <option value="">До кореня</option>}
+              <option value="" disabled>{s.moveTo}</option>
+              {node.parent && <option value="">{s.toRoot}</option>}
               {moveTargets(node).map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
@@ -253,7 +312,7 @@ export default function BaseTree({
               }}
               onBlur={() => commitRename(node)}
               onClick={(e) => e.stopPropagation()}
-              aria-label="Нова назва бази"
+              aria-label={s.newName}
             />
           ) : (
             <button
@@ -271,7 +330,7 @@ export default function BaseTree({
               <span className={styles.tone} aria-hidden="true" />
               <span className={styles.icon} aria-hidden="true">{hasKids ? <IconFolder size={14} /> : <IconFile size={14} />}</span>
               <span className={styles.name}>{node.name}</span>
-              {node.builtin && <span className={styles.tag}>вбудована</span>}
+              {node.builtin && <span className={styles.tag}>{s.builtin}</span>}
             </button>
           )}
           {editingId !== node.id && movingId !== node.id && (
@@ -284,7 +343,7 @@ export default function BaseTree({
                 className={styles.more}
                 aria-haspopup="menu"
                 aria-expanded={menu?.id === node.id}
-                title={`Дії з базою «${node.name}»`}
+                title={s.actionsFor(node.name)}
                 onClick={(e) => { e.stopPropagation(); openMenu(node.id, e.currentTarget); }}
               >
                 <IconDots size={16} />
@@ -304,12 +363,12 @@ export default function BaseTree({
     <div
       className={embedded ? styles.embedded : styles.panel}
       role={embedded ? 'navigation' : 'dialog'}
-      aria-label="Бази даних"
+      aria-label={s.bases}
     >
       {!embedded && (
         <div className={styles.head}>
-          <span className={styles.title}>Бази даних</span>
-          <button type="button" className={styles.close} onClick={onClose} aria-label="Закрити">
+          <span className={styles.title}>{s.bases}</span>
+          <button type="button" className={styles.close} onClick={onClose} aria-label={s.close}>
             ×
           </button>
         </div>
@@ -317,7 +376,7 @@ export default function BaseTree({
 
       <input
         className={styles.search}
-        placeholder="Пошук бази…"
+        placeholder={s.search}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         autoFocus={!embedded}
@@ -325,7 +384,7 @@ export default function BaseTree({
 
       <div className={styles.tree} onScroll={closeMenu}>
         {roots.map((n) => renderNode(n, 0))}
-        {matches && matches.size === 0 && <div className={styles.empty}>Нічого не знайдено</div>}
+        {matches && matches.size === 0 && <div className={styles.empty}>{s.empty}</div>}
       </div>
 
       {/* «⋯» actions menu, positioned fixed off the trigger's rect so the tree's
@@ -342,20 +401,20 @@ export default function BaseTree({
         return (
           <>
             <div className={styles.menuBackdrop} onClick={closeMenu} aria-hidden="true" />
-            <div className={styles.menu} role="menu" style={pos} aria-label={`Дії з базою «${node.name}»`}>
+            <div className={styles.menu} role="menu" style={pos} aria-label={s.actionsFor(node.name)}>
               <button type="button" role="menuitem" className={styles.menuItem} onClick={() => { closeMenu(); onCreate(node.id); }}>
-                <IconPlus size={15} /> Додати підбазу
+                <IconPlus size={15} /> {s.addSub}
               </button>
               {!node.builtin && (
                 <>
                   <button type="button" role="menuitem" className={styles.menuItem} onClick={() => { closeMenu(); startRename(node); }}>
-                    <IconPencil size={15} /> Перейменувати
+                    <IconPencil size={15} /> {s.rename}
                   </button>
                   <button type="button" role="menuitem" className={styles.menuItem} onClick={() => { closeMenu(); setMovingId(node.id); }}>
-                    <IconMove size={15} /> Перенести
+                    <IconMove size={15} /> {s.move}
                   </button>
                   <button type="button" role="menuitem" className={`${styles.menuItem} ${styles.danger}`} onClick={() => { closeMenu(); deleteBase(node); }}>
-                    <IconTrash size={15} /> Видалити
+                    <IconTrash size={15} /> {s.del}
                   </button>
                 </>
               )}
@@ -373,7 +432,7 @@ export default function BaseTree({
             onCreate();
           }}
         >
-          + Створити базу
+          {s.create}
         </button>
       </div>
     </div>
