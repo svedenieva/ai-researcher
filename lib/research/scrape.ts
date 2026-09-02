@@ -7,7 +7,10 @@ import { coerceToNumber } from '../coerce';
 // Off unless SCRAPEGRAPHAI_API_KEY is set; SCRAPEGRAPHAI_MOCK=1 runs the whole
 // flow without the network (for local testing).
 
-const ENDPOINT = 'https://api.scrapegraphai.com/v1/smartscraper';
+// ScrapeGraphAI v2 «extract» endpoint (v1/smartscraper is deprecated and rejects
+// v2 keys). Overridable via SCRAPEGRAPHAI_API_URL if the base ever moves again.
+const API_BASE = process.env.SCRAPEGRAPHAI_API_URL || 'https://v2-api.scrapegraphai.com/api';
+const ENDPOINT = `${API_BASE}/extract`;
 
 export interface ScrapeStatus { enabled: boolean; mock: boolean; reason: string; }
 export function scrapeStatus(env: Record<string, string | undefined> = process.env): ScrapeStatus {
@@ -64,16 +67,17 @@ export function mockResult(columns: ColumnDef[], url: string): { items: Record<s
   return { items: [item] };
 }
 
-// Call the live SmartScraper endpoint. Throws on a non-OK response or an API error.
+// Call the live v2 «extract» endpoint. Throws on a non-OK response or an API
+// error. The structured data comes back under `json`; fall back to result/data.
 export async function smartScrape(apiKey: string, url: string, prompt: string, signal?: AbortSignal): Promise<unknown> {
   const res = await fetch(ENDPOINT, {
     method: 'POST',
     headers: { 'SGAI-APIKEY': apiKey, 'Content-Type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify({ website_url: url, user_prompt: prompt }),
+    body: JSON.stringify({ url, prompt }),
     signal,
   });
-  const body = (await res.json().catch(() => ({}))) as { result?: unknown; error?: string };
-  if (!res.ok) throw new Error(`ScrapeGraphAI ${res.status}: ${body.error || res.statusText}`);
+  const body = (await res.json().catch(() => ({}))) as { json?: unknown; result?: unknown; data?: unknown; error?: string; message?: string };
+  if (!res.ok) throw new Error(`ScrapeGraphAI ${res.status}: ${body.error || body.message || res.statusText}`);
   if (body.error) throw new Error(`ScrapeGraphAI: ${body.error}`);
-  return body.result;
+  return body.json ?? body.result ?? body.data ?? body;
 }
