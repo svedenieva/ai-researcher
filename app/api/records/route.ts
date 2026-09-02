@@ -121,7 +121,24 @@ export async function GET(request: Request): Promise<Response> {
         // the «Теги» multiselect column is a system column shown on every custom
         // base (like the mode flag), so tags can be edited, searched and grouped
         const withTags = withTagsColumn(custom.columns);
-        const cols = descendants.length ? [...withTags, SOURCE_COL] : withTags;
+        let cols = withTags;
+        if (descendants.length) {
+          // «единое наследуемое дерево»: the parent shows the UNION of every
+          // column across its subtree, so a child's own columns are visible here
+          // instead of being dropped. Deduped by key (first — the parent — wins
+          // the type); each merged row already carries all its keys.
+          const byId = new Map(all.map((b) => [b.id, b]));
+          const seen = new Set(withTags.map((c) => c.key));
+          const union = [...withTags];
+          for (const id of descendants) {
+            const sub = byId.get(id);
+            if (!sub) continue;
+            for (const c of withTagsColumn(sub.columns)) {
+              if (!seen.has(c.key)) { seen.add(c.key); union.push(c); }
+            }
+          }
+          cols = [...union, SOURCE_COL];
+        }
         const ds = new JsonDataSource(rows, cols);
         const [records, facets] = await Promise.all([ds.list(params), ds.facets()]);
         const total = q || params.filters ? (await ds.list()).length : records.length;

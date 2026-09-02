@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseTable, inferType } from '@/lib/parseTable';
-import type { ColumnType } from '@/lib/datasource/types';
+import type { ColumnType, ColumnDef } from '@/lib/datasource/types';
 import { BASE_PRESETS, type BasePreset } from '@/lib/presets';
 import { useLang } from './lang-provider';
 import { t, tImportN, tColumnN } from '@/lib/i18n';
-import { apiSend } from '@/lib/api';
+import { apiSend, apiJson } from '@/lib/api';
 import { useToast } from './ui';
 import styles from './forms.module.css';
 
@@ -56,18 +56,45 @@ export default function CreateBase({
   // rows a template ships pre-filled (positional to its columns). Dropped the
   // moment the user edits the columns, so seeded rows never end up misaligned.
   const [presetRows, setPresetRows] = useState<Array<Array<string | number>> | null>(null);
+  // once the user touches the columns (or a preset does), stop auto-inheriting
+  // the parent's schema on top of their work
+  const colsTouched = useRef(false);
 
   // ── manual columns ──
   const setCol = (i: number, patch: Partial<ColDraft>) => {
+    colsTouched.current = true;
     setPresetRows(null);
     setCols((prev) => prev.map((c, j) => (j === i ? { ...c, ...patch } : c)));
   };
-  const addCol = () => { setPresetRows(null); setCols((prev) => [...prev, { label: '', type: 'text', filterable: false }]); };
-  const removeCol = (i: number) => { setPresetRows(null); setCols((prev) => prev.filter((_, j) => j !== i)); };
+  const addCol = () => { colsTouched.current = true; setPresetRows(null); setCols((prev) => [...prev, { label: '', type: 'text', filterable: false }]); };
+  const removeCol = (i: number) => { colsTouched.current = true; setPresetRows(null); setCols((prev) => prev.filter((_, j) => j !== i)); };
+
+  // «наследуемое дерево»: a new sub-base inherits its parent's columns as the
+  // starting schema (the user can still edit/add). Only while the columns are
+  // pristine — a preset or a manual edit opts out.
+  useEffect(() => {
+    if (!parent || colsTouched.current) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await apiJson<{ columns?: ColumnDef[] }>(`/api/records?base=${encodeURIComponent(parent)}`);
+        if (cancelled || colsTouched.current) return;
+        const inherited = (data.columns ?? [])
+          .filter((c) => !c.key.startsWith('__'))
+          .map((c) => ({
+            label: c.label, type: c.type, filterable: !!c.filterable,
+            order: c.order, badge: c.badge, badgeVariant: c.badgeVariant, defaultGroup: c.defaultGroup,
+          }));
+        if (inherited.length) setCols(inherited);
+      } catch { /* parent columns are a convenience; ignore failures */ }
+    })();
+    return () => { cancelled = true; };
+  }, [parent]);
 
   // a template fills the column schema (and the name, if empty) in one click,
   // then drops into the manual editor so the columns can still be tweaked
   const applyPreset = (p: BasePreset) => {
+    colsTouched.current = true;
     if (!name.trim()) setName(p.name);
     setCols(
       p.columns.map((c) => ({
