@@ -50,7 +50,9 @@ export async function POST(request: Request): Promise<Response> {
     const replaced = existing.length
       ? await store.softDeleteRecords(baseId, existing.map((r) => String(r.id)))
       : 0;
-    const added = mapped.length ? await store.addRecords(baseId, mapped) : 0;
+    const now = new Date().toISOString();
+    const stamped = mapped.map((r) => ({ ...r, __created: now, __updated: now }));
+    const added = stamped.length ? await store.addRecords(baseId, stamped) : 0;
     return Response.json({ replaced, added, matched, unmatched });
   } catch (e) {
     return Response.json({ error: publicError(e, 'Не вдалося імпортувати', 'import failed') }, { status: 500 });

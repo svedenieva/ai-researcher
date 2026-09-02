@@ -241,7 +241,10 @@ export async function POST(request: Request): Promise<Response> {
     if (badUrlCell(base.columns, data)) {
       return Response.json({ error: 'A url column accepts only http, https, mailto or tel' }, { status: 400 });
     }
-    const record = await store.addRecord(baseId, data);
+    // stamp when the row was created/changed — a hidden system field (jsonb, no
+    // migration) that drives the «recent activity» feed and the 30-day metric
+    const now = new Date().toISOString();
+    const record = await store.addRecord(baseId, { ...data, __created: now, __updated: now });
     return Response.json({ record });
   } catch (e) {
     return Response.json({ error: publicError(e, 'Could not add the row', 'addRecord failed') }, { status: 500 });
@@ -273,7 +276,7 @@ export async function PATCH(request: Request): Promise<Response> {
     if (badUrlCell(base.columns, patch)) {
       return Response.json({ error: 'A url column accepts only http, https, mailto or tel' }, { status: 400 });
     }
-    const record = await store.updateRecord(baseId, id, patch);
+    const record = await store.updateRecord(baseId, id, { ...patch, __updated: new Date().toISOString() });
     if (!record) return Response.json({ error: 'Row not found' }, { status: 404 });
     return Response.json({ record });
   } catch (e) {

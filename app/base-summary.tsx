@@ -6,10 +6,10 @@ import { useLang } from './lang-provider';
 import type { Lang } from '@/lib/i18n';
 import styles from './base-summary.module.css';
 
-const S: Record<Lang, { title: string; total: string; avg: string; updated30: string; show: string; hide: string }> = {
-  uk: { title: 'Зведення', total: 'Усього', avg: 'Середня оцінка', updated30: 'Оновлень за 30 днів', show: 'Показати зведення', hide: 'Сховати зведення' },
-  ru: { title: 'Сводка', total: 'Всего', avg: 'Средняя оценка', updated30: 'Обновлений за 30 дней', show: 'Показать сводку', hide: 'Скрыть сводку' },
-  en: { title: 'Summary', total: 'Total', avg: 'Average rating', updated30: 'Updates in 30 days', show: 'Show summary', hide: 'Hide summary' },
+const S: Record<Lang, { title: string; total: string; avg: string; updated30: string; activity: string; locale: string }> = {
+  uk: { title: 'Зведення', total: 'Усього', avg: 'Середня оцінка', updated30: 'Оновлень за 30 днів', activity: 'Остання активність', locale: 'uk-UA' },
+  ru: { title: 'Сводка', total: 'Всего', avg: 'Средняя оценка', updated30: 'Обновлений за 30 дней', activity: 'Последняя активность', locale: 'ru-RU' },
+  en: { title: 'Summary', total: 'Total', avg: 'Average rating', updated30: 'Updates in 30 days', activity: 'Recent activity', locale: 'en-US' },
 };
 
 const isSystem = (k: string) => k.startsWith('__');
@@ -62,13 +62,29 @@ export default function BaseSummary({
       if (vals.length) avg = vals.reduce((a, b) => a + b, 0) / vals.length;
     }
 
+    // when a row last changed: the auto «__updated» stamp, else a date column
+    const nameCol = columns.find((c) => !isSystem(c.key));
+    const whenOf = (r: CatalogRecord): number => {
+      const u = (r as Record<string, unknown>).__updated;
+      if (u) { const t = Date.parse(String(u)); if (Number.isFinite(t)) return t; }
+      if (dateCol) { const t = Date.parse(String(r[dateCol.key] ?? '')); if (Number.isFinite(t)) return t; }
+      return NaN;
+    };
+
     let recent: number | null = null;
-    if (dateCol) {
+    if (records.some((r) => Number.isFinite(whenOf(r)))) {
       const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      recent = records.filter((r) => { const t = Date.parse(String(r[dateCol.key] ?? '')); return Number.isFinite(t) && t >= cutoff; }).length;
+      recent = records.filter((r) => { const t = whenOf(r); return Number.isFinite(t) && t >= cutoff; }).length;
     }
 
-    return { funnel, avg, recent, ratingLabel: ratingCol?.label, dateLabel: dateCol?.label };
+    // recent-activity feed: rows with a known «when», newest first
+    const feed = records
+      .map((r) => ({ name: String((nameCol && r[nameCol.key]) ?? '—') || '—', t: whenOf(r) }))
+      .filter((x) => Number.isFinite(x.t))
+      .sort((a, b) => b.t - a.t)
+      .slice(0, 6);
+
+    return { funnel, avg, recent, feed, ratingLabel: ratingCol?.label };
   }, [columns, records]);
 
   const totalN = total ?? records.length;
@@ -97,6 +113,19 @@ export default function BaseSummary({
                   {f.value} <b>{f.count}</b>
                 </span>
               ))}
+            </div>
+          )}
+          {metrics.feed && metrics.feed.length > 0 && (
+            <div className={styles.feed}>
+              <div className={styles.feedHead}>{s.activity}</div>
+              <ol className={styles.feedList}>
+                {metrics.feed.map((f, i) => (
+                  <li key={i} className={styles.feedItem}>
+                    <span className={styles.feedName}>{f.name}</span>
+                    <time className={styles.feedTime}>{new Date(f.t).toLocaleDateString(s.locale, { day: 'numeric', month: 'short' })}</time>
+                  </li>
+                ))}
+              </ol>
             </div>
           )}
         </div>
