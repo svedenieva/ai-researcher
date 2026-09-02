@@ -1,79 +1,13 @@
-.wrap {
-  margin: 0 0 10px;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--paper-raised);
-}
-
-.head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 6px 10px;
-  border: none;
-  background: none;
-  text-align: left;
-  cursor: pointer;
-  font-family: var(--font-mono), monospace;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-45);
-}
-.head:hover { color: var(--ink); }
-.caret { font-size: 9px; width: 9px; }
-
-.body {
+/* compact inline metrics that sit next to the mode tabs — plain text, no card */
+.inline {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 14px;
-  padding: 2px 10px 8px;
-}
-
-.tiles { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
-.tile { display: flex; align-items: baseline; gap: 5px; }
-.num { font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.2; }
-.lbl { font-size: 11px; color: var(--ink-45); }
-
-.funnel { display: flex; flex-wrap: wrap; gap: 5px; }
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11.5px;
-  color: var(--ink-70);
-  background: var(--wash);
-  border: 1px solid var(--rule);
-}
-.pill b { font-weight: 700; color: var(--ink); }
-
-/* tint by the column's badge variant, so pills read like the grid's badges */
-.v_blue   { background: color-mix(in srgb, #4f7cff 14%, transparent); border-color: color-mix(in srgb, #4f7cff 30%, transparent); }
-.v_green  { background: color-mix(in srgb, #2fa36b 14%, transparent); border-color: color-mix(in srgb, #2fa36b 30%, transparent); }
-.v_teal   { background: color-mix(in srgb, #17a2a2 14%, transparent); border-color: color-mix(in srgb, #17a2a2 30%, transparent); }
-.v_amber  { background: color-mix(in srgb, #d99a2b 16%, transparent); border-color: color-mix(in srgb, #d99a2b 32%, transparent); }
-.v_red    { background: color-mix(in srgb, #d64545 14%, transparent); border-color: color-mix(in srgb, #d64545 30%, transparent); }
-.v_purple { background: color-mix(in srgb, #a87bff 14%, transparent); border-color: color-mix(in srgb, #a87bff 30%, transparent); }
-.v_grey   { background: var(--wash); border-color: var(--rule); }
-
-.feed { flex-basis: 100%; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--rule); }
-.feedHead {
-  font-family: var(--font-mono), monospace;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  align-items: baseline;
+  column-gap: 14px;
+  row-gap: 2px;
+  min-width: 0;
+  font-size: 12px;
   color: var(--ink-45);
-  margin-bottom: 6px;
 }
-.feedList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
-.feedItem { display: flex; align-items: baseline; gap: 10px; font-size: 13px; }
-.feedName { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.feedTime { margin-left: auto; flex: none; font-size: 11.5px; color: var(--ink-45); font-variant-numeric: tabular-nums; }
-
-@media (max-width: 640px) {
-  .funnel { margin-left: 0; }
-}
+.metric { white-space: nowrap; }
+.metric b { color: var(--ink); font-weight: 600; }

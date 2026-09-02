@@ -620,6 +620,16 @@
 .crumbNow { padding: 2px 6px; font-weight: 600; color: var(--ink); }
 
 /* view-mode toggle above the grid: Все / Исследование / Эталон */
+/* the mode tabs sit on one row with the compact inline summary next to them */
+.modeRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-bottom: 10px;
+}
+.modeRow .modeBar { margin-bottom: 0; }
+
 .modeBar {
   display: inline-flex;
   align-self: flex-start;

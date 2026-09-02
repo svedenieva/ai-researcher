@@ -711,31 +711,33 @@ export default function Home() {
             );
           })()}
           {isCustom && (
-            <div className={styles.modeBar} role="tablist" aria-label={tr(lang, 'modeLabel')}>
-              {/* the two mode labels ARE the stored constants (ТЗ vocabulary,
-                  fixed Russian and not translatable), so the whole toggle stays
-                  Russian — «Все» is hardcoded to match, not i18n'd, otherwise it
-                  reads «Усі» in uk next to Russian modes */}
-              {([
-                ['all', 'Все'],
-                [MODE_RESEARCH, MODE_RESEARCH],
-                [MODE_REFERENCE, MODE_REFERENCE],
-              ] as const).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === value}
-                  className={mode === value ? styles.modeSegOn : styles.modeSeg}
-                  onClick={() => setMode(value)}
-                >
-                  {label}
-                </button>
-              ))}
+            <div className={styles.modeRow}>
+              <div className={styles.modeBar} role="tablist" aria-label={tr(lang, 'modeLabel')}>
+                {/* the two mode labels ARE the stored constants (ТЗ vocabulary,
+                    fixed Russian and not translatable), so the whole toggle stays
+                    Russian — «Все» is hardcoded to match, not i18n'd, otherwise it
+                    reads «Усі» in uk next to Russian modes */}
+                {([
+                  ['all', 'Все'],
+                  [MODE_RESEARCH, MODE_RESEARCH],
+                  [MODE_REFERENCE, MODE_REFERENCE],
+                ] as const).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="tab"
+                    aria-selected={mode === value}
+                    className={mode === value ? styles.modeSegOn : styles.modeSeg}
+                    onClick={() => setMode(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {shownRecords.length > 0 && (
+                <BaseSummary columns={displayColumns} records={shownRecords} total={total} />
+              )}
             </div>
-          )}
-          {isCustom && shownRecords.length > 0 && (
-            <BaseSummary columns={displayColumns} records={shownRecords} total={total} />
           )}
           <MindSheet
             columns={displayColumns}
