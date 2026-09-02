@@ -151,8 +151,46 @@ export function roadmapPreset(): BasePreset {
   };
 }
 
+// §competitor-radar: track rival companies like the «Ai Сфера. Аналитика» sheet
+// — a watch funnel (Статус наблюдения) as the board, a 1–5 threat rating, and the
+// «что взять себе / где пересекаемся» analysis columns.
+export function radarPreset(): BasePreset {
+  const WATCH = ['👀 Watch', '🔬 Deep dive', '🧪 Test', '✅ Adopt', '❌ Drop'] as const;
+  const CATS = ['Frontier Lab', 'Fine-tuning', 'Multimodal', 'Infra / Tooling', 'Open-weights', 'Agent / Application', 'Other'] as const;
+  return {
+    id: 'radar',
+    name: 'Радар конкурентов',
+    blurb: 'Конкурентная разведка: воронка наблюдения, угроза, что взять себе',
+    columns: [
+      { label: 'Компания', type: 'text', sortable: true },
+      {
+        label: 'Статус наблюдения', type: 'select', sortable: true, filterable: true, badge: true, defaultGroup: true,
+        order: [...WATCH],
+        badgeVariant: { '👀 Watch': 'grey', '🔬 Deep dive': 'blue', '🧪 Test': 'amber', '✅ Adopt': 'green', '❌ Drop': 'red' },
+      },
+      { label: 'Угроза', type: 'rating', sortable: true },
+      {
+        label: 'Категория', type: 'select', sortable: true, filterable: true, badge: true,
+        order: [...CATS],
+        badgeVariant: { 'Frontier Lab': 'purple', 'Fine-tuning': 'blue', 'Multimodal': 'teal', 'Infra / Tooling': 'grey', 'Open-weights': 'green', 'Agent / Application': 'amber', 'Other': 'grey' },
+      },
+      { label: 'Стадия', type: 'text', sortable: true },
+      { label: 'Главный продукт', type: 'text', sortable: true },
+      { label: 'Что делают', type: 'text' },
+      { label: 'Где пересекаемся', type: 'long-text' },
+      { label: 'Что взять себе', type: 'long-text' },
+      { label: 'Последнее событие', type: 'text' },
+      { label: 'Обновлено', type: 'date', sortable: true },
+      { label: 'Сайт', type: 'url' },
+      { label: 'Источники', type: 'url' },
+      { label: 'Заметки', type: 'long-text' },
+    ],
+  };
+}
+
 export const BASE_PRESETS: BasePreset[] = [
   implementationPreset(),
+  radarPreset(),
   roadmapPreset(),
   knowledgeMatrixPreset(),
   expertsPreset(),
