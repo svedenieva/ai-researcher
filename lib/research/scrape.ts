@@ -22,15 +22,29 @@ export function scrapeStatus(env: Record<string, string | undefined> = process.e
 const norm = (s: string) => s.trim().toLowerCase();
 const userCols = (columns: ColumnDef[]) => columns.filter((c) => !c.key.startsWith('__') && c.label.trim());
 
-// Ask the model to return one object per entity, fields named by our column
-// labels — so the result maps straight onto the base.
+// Ask the model to return one object per row, fields named by our column labels
+// — so the result maps straight onto the base.
 export function buildPrompt(columns: ColumnDef[]): string {
   const labels = userCols(columns).map((c) => `"${c.label}"`);
   return (
-    'Extract every distinct entity described on the page as a JSON array under the key "items". ' +
-    `Each item is an object with exactly these fields: ${labels.join(', ')}. ` +
-    'Use an empty string for a field that is not present on the page. Do not invent facts.'
+    'Read this page and turn its information into rows of a table. ' +
+    `Each row is an object with these fields: ${labels.join(', ')}. ` +
+    'Return a JSON object {"items": [ ...rows... ]}. Return one row per distinct item; ' +
+    'if the page is about a single subject, return exactly one row. ' +
+    'Fill every field from the page; use an empty string only when the page truly does not say. Do not invent facts.'
   );
+}
+
+// A JSON schema for {"items": [ {label: string, …} ]} — passed to v2 /extract so
+// the model reliably returns our exact field names instead of guessing a shape.
+export function buildSchema(columns: ColumnDef[]): Record<string, unknown> {
+  const props: Record<string, unknown> = {};
+  for (const c of userCols(columns)) props[c.label] = { type: 'string' };
+  return {
+    type: 'object',
+    properties: { items: { type: 'array', items: { type: 'object', properties: props } } },
+    required: ['items'],
+  };
 }
 
 // Map SmartScraper's `result` onto base rows: find the array of items, then map
@@ -69,11 +83,11 @@ export function mockResult(columns: ColumnDef[], url: string): { items: Record<s
 
 // Call the live v2 «extract» endpoint. Throws on a non-OK response or an API
 // error. The structured data comes back under `json`; fall back to result/data.
-export async function smartScrape(apiKey: string, url: string, prompt: string, signal?: AbortSignal): Promise<unknown> {
+export async function smartScrape(apiKey: string, url: string, prompt: string, schema?: Record<string, unknown>, signal?: AbortSignal): Promise<unknown> {
   const res = await fetch(ENDPOINT, {
     method: 'POST',
     headers: { 'SGAI-APIKEY': apiKey, 'Content-Type': 'application/json', accept: 'application/json' },
-    body: JSON.stringify({ url, prompt }),
+    body: JSON.stringify(schema ? { url, prompt, schema } : { url, prompt }),
     signal,
   });
   const body = (await res.json().catch(() => ({}))) as { json?: unknown; result?: unknown; data?: unknown; error?: string; message?: string };

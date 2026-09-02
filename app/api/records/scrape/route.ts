@@ -1,7 +1,7 @@
 import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
 import { currentEmail } from '@/lib/current-user';
 import { BASES } from '@/lib/datasource/bases';
-import { scrapeStatus, buildPrompt, resultToRows, mockResult, smartScrape } from '@/lib/research/scrape';
+import { scrapeStatus, buildPrompt, buildSchema, resultToRows, mockResult, smartScrape } from '@/lib/research/scrape';
 import { publicError } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
@@ -42,7 +42,7 @@ export async function POST(request: Request): Promise<Response> {
     const prompt = buildPrompt(base.columns);
     const result = status.mock
       ? mockResult(base.columns, url)
-      : await smartScrape(process.env.SCRAPEGRAPHAI_API_KEY as string, url, prompt, request.signal);
+      : await smartScrape(process.env.SCRAPEGRAPHAI_API_KEY as string, url, prompt, buildSchema(base.columns), request.signal);
 
     const rows = resultToRows(base.columns, result);
     if (!rows.length) {
