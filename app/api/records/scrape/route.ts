@@ -46,6 +46,8 @@ export async function POST(request: Request): Promise<Response> {
 
     const rows = resultToRows(base.columns, result);
     if (!rows.length) {
+      // diagnostic: what did the API actually return? (shape drives the mapping)
+      console.warn('scrape: 0 rows mapped. raw result:', JSON.stringify(result)?.slice(0, 1500));
       return Response.json({ error: 'На сторінці нічого не знайдено за схемою бази', added: 0 }, { status: 422 });
     }
     const now = new Date().toISOString();
