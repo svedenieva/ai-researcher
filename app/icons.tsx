@@ -74,9 +74,14 @@ export const IconDownload = (p: IconProps) => (
 export const IconUpload = (p: IconProps) => (
   <Svg {...p}><path d="M12 15V3" /><path d="M7 8l5-5 5 5" /><path d="M4 20h16" /></Svg>
 );
-// scrape / extract from a web page — a globe with a down arrow pulling data in
+// scrape / extract from a web page — a spider on its silk thread (web-crawler)
 export const IconScrape = (p: IconProps) => (
-  <Svg {...p}><circle cx="12" cy="9" r="6" /><path d="M2 9h20M12 3c2.5 2.5 2.5 9 0 12M12 3c-2.5 2.5-2.5 9 0 12" /><path d="M8 19h8M12 17v4M10 19l2 2 2-2" /></Svg>
+  <Svg {...p}>
+    <path d="M12 2v7" />
+    <circle cx="12" cy="12" r="2.6" />
+    <path d="M9.6 10.6 5.5 7.5M9.4 12H4.5M9.6 13.4 5.5 16.5M10.4 14.2 8 18" />
+    <path d="M14.4 10.6 18.5 7.5M14.6 12H19.5M14.4 13.4 18.5 16.5M13.6 14.2 16 18" />
+  </Svg>
 );
 export const IconArchive = (p: IconProps) => (
   <Svg {...p}><rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" /><path d="M10 12h4" /></Svg>
