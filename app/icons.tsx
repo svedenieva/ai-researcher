@@ -70,6 +70,10 @@ export const IconSearch = (p: IconProps) => (
 export const IconDownload = (p: IconProps) => (
   <Svg {...p}><path d="M12 3v12" /><path d="M7 11l5 5 5-5" /><path d="M4 20h16" /></Svg>
 );
+// upload / import — an arrow rising into a tray
+export const IconUpload = (p: IconProps) => (
+  <Svg {...p}><path d="M12 15V3" /><path d="M7 8l5-5 5 5" /><path d="M4 20h16" /></Svg>
+);
 export const IconArchive = (p: IconProps) => (
   <Svg {...p}><rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" /><path d="M10 12h4" /></Svg>
 );

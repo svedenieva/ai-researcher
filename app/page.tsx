@@ -24,7 +24,7 @@ import { basePath } from '@/lib/datasource/tree';
 import { defaultGroupSort } from '@/lib/presets';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
-import { IconGlobe, IconMerge, IconFile, IconShare, IconGrid, IconPlug, IconInbox, IconTrash, IconSidebar } from './icons';
+import { IconGlobe, IconMerge, IconFile, IconShare, IconGrid, IconPlug, IconInbox, IconTrash, IconSidebar, IconUpload } from './icons';
 
 import styles from './page.module.css';
 
@@ -93,6 +93,8 @@ export default function Home() {
       return n;
     });
   }, []);
+  // hidden file input for «import .md/.csv back into this base» (the export's inverse)
+  const importInputRef = useRef<HTMLInputElement>(null);
   // apply a base's default grouping (e.g. «Стадия» for the «Внедрение» preset)
   // once when the base is entered, then leave sorting to the user
   const pendingDefaultGroup = useRef(true);
@@ -215,6 +217,31 @@ export default function Home() {
       toast(e instanceof Error ? e.message : 'Не вдалося створити посилання');
     }
   }, [base, toast]);
+
+  // Import a .md/.csv/.tsv back INTO the current base — the inverse of the
+  // Markdown export. Columns match by label, the base's types are kept, and its
+  // rows are replaced by the file (the round-trip: export → edit → import back).
+  const importFile = useCallback(async (file: File | undefined) => {
+    if (!file) return;
+    const text = await file.text();
+    if (!text.trim()) { toast('Порожній файл'); return; }
+    const ok = await confirm({
+      title: 'Імпортувати у цю базу?',
+      message: 'Рядки бази буде замінено вмістом файлу (стовпці — за назвою; типи стовпців зберігаються). Поточні рядки підуть у кошик — звідти можна повернути.',
+      confirmLabel: 'Імпортувати',
+    });
+    if (!ok) return;
+    try {
+      const r = await apiSend<{ replaced: number; added: number; unmatched?: string[] }>(
+        '/api/records/import', 'POST', { base, text },
+      );
+      setRefreshTick((t) => t + 1);
+      const skipped = r.unmatched?.length ? ` · пропущено стовпців: ${r.unmatched.length}` : '';
+      toast(`Імпортовано: ${r.added} рядків (замінено ${r.replaced})${skipped}`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не вдалося імпортувати');
+    }
+  }, [base, confirm, toast]);
 
   // Merge duplicate rows (same name): fill the kept row's gaps from the copies,
   // send the extras to the bin. Reversible, so a light confirm is enough.
@@ -585,6 +612,26 @@ export default function Home() {
             <a href={reportHref} className={styles.iconBtn} title={tr(lang, 'mdHint')} aria-label="Markdown">
               <IconFile size={16} />
             </a>
+          )}
+          {isCustom && (
+            <>
+              <input
+                ref={importInputRef}
+                type="file"
+                accept=".md,.csv,.tsv,.txt,text/markdown,text/csv,text/tab-separated-values"
+                hidden
+                onChange={(e) => { importFile(e.target.files?.[0]); e.currentTarget.value = ''; }}
+              />
+              <button
+                type="button"
+                className={styles.iconBtn}
+                onClick={() => importInputRef.current?.click()}
+                aria-label="Імпорт"
+                title="Імпортувати .md/.csv у цю базу (оновити рядки; стовпці за назвою, типи зберігаються)"
+              >
+                <IconUpload size={16} />
+              </button>
+            </>
           )}
           </div>
           {/* «+ New research» sits by the language button (in responsive it joins
