@@ -25,7 +25,7 @@ import { basePath } from '@/lib/datasource/tree';
 import { defaultGroupSort } from '@/lib/presets';
 import { apiJson, apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
-import { IconGlobe, IconMerge, IconFile, IconShare, IconGrid, IconPlug, IconInbox, IconTrash, IconSidebar, IconUpload } from './icons';
+import { IconGlobe, IconMerge, IconFile, IconShare, IconGrid, IconPlug, IconInbox, IconTrash, IconSidebar, IconUpload, IconScrape } from './icons';
 
 import styles from './page.module.css';
 
@@ -243,6 +243,21 @@ export default function Home() {
       toast(e instanceof Error ? e.message : 'Не вдалося імпортувати');
     }
   }, [base, confirm, toast]);
+
+  // Extract rows into this base from a page URL via ScrapeGraphAI (the base's
+  // columns are the extraction schema). Off until SCRAPEGRAPHAI_API_KEY is set.
+  const scrapeUrl = useCallback(async () => {
+    const url = window.prompt('URL сторінки — витягти дані у цю базу (ScrapeGraphAI):');
+    if (!url || !url.trim()) return;
+    toast('Витягую…');
+    try {
+      const r = await apiSend<{ added: number }>('/api/records/scrape', 'POST', { base, url: url.trim() });
+      setRefreshTick((t) => t + 1);
+      toast(`Додано рядків: ${r.added}`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не вдалося витягнути');
+    }
+  }, [base, toast]);
 
   // Merge duplicate rows (same name): fill the kept row's gaps from the copies,
   // send the extras to the bin. Reversible, so a light confirm is enough.
@@ -631,6 +646,15 @@ export default function Home() {
                 title="Імпортувати .md/.csv у цю базу (оновити рядки; стовпці за назвою, типи зберігаються)"
               >
                 <IconUpload size={16} />
+              </button>
+              <button
+                type="button"
+                className={styles.iconBtn}
+                onClick={scrapeUrl}
+                aria-label="Витягти з URL"
+                title="Витягти дані зі сторінки в цю базу (ScrapeGraphAI): колонки бази — це схема витягування"
+              >
+                <IconScrape size={16} />
               </button>
             </>
           )}

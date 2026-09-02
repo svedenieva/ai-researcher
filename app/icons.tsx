@@ -74,6 +74,10 @@ export const IconDownload = (p: IconProps) => (
 export const IconUpload = (p: IconProps) => (
   <Svg {...p}><path d="M12 15V3" /><path d="M7 8l5-5 5 5" /><path d="M4 20h16" /></Svg>
 );
+// scrape / extract from a web page — a globe with a down arrow pulling data in
+export const IconScrape = (p: IconProps) => (
+  <Svg {...p}><circle cx="12" cy="9" r="6" /><path d="M2 9h20M12 3c2.5 2.5 2.5 9 0 12M12 3c-2.5 2.5-2.5 9 0 12" /><path d="M8 19h8M12 17v4M10 19l2 2 2-2" /></Svg>
+);
 export const IconArchive = (p: IconProps) => (
   <Svg {...p}><rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" /><path d="M10 12h4" /></Svg>
 );
