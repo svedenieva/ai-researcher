@@ -1,99 +1,138 @@
 # AI-Researcher — architecture
 
-A knowledge-base storefront over the AiVocado product catalog: a fast, spreadsheet-style
-grid over nested bases, an AI research flow that runs on the **user's own** Claude
-subscription, and an MCP connector that lets any Claude client read and edit the bases.
+A knowledge-base workspace for research and competitive intelligence: a fast,
+spreadsheet-style grid over **nested user bases**, a research flow that runs on the
+**user's own** Claude subscription (or a server-side agent behind a flag), and an
+MCP connector that lets any Claude client read and edit the bases. Built on Next.js
++ Supabase; deployed on Vercel.
 
 ## System at a glance
 
 ```mermaid
 flowchart TB
-  subgraph Client["Browser"]
-    UI["Next.js App Router UI<br/>MindSheet grid (virtualized)"]
-    Login["/login — Google OAuth<br/>(anon key, auth only)"]
+  subgraph Client["Browser — Next.js App Router UI"]
+    Grid["MindSheet grid<br/>(@aivocado/mindsheet)"]
+    Pages["pages: / · /bases · /research<br/>/sources · /sites · /bin · /topic · /p"]
   end
 
-  subgraph Edge["Next.js API routes (server)"]
-    MW["middleware.ts<br/>auth gate · fail-closed"]
-    REC["/api/records · /api/bases<br/>/api/columns · /api/bin"]
-    MCPH["/api/mcp<br/>JSON-RPC · personal token"]
-    RES["/api/research/start"]
+  subgraph Edge["Next.js route handlers (server)"]
+    MW["middleware.ts — auth gate (fail-closed)"]
+    DATA["/api/bases · /api/records(+import,export,<br/>scrape,share-link,reorder) · /api/columns · /api/bin"]
+    RES["/api/research/{start,server,runs,eval}"]
+    MCPH["/api/mcp — JSON-RPC connector 'AiS'<br/>(personal token → email → scope)"]
   end
 
-  subgraph Data["Supabase (Postgres)"]
-    DB[("bases · base_records<br/>sites · trusted_sources")]
+  subgraph Data["Supabase (Postgres + RLS)"]
+    DB[("bases · base_records<br/>sites · trusted_sources · products")]
   end
 
-  Cat[["Product catalog<br/>(data/catalog.json)"]]
+  UserClaude["User's own Claude<br/>(their subscription)"]
+  Anthropic["Anthropic API<br/>(server agent, flagged)"]
+  Scrape["ScrapeGraphAI v2<br/>/extract"]
 
-  ExtClaude["User's own Claude<br/>(their subscription)"]
-
-  UI -->|"fetch"| REC
-  Login -->|"OAuth"| MW
-  UI --> MW
-  MW --> REC
-  REC -->|"service_role key<br/>(bypasses RLS)"| DB
-  REC --> Cat
-  RES -->|"creates run base"| DB
-  RES -->|"deeplink (prefilled prompt)"| ExtClaude
-  ExtClaude -->|"MCP tools: add_rows,<br/>catalog_search, …"| MCPH
-  MCPH -->|"token → email → scope"| DB
+  Grid --> MW --> DATA -->|service_role key| DB
+  RES -->|creates run base| DB
+  RES -->|deeplink (prefilled prompt)| UserClaude
+  RES -.->|flagged + quota| Anthropic
+  UserClaude -->|MCP tools: add_rows, query_records, …| MCPH --> DB
+  DATA -->|extract from URL| Scrape
 ```
 
-## Layers
+## Tech stack
 
-- **UI** (`app/`) — Next.js App Router, React 19. The table is `@aivocado/mindsheet`,
-  a **virtualized** grid (only ~20 rows in the DOM out of thousands) shared with a
-  second product (Fathom); all changes here are additive and opt-in so the other
-  host is never disturbed.
-- **API** (`app/api/`) — every data path is server-side. The browser never queries
-  Postgres directly; it only uses the anon key for Google sign-in.
-- **Data** (`lib/datasource/`) — one `DataSource` interface over two backends: an
-  in-memory store (dev/tests) and Supabase (prod). The product catalog is a static
-  JSON slice; user bases live in `bases` / `base_records`.
-- **Auth** — Supabase Google OAuth, gated in `middleware.ts` (fail-closed: no keys on
-  a deployment → 503, never open data). Access model: own + shared + ownerless bases.
-- **Connector** — one HTTP MCP endpoint, 19 tools, authenticated by a personal token
-  (`token → email → scope`). Same access model as the web.
+- **Frontend** — Next.js 15 (App Router), React 19, TypeScript. Grid via the
+  git-pinned package `@aivocado/mindsheet`. Mind-map canvas via `@xyflow/react`
+  (vendored under `lib/mindmap`). Local state with React + `zustand`.
+- **Backend** — Next.js server route handlers (no separate API server).
+- **Database** — Supabase (Postgres) with Row-Level Security. Server reads/writes
+  with the `service_role` key; the browser only uses the `anon` key for auth.
+- **Auth** — Supabase Auth (Google OAuth), cookie session; `middleware.ts` gates
+  every route and fails closed.
+- **Deploy** — Vercel; `git push` → auto-deploy. Production: `ai-reesearcher.vercel.app`.
 
-## Variant C — research on the user's own subscription
+## Frontend
 
-The site never calls Claude with someone else's subscription (Anthropic forbids it).
-Instead `/api/research/start` creates a private **run base** and returns a **deeplink**
-that opens the user's own Claude with a ready-made prompt. Their Claude does the search
-with its own tools + our connector, writes rows back via `add_rows`, and the site reads
-that base. Every row must carry a primary-source link **and a verbatim quote** — cheap
-for a human to spot-check, and not sold as automatic fact-checking.
+- `app/page.tsx` — the main workspace: left sidebar (base tree + global search +
+  section links), the grid, the top bar (mode tabs + inline summary, AI actions,
+  import/export/scrape, share). Language via `lang-provider` (uk / ru / en).
+- Pages: `/bases` (showcase tree), `/research` (research runs), `/sources`
+  (trusted-source registry), `/sites`, `/bin` (recycle), `/connect` (connector
+  setup), `/login`, `/topic/[base]/[record]` (reading-view "article"),
+  `/p/[id]` (public read-only base via HMAC token).
+- Key components: `base-tree` (sidebar explorer, «⋯» menu, Researcher/Knowledge
+  groups), `base-summary` (inline metrics + funnel), `create-base` (templates +
+  import), `base-ai-actions`, `saved-views`, `global-search`.
 
-## Security posture
+## API routes
 
-- **Fail-closed auth gate**; public paths matched exactly, not by prefix (no `/loginXXX`).
-- **RLS** on user tables: the app uses the `service_role` key (bypasses RLS), so enabling
-  it costs nothing but blocks the public anon key from reading tables directly around the API.
-- **Token model** for the connector: `token → email`, revocable instantly via env.
-- **Adversarial test suite** (`tests/adversarial/`, 166 tests): CSV formula injection,
-  prototype pollution, id spoofing, tenancy leaks, prompt-cost ceilings, path-traversal,
-  input fuzzing — each attack is a passing test.
+- **Data** — `/api/bases`, `/api/records` (+ `import`, `export`, `scrape`,
+  `share-link`, `reorder`, `check-links`, `dedupe`), `/api/columns`, `/api/bin`,
+  `/api/favorites`, `/api/search`, `/api/sources`, `/api/sites` (+ `[id]`,
+  `files`, `download`).
+- **Research** — `/api/research/start` (Variant C deeplink), `/api/research/server`
+  (server agent, flag + per-user quota), `/api/research/runs`, `/api/research/eval`.
+- **Connector** — `/api/mcp` (JSON-RPC MCP server, personal token), `/api/connect`.
 
-## Testing & CI
+## Data model & access
 
-- **336 tests** (`vitest`), strict TypeScript (`tsc --noEmit` clean).
-- **GitHub Actions** runs type-check + tests + build on every push and PR.
+- Tables: `bases` (id, name, tone, columns `jsonb`, parent, owner_email, shared,
+  created_at, deleted_at), `base_records` (base_id, data `jsonb`, position,
+  deleted_at), `sites`, `trusted_sources`, plus the built-in `products` catalog.
+- Custom columns and row values live in `jsonb` — new column types and per-row
+  system fields (`__mode`, `__tags`, `__updated`) need **no migration**.
+- **Isolation** — a base is visible to its owner, to everyone if `shared`, or if
+  `owner === null` (legacy/team). Enforced by `canAccessBase` and by RLS
+  (`migrations/0003`). Server routes use the service key and re-check access.
+- **Inherited tree** — opening a base merges its descendants' rows and the
+  **union** of their columns; each row carries `__baseId` so edits go to the base
+  it actually lives in.
 
-## Key decisions (the "why")
+## Library layout (`lib/`)
 
-| Decision | Why |
-|----------|-----|
-| Research via deeplink to the user's Claude | Legally clean — no third-party use of a subscription; no server-side model cost. |
-| Virtualized grid, shared as a package | One grid engine, two products; perf on thousands of rows without a heavy table lib. |
-| service_role server-side + RLS on | App is simple and fast; RLS is defense-in-depth against the public anon key. |
-| Attacks encoded as tests | A passing test = proof the hole is closed; regressions can't sneak back. |
-| Manual, ordered migrations + checklist | The service key can't run DDL; the folder makes "shipped before the table existed" impossible to do silently. |
+- **datasource** — `customStore` (bases + records CRUD, bin), `bases` (built-in),
+  `columns`, `tree` (descendants, path), `json` (`JsonDataSource`: list, filter,
+  facets, sort, group), `dedupe`, `types`.
+- **domain** — `mode` (Исследование / Эталон), `tags`, `presets` (base templates),
+  `importTable` / `parseTable` / `markdownTable` / `csv` (import-export & MD
+  round-trip), `coerce`, `limits`, `records-query`, `i18n`, `tone`, `safe-url`,
+  `current-user`, `supabase-auth`, `errors`.
+- **research** — `server-agent` (Anthropic), `deeplink` (Variant C), `runs`
+  (run bases + quota), `verify-quote`, `links` (source check), `report` (MD),
+  `eval` / `eval-set`, `decompose`, `base-actions` (AI actions), `sources`
+  (trusted registry), `scrape` (ScrapeGraphAI v2), `share` (HMAC links).
 
-## Talking points for the demo
+## External integrations
 
-1. **Open the grid, filter, group, colour** — then note: only ~20 rows are in the DOM.
-2. **Run a research** — show the deeplink opening *your* Claude; results flow back with quotes.
-3. **Show `tests/adversarial/` + `REPORT.md`** — "we threat-model, and every attack is a test."
-4. **Show the green CI check** — everything is verified on every push.
-5. **Answer the data-isolation question** with RLS + the token→email scope.
+- **The user's own Claude** — the default research flow: `/api/research/start`
+  opens Claude with a ready prompt; that Claude writes results into a run base
+  through the MCP connector. No data leaves for a third party.
+- **Anthropic API** — the optional server-side research agent (`ANTHROPIC_API_KEY`
+  + `RESEARCH_SERVER_AGENT=1`), rate-limited by a per-user daily quota.
+- **ScrapeGraphAI v2** — `POST v2-api.scrapegraphai.com/api/extract` turns a page
+  URL into structured JSON shaped by the base's columns (`SCRAPEGRAPHAI_API_KEY`).
+- **Supabase** — database, auth, storage of uploaded sites/files.
+
+## Key flows
+
+1. **Bases & grid** — UI → `/api/records|bases|columns` → `customStore` → Supabase.
+   A parent base shows the merged, column-unioned view of its subtree.
+2. **Research (Variant C)** — create a run base under *AI-сфера*, deeplink the
+   user's Claude with a prompt; the run polls the base and shows coverage. Results
+   are gated by verbatim-quote and source-resolution checks and deduped.
+3. **Import / export** — CSV/TSV/Markdown import; the Markdown-table export is the
+   exact inverse of the importer, so a base round-trips (export → edit → re-import
+   into the same base, keeping its types).
+4. **Scrape** — `/api/records/scrape` sends the base's columns as an extraction
+   schema to ScrapeGraphAI and maps the returned items to rows.
+5. **Sharing** — `/api/records/share-link` mints an HMAC token; `/p/[id]?t=` serves
+   a read-only view without login.
+6. **Summary & activity** — computed on the client from the loaded rows and the
+   `__updated` stamps written on every add/edit/import.
+
+## Security
+
+- Auth gate in middleware (fail-closed); the MCP token maps to an email and scopes
+  every call; private bases never confirm their existence to a non-owner.
+- Hardening: SSRF closed (redirects / numeric IPs), URL columns accept only safe
+  schemes, uploaded sites are sandboxed away from the API and cookies, row/cell/
+  name/nesting limits, CSV-formula-injection guard, RLS in CI (`npm run check:rls`).
