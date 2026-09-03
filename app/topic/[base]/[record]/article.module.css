@@ -425,3 +425,16 @@
   cursor: pointer;
 }
 .promoteBtn:hover { background: color-mix(in srgb, var(--sage, #6b8f71) 20%, transparent); }
+
+/* ТР-БЗ-03: копирование чек-листа */
+.copyList {
+  margin-top: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--rule-soft, #eceae4);
+  border-radius: 7px;
+  background: var(--paper, #fff);
+  color: var(--ink-70, #4b4b46);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.copyList:hover { background: var(--wash, #f4f2ee); color: var(--ink, #24241f); }

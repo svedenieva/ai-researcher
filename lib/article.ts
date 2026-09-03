@@ -53,6 +53,49 @@ function checklistItems(text: string): string[] {
     .map((l) => l.replace(/^[-*+]\s+/, '').replace(/^\[[ xX]\]\s+/, '').trim());
 }
 
+// ТР-БЗ-03: у каждого элемента базы знаний ОДИН И ТОТ ЖЕ набор разделов —
+// «Введение», «Настройка», «Использование». В каждом: чек-лист (с копированием)
+// и подробное описание. Незаполненный раздел присутствует и помечается пустым.
+export interface KnowledgeSection {
+  heading: string;
+  description: string;
+  items: string[];
+  filled: boolean;
+  /** ключи колонок, из которых собран раздел (чтобы не дублировать ниже) */
+  usedKeys: string[];
+}
+
+const KB_SECTIONS: Array<{ heading: string; re: RegExp }> = [
+  { heading: 'Введение', re: /введен|вступ|introduction|\bintro\b|описание|опис|overview|что это|про що/i },
+  { heading: 'Настройка', re: /настрой|налашт|setup|install|установ|конфиг|config|подключ|під'?єдн/i },
+  { heading: 'Использование', re: /использ|застосув|usage|\buse\b|применен|как польз|how to use|робота з|работа с/i },
+];
+
+function looksChecklist(text: string): boolean {
+  return /(^|\n)\s*(?:[-*+]\s|\[[ xX]\]\s|\d+[.)]\s)/.test(text);
+}
+
+export function knowledgeSections(columns: ColumnDef[], record: Record<string, unknown>): KnowledgeSection[] {
+  const firstKey = columns.find((c) => !c.key.startsWith('__'))?.key;
+  return KB_SECTIONS.map(({ heading, re }) => {
+    const descParts: string[] = [];
+    const items: string[] = [];
+    const usedKeys: string[] = [];
+    for (const col of columns) {
+      if (col.key.startsWith('__') || col.key === firstKey) continue;
+      if (!re.test(`${col.label} ${col.key}`)) continue;
+      const val = record[col.key] == null ? '' : String(record[col.key]).trim();
+      if (!val) continue;
+      usedKeys.push(col.key);
+      const isCheck = TRIAD[2].has(norm(col.label)) || /чек|check/i.test(col.label) || looksChecklist(val);
+      if (isCheck) items.push(...checklistItems(val));
+      else descParts.push(val);
+    }
+    const description = descParts.join('\n\n');
+    return { heading, description, items, filled: Boolean(description || items.length), usedKeys };
+  });
+}
+
 export function buildArticle(columns: ColumnDef[], record: Record<string, unknown>): Article {
   const firstKey = columns.find((c) => !c.key.startsWith('__'))?.key;
   const title = String(record[firstKey ?? ''] ?? '').trim();

@@ -23,6 +23,7 @@ import GlobalSearch from './global-search';
 import Shortcuts from './shortcuts';
 import { useLang } from './lang-provider';
 import { t as tr, mindsheetStrings } from '@/lib/i18n';
+import { typeReport } from '@/lib/knowledge-report';
 import { toneColor } from '@/lib/tone';
 import { recordsQuery } from '@/lib/records-query';
 import { MODE_RESEARCH, MODE_REFERENCE } from '@/lib/mode';
@@ -877,6 +878,32 @@ export default function Home() {
               {isCustom && shownRecords.length > 0 && (
                 <SourceCounters records={shownRecords} columns={displayColumns} lang={lang} />
               )}
+              {isCustom && shownRecords.length > 0 && (() => {
+                const rep = typeReport(shownRecords, displayColumns);
+                if (!rep.typeKey) return null;
+                return (
+                  <div className={styles.kbTypeRow}>
+                    <button
+                      type="button"
+                      className={styles.kbTypeBtn}
+                      onClick={() => setGroupBy([rep.typeKey!])}
+                      title={rep.typeLabel ?? ''}
+                    >
+                      {tr(lang, 'kbByType')}
+                    </button>
+                    {rep.missingCount > 0 && (
+                      <button
+                        type="button"
+                        className={styles.kbTypeWarn}
+                        onClick={() => setCondModel({ match: 'all', items: [{ key: rep.typeKey!, op: 'empty' }] })}
+                        title={rep.typeLabel ?? ''}
+                      >
+                        ⚠ {rep.missingCount} {tr(lang, 'kbNoType')}
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
           <MindSheet

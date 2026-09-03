@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { ColumnDef } from '@/lib/datasource/types';
-import { buildArticle } from '@/lib/article';
+import { buildArticle, knowledgeSections } from '@/lib/article';
 import { renderMarkdown } from '@/lib/markdown';
 import { recordMode, MODE_KEY, MODE_REFERENCE, MODE_VALUES } from '@/lib/mode';
 import { TAGS_KEY } from '@/lib/tags';
@@ -29,6 +29,7 @@ const S = {
     edit: 'Редагувати',
     done: 'Готово',
     draft: 'Чернетка', toReference: 'В еталон', promoted: 'Переведено в еталон', promoteBlocked: 'Потрібні перевірена цитата і робоче посилання',
+    kbEmpty: '— порожньо —', kbCopy: 'Копіювати чек-лист', kbCopied: 'Скопійовано',
     showInBase: 'показати в базі',
     untitled: 'Без назви',
     mode: 'Режим',
@@ -49,6 +50,7 @@ const S = {
     edit: 'Редактировать',
     done: 'Готово',
     draft: 'Черновик', toReference: 'В эталон', promoted: 'Переведено в эталон', promoteBlocked: 'Нужна проверенная цитата и рабочая ссылка',
+    kbEmpty: '— пусто —', kbCopy: 'Копировать чек-лист', kbCopied: 'Скопировано',
     showInBase: 'показать в базе',
     untitled: 'Без названия',
     mode: 'Режим',
@@ -69,6 +71,7 @@ const S = {
     edit: 'Edit',
     done: 'Done',
     draft: 'Draft', toReference: 'To reference', promoted: 'Promoted to reference', promoteBlocked: 'Needs a verified quote and a working link',
+    kbEmpty: '— empty —', kbCopy: 'Copy checklist', kbCopied: 'Copied',
     showInBase: 'show in base',
     untitled: 'Untitled',
     mode: 'Mode',
@@ -123,6 +126,12 @@ export default function ArticleClient({
   const [error, setError] = useState<string | null>(null);
 
   const article = useMemo(() => buildArticle(columns, rec), [columns, rec]);
+  // ТР-БЗ-03: обязательные разделы элемента базы знаний (пустые помечены)
+  const kbSections = useMemo(() => knowledgeSections(columns, rec), [columns, rec]);
+  const kbUsed = useMemo(() => new Set(kbSections.flatMap((s) => s.usedKeys)), [kbSections]);
+  const copyList = (items: string[]) => {
+    try { navigator.clipboard?.writeText(items.join('\n')); } catch {}
+  };
   const { sidebar } = article;
   const hasSidebar =
     sidebar.sources.length > 0 || sidebar.quotes.length > 0 || sidebar.links.length > 0 || sidebar.raw.length > 0;
@@ -252,10 +261,40 @@ export default function ArticleClient({
         ) : (
           <div className={hasSidebar ? styles.layout : styles.layoutWide}>
             <article className={styles.sections}>
-              {article.sections.length === 0 && (
-                <p className={styles.empty}>{S[lang].empty}</p>
-              )}
-              {article.sections.map((s) =>
+              {/* ТР-БЗ-03: единый набор разделов у каждого элемента; пустые помечены */}
+              {kbSections.map((s) => (
+                <section key={`kb-${s.heading}`} className={styles.section}>
+                  <h2 className={styles.sectionTitle}>{s.heading}</h2>
+                  {!s.filled ? (
+                    <p className={styles.empty}>{S[lang].kbEmpty}</p>
+                  ) : (
+                    <>
+                      {s.description && (
+                        <div
+                          className={styles.prose}
+                          dangerouslySetInnerHTML={{ __html: renderMarkdown(s.description) }}
+                        />
+                      )}
+                      {s.items.length > 0 && (
+                        <>
+                          <ul className={styles.checklist}>
+                            {s.items.map((it, i) => (
+                              <li key={i} className={styles.checkItem}>
+                                <span aria-hidden="true" className={styles.checkBox}>•</span>
+                                <span>{it}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <button type="button" className={styles.copyList} onClick={() => copyList(s.items)}>
+                            {S[lang].kbCopy}
+                          </button>
+                        </>
+                      )}
+                    </>
+                  )}
+                </section>
+              ))}
+              {article.sections.filter((s) => !kbUsed.has(s.key)).map((s) =>
                 s.kind === 'checklist' ? (
                   <section key={s.key} className={styles.section}>
                     <h2 className={styles.sectionTitle}>{s.heading}</h2>

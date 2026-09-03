@@ -138,6 +138,9 @@ const UI = {
   caSources: { uk: 'джерел', ru: 'источников', en: 'sources' },
   caPassed: { uk: 'пройшли поріг', ru: 'прошли порог', en: 'passed' },
   caEmpty: { uk: 'Немає тез із джерелами', ru: 'Нет тезисов с источниками', en: 'No theses with sources' },
+  // база знаний: группировка по типу + отчёт о неполноте (ТР-БЗ-02)
+  kbByType: { uk: 'За типом', ru: 'По типу', en: 'By type' },
+  kbNoType: { uk: 'без типу', ru: 'без типа', en: 'no type' },
 } satisfies Record<string, Tri>;
 
 const UI_FN = {
