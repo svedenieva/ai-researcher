@@ -81,8 +81,13 @@ export function researchInstruction(topic: string, baseId: string): string {
     `so a quote you couldn't place gets caught rather than passing silently.
 
 ` +
-    `4. After the table, give a connected analysis: 1–3 paragraphs of conclusions with links to ` +
-    `primary sources (the analysis stays in this chat; the table is what travels to the site).`
+    `4. Make the result COMPLETE (ТР-ПИ-06). Beyond the plain facts, add — as extra columns where ` +
+    `they fit a per-row judgement, otherwise as points in the closing analysis — these sections, ` +
+    `and say plainly when one is empty rather than padding it: conclusions («Вывод»), alternative ` +
+    `viewpoints («Альтернатива»), a dissenting/contrarian opinion («Особое мнение»), and a short ` +
+    `assessment of each thesis («Оценка»). Then give a connected analysis: 1–3 paragraphs of ` +
+    `conclusions with links to primary sources (the analysis stays in this chat; the table is what ` +
+    `travels to the site).`
   );
 }
 

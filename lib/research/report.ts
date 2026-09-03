@@ -6,6 +6,7 @@
 import type { ColumnDef } from '../datasource/types';
 import { extractRow } from './eval';
 import { CHECK_COLUMN } from './links';
+import { composeSections, sectionsMarkdown } from './result-sections';
 
 // columns whose values are already rendered specially (name/quote/link), so they
 // aren't repeated in the per-row bullet list
@@ -32,6 +33,9 @@ export function toMarkdown(
   );
 
   const out: string[] = [`# ${baseName}`, '', `_Записей: ${rows.length}_`, ''];
+
+  // ТР-ПИ-06: обязательные секции результата прогона (пустые помечены)
+  out.push(sectionsMarkdown(composeSections(columns, rows)), '## Записи', '');
 
   for (const row of rows) {
     const { name, quote, link } = extractRow(row);
