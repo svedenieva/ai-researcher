@@ -157,6 +157,10 @@ export default function Home() {
           if (merged.underline === false) delete merged.underline;
           if (!merged.fontPx) delete merged.fontPx;
           if (merged.fontScale === 1) delete merged.fontScale;
+          if (!merged.fontFamily) delete merged.fontFamily;
+          if (!merged.color) delete merged.color;
+          if (!merged.fill) delete merged.fill;
+          if (!merged.align || merged.align === 'left') delete merged.align;
           if (Object.keys(merged).length === 0) delete next[k];
           else next[k] = merged;
         }
