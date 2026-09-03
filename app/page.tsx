@@ -8,6 +8,7 @@ import type { CellFormat } from '@aivocado/mindsheet';
 import FilterConditions from './filter-conditions';
 import ConfirmationsPanel from './confirmations-panel';
 import StagesPanel from './stages-panel';
+import KnowledgeCards from './knowledge-cards';
 import { emptyFilterModel, countConditions, matchesModel, encodeConditions, decodeConditions, type FilterModel } from '@/lib/filter-conditions';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
 import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
@@ -73,6 +74,7 @@ export default function Home() {
   const [groupBy, setGroupBy] = useState<string[]>([]);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [condModel, setCondModel] = useState<FilterModel>(emptyFilterModel());
+  const [cardView, setCardView] = useState(false); // ТР-БЗ-01: вид «карточки»
   const [search, setSearch] = useState('');
   // view mode: 'all' | MODE_RESEARCH | MODE_REFERENCE — filters rows by the
   // system «Режим» column; default shows everything
@@ -612,6 +614,18 @@ export default function Home() {
 
   const displayColumns = columns;
 
+  // §5.5: запись открывается своей страницей-статьёй; строка из вложенной базы
+  // несёт свою базу в __baseId, товар каталога — по /product/<slug>.
+  const openRecord = useCallback(
+    (record: CatalogRecord) => {
+      const r = record as Record<string, unknown>;
+      const baseId = typeof r.__baseId === 'string' && r.__baseId ? r.__baseId : (isCustom ? base : undefined);
+      if (baseId) router.push(`/topic/${baseId}/${r.id}`);
+      else router.push(`/product/${r.id}`);
+    },
+    [router, base, isCustom],
+  );
+
   // "favorites only" + фильтр по условию (ТР-МШ-07) сужают уже загруженные строки
   const shownRecords = (() => {
     let rows = favoritesOnly ? records.filter((r) => favorites.includes(String(r.id))) : records;
@@ -905,8 +919,26 @@ export default function Home() {
                   </div>
                 );
               })()}
+              {isCustom && (
+                <button
+                  type="button"
+                  className={styles.kbTypeBtn}
+                  onClick={() => setCardView((v) => !v)}
+                >
+                  {cardView ? tr(lang, 'viewTable') : tr(lang, 'viewCards')}
+                </button>
+              )}
             </div>
           )}
+          {isCustom && cardView ? (
+            <KnowledgeCards
+              records={shownRecords}
+              columns={displayColumns}
+              lang={lang}
+              tone={tabs.find((t) => t.id === base)?.tone}
+              onOpen={openRecord}
+            />
+          ) : (
           <MindSheet
             columns={displayColumns}
             records={shownRecords}
@@ -951,16 +983,7 @@ export default function Home() {
             onFavoritesOnlyChange={setFavoritesOnly}
             onFiltersChange={setFilters}
             onSearchChange={setSearch}
-            onRowOpen={(record) => {
-              // §5.5: a knowledge-base record opens as its own reading view
-              // (the "статья"). A custom row — native or merged into the catalog
-              // — carries the base it truly lives in via __baseId; catalog
-              // products have no base and keep the /product/<slug> page.
-              const r = record as Record<string, unknown>;
-              const baseId = typeof r.__baseId === 'string' && r.__baseId ? r.__baseId : (isCustom ? base : undefined);
-              if (baseId) router.push(`/topic/${baseId}/${r.id}`);
-              else router.push(`/product/${r.id}`);
-            }}
+            onRowOpen={openRecord}
             editable={isCustom}
             onCellEdit={onCellEdit}
             onAddRow={onAddRow}
@@ -985,6 +1008,7 @@ export default function Home() {
             strings={mindsheetStrings(lang)}
             accent={toneColor(tabs.find((t) => t.id === base)?.tone)}
           />
+          )}
         </div>
       </div>
     </div>

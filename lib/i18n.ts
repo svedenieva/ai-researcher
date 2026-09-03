@@ -147,6 +147,10 @@ const UI = {
   stDays: { uk: 'дн.', ru: 'дн.', en: 'd' },
   stNoStage: { uk: 'без стадії', ru: 'без стадии', en: 'no stage' },
   stEmpty: { uk: 'Немає колонки стадії', ru: 'Нет колонки стадии', en: 'No stage column' },
+  // вид «карточки» базы знаний (ТР-БЗ-01)
+  viewCards: { uk: 'Картки', ru: 'Карточки', en: 'Cards' },
+  viewTable: { uk: 'Таблиця', ru: 'Таблица', en: 'Table' },
+  cardsEmpty: { uk: 'Немає елементів', ru: 'Нет элементов', en: 'No items' },
 } satisfies Record<string, Tri>;
 
 const UI_FN = {
