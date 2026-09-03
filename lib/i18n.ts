@@ -141,6 +141,12 @@ const UI = {
   // база знаний: группировка по типу + отчёт о неполноте (ТР-БЗ-02)
   kbByType: { uk: 'За типом', ru: 'По типу', en: 'By type' },
   kbNoType: { uk: 'без типу', ru: 'без типа', en: 'no type' },
+  // стадии внедрения знания (ТР-БЗ-09)
+  stButton: { uk: 'Стадії', ru: 'Стадии', en: 'Stages' },
+  stTitle: { uk: 'Стадії впровадження', ru: 'Стадии внедрения', en: 'Implementation stages' },
+  stDays: { uk: 'дн.', ru: 'дн.', en: 'd' },
+  stNoStage: { uk: 'без стадії', ru: 'без стадии', en: 'no stage' },
+  stEmpty: { uk: 'Немає колонки стадії', ru: 'Нет колонки стадии', en: 'No stage column' },
 } satisfies Record<string, Tri>;
 
 const UI_FN = {

@@ -7,6 +7,7 @@ import { MindSheet } from '@aivocado/mindsheet';
 import type { CellFormat } from '@aivocado/mindsheet';
 import FilterConditions from './filter-conditions';
 import ConfirmationsPanel from './confirmations-panel';
+import StagesPanel from './stages-panel';
 import { emptyFilterModel, countConditions, matchesModel, encodeConditions, decodeConditions, type FilterModel } from '@/lib/filter-conditions';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
 import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
@@ -929,6 +930,7 @@ export default function Home() {
                 />
                 <FilterConditions columns={displayColumns} model={condModel} onChange={setCondModel} lang={lang} />
                 {isCustom && <ConfirmationsPanel records={shownRecords} columns={displayColumns} lang={lang} />}
+                {isCustom && <StagesPanel records={shownRecords} columns={displayColumns} lang={lang} />}
               </>
             }
             forceDisplay={{ wrap: 'shrink' }}
