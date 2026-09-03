@@ -164,6 +164,7 @@ export default function Home() {
           if (!merged.color) delete merged.color;
           if (!merged.fill) delete merged.fill;
           if (!merged.align || merged.align === 'left') delete merged.align;
+          if (merged.border && !merged.border.top && !merged.border.right && !merged.border.bottom && !merged.border.left) delete merged.border;
           if (Object.keys(merged).length === 0) delete next[k];
           else next[k] = merged;
         }
@@ -226,6 +227,31 @@ export default function Home() {
   const onBulkEdit = useCallback(
     (edits: Array<{ id: string; key: string; value: string }>) => applyBulk(edits, true),
     [applyBulk],
+  );
+
+  // ТР-МШ-16: примечания к клеткам — в записи под __notes (jsonb, без миграции)
+  const cellNotes = useMemo(() => {
+    const map: Record<string, Record<string, string>> = {};
+    for (const r of records) {
+      const n = (r as Record<string, unknown>).__notes;
+      if (n && typeof n === 'object') map[String(r.id)] = n as Record<string, string>;
+    }
+    return map;
+  }, [records]);
+  const onCellNote = useCallback(
+    (rowId: string, colKey: string, text: string) => {
+      const rec = records.find((r) => String(r.id) === rowId);
+      if (!rec) return;
+      const cur = ((rec as Record<string, unknown>).__notes ?? {}) as Record<string, string>;
+      const next: Record<string, string> = { ...cur };
+      if (text) next[colKey] = text;
+      else delete next[colKey];
+      const targetBase = typeof rec.__baseId === 'string' ? rec.__baseId : base;
+      setRecords((prev) => prev.map((r) => (String(r.id) === rowId ? ({ ...(r as Record<string, unknown>), __notes: next } as unknown as CatalogRecord) : r)));
+      apiSend('/api/records', 'PATCH', { base: targetBase, id: rowId, data: { __notes: next } })
+        .catch((e) => toast(e instanceof Error ? e.message : 'Не вдалося зберегти примітку'));
+    },
+    [records, base, toast],
   );
 
   const onAddRow = useCallback(
@@ -915,6 +941,8 @@ export default function Home() {
             cellFormats={cellFormats}
             onCellFormat={isCustom ? onCellFormat : undefined}
             onBulkEdit={isCustom ? onBulkEdit : undefined}
+            cellNotes={cellNotes}
+            onCellNote={isCustom ? onCellNote : undefined}
             viewKey={base}
             strings={mindsheetStrings(lang)}
             accent={toneColor(tabs.find((t) => t.id === base)?.tone)}
