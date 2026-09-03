@@ -769,6 +769,7 @@ export default function Home() {
             onSortChange={onSortChange}
             onSortsChange={onSortsChange}
             onSortReset={onSortReset}
+            onSortsSet={(levels) => { setSort(levels[0]); setExtraLevels(levels.slice(1)); }}
             favorites={favorites}
             onToggleFavorite={onToggleFavorite}
             favoritesOnly={favoritesOnly}
