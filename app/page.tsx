@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MindSheet } from '@aivocado/mindsheet';
 import type { CellFormat } from '@aivocado/mindsheet';
+import FilterConditions from './filter-conditions';
+import { emptyFilterModel, countConditions, matchesModel, encodeConditions, decodeConditions, type FilterModel } from '@/lib/filter-conditions';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
 import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
 import { BASES, DEFAULT_BASE } from '@/lib/datasource/bases';
@@ -35,7 +37,7 @@ const DEFAULT_SORT = { key: 'pop', dir: 'asc' as const };
 const FILTER_KEYS = new Set(CATALOG_COLUMNS.filter((c) => c.filterable).map((c) => c.key));
 const BUILTIN_IDS = new Set(BASES.map((b) => b.id));
 // URL params that steer navigation, not filtering — never read as filters
-const NAV_PARAMS = new Set(['base', 'q', 'sort']);
+const NAV_PARAMS = new Set(['base', 'q', 'sort', 'cond']);
 
 interface BaseTab {
   id: string;
@@ -64,6 +66,7 @@ export default function Home() {
   // columns to GROUP by — independent of sort order (Google-Sheets style)
   const [groupBy, setGroupBy] = useState<string[]>([]);
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [condModel, setCondModel] = useState<FilterModel>(emptyFilterModel());
   const [search, setSearch] = useState('');
   // view mode: 'all' | MODE_RESEARCH | MODE_REFERENCE — filters rows by the
   // system «Режим» column; default shows everything
@@ -442,6 +445,8 @@ export default function Home() {
       if (FILTER_KEYS.has(key) || customBase) f[key] = value;
     }
     if (Object.keys(f).length) setFilters(f);
+    const cond = p.get('cond');
+    if (cond) setCondModel(decodeConditions(cond));
     setReady(true);
     loadBases();
   }, [loadBases]);
@@ -455,9 +460,11 @@ export default function Home() {
     if (sort && !(sort.key === DEFAULT_SORT.key && sort.dir === DEFAULT_SORT.dir)) {
       p.set('sort', `${sort.key}:${sort.dir}`);
     }
+    const cond = encodeConditions(condModel);
+    if (cond) p.set('cond', cond);
     const qs = p.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [filters, search, sort, base, ready]);
+  }, [filters, search, sort, base, ready, condModel]);
 
   useEffect(() => {
     if (!ready) return;
@@ -565,16 +572,19 @@ export default function Home() {
     setSort(BUILTIN_IDS.has(id) ? DEFAULT_SORT : undefined);
     setExtraLevels([]);
     setGroupBy([]);
+    setCondModel(emptyFilterModel());
     pendingDefaultGroup.current = true; // re-apply the base's default grouping
   }, []);
 
 
-  // "favorites only" filters the already-loaded records
-  const shownRecords = favoritesOnly
-    ? records.filter((r) => favorites.includes(String(r.id)))
-    : records;
-
   const displayColumns = columns;
+
+  // "favorites only" + фильтр по условию (ТР-МШ-07) сужают уже загруженные строки
+  const shownRecords = (() => {
+    let rows = favoritesOnly ? records.filter((r) => favorites.includes(String(r.id))) : records;
+    if (countConditions(condModel)) rows = rows.filter((r) => matchesModel(r, condModel, displayColumns));
+    return rows;
+  })();
   const displayFacets = facets;
 
   // The export link mirrors the data request — same builder, so the file can't
@@ -842,19 +852,22 @@ export default function Home() {
             loading={loading}
             filtersPosition="menu"
             toolbarLead={
-              <SavedViews
-                base={base}
-                sort={sort}
-                extraLevels={extraLevels}
-                filters={filters}
-                search={search}
-                onApply={(v) => {
-                  setSort(v.sort);
-                  setExtraLevels(v.extraLevels ?? []);
-                  setFilters(v.filters ?? {});
-                  setSearch(v.search ?? '');
-                }}
-              />
+              <>
+                <SavedViews
+                  base={base}
+                  sort={sort}
+                  extraLevels={extraLevels}
+                  filters={filters}
+                  search={search}
+                  onApply={(v) => {
+                    setSort(v.sort);
+                    setExtraLevels(v.extraLevels ?? []);
+                    setFilters(v.filters ?? {});
+                    setSearch(v.search ?? '');
+                  }}
+                />
+                <FilterConditions columns={displayColumns} model={condModel} onChange={setCondModel} lang={lang} />
+              </>
             }
             forceDisplay={{ wrap: 'shrink' }}
             sort={sort}

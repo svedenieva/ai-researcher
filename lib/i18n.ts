@@ -105,6 +105,26 @@ const UI = {
     ru: 'Название\tКатегория\tЦена\nFigma\tUI\t15\nFramer\tUI\t30',
     en: 'Name\tCategory\tPrice\nFigma\tUI\t15\nFramer\tUI\t30',
   },
+  // фильтр по условию (ТР-МШ-07)
+  fcButton: { uk: 'Умови', ru: 'Условия', en: 'Conditions' },
+  fcTitle: { uk: 'Фільтр за умовою', ru: 'Фильтр по условию', en: 'Filter by condition' },
+  fcAll: { uk: 'Усі умови (І)', ru: 'Все условия (И)', en: 'All conditions (AND)' },
+  fcAny: { uk: 'Будь-яка (АБО)', ru: 'Любое (ИЛИ)', en: 'Any (OR)' },
+  fcAddCond: { uk: '+ Умова', ru: '+ Условие', en: '+ Condition' },
+  fcAddGroup: { uk: '+ Група', ru: '+ Группа', en: '+ Group' },
+  fcValue: { uk: 'значення', ru: 'значение', en: 'value' },
+  fcClear: { uk: 'Скинути', ru: 'Сбросить', en: 'Clear' },
+  fcColumn: { uk: 'колонка', ru: 'колонка', en: 'column' },
+  opContains: { uk: 'містить', ru: 'содержит', en: 'contains' },
+  opNContains: { uk: 'не містить', ru: 'не содержит', en: 'does not contain' },
+  opEq: { uk: 'дорівнює', ru: 'равно', en: 'equals' },
+  opNe: { uk: 'не дорівнює', ru: 'не равно', en: 'not equal' },
+  opGt: { uk: 'більше', ru: 'больше', en: 'greater than' },
+  opLt: { uk: 'менше', ru: 'меньше', en: 'less than' },
+  opGte: { uk: 'більше або =', ru: 'больше или =', en: '≥' },
+  opLte: { uk: 'менше або =', ru: 'меньше или =', en: '≤' },
+  opEmpty: { uk: 'порожнє', ru: 'пусто', en: 'is empty' },
+  opNEmpty: { uk: 'не порожнє', ru: 'не пусто', en: 'is not empty' },
 } satisfies Record<string, Tri>;
 
 const UI_FN = {

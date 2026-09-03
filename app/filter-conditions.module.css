@@ -1,0 +1,96 @@
+.wrap { position: relative; display: inline-flex; }
+
+.trigger {
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--rule, #e6e3dc);
+  border-radius: 8px;
+  background: var(--paper, #fff);
+  color: var(--ink-70, #4b4b46);
+  font-size: 12.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.trigger:hover { background: var(--wash, #f4f2ee); color: var(--ink, #24241f); }
+.on { border-color: var(--sage, #6b8f71); color: var(--ink, #24241f); font-weight: 600; }
+
+.panel {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 40;
+  width: min(430px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px;
+  background: var(--paper, #fff);
+  border: 1px solid var(--rule, #e6e3dc);
+  border-radius: 11px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+.head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.title { font-size: 12px; font-weight: 600; color: var(--ink, #24241f); }
+
+.match, .matchSm {
+  padding: 4px 6px;
+  border: 1px solid var(--rule-soft, #eceae4);
+  border-radius: 6px;
+  background: var(--paper, #fff);
+  color: var(--ink, #24241f);
+  font-size: 12px;
+  cursor: pointer;
+}
+.matchSm { font-size: 11px; }
+
+.row { display: flex; align-items: center; gap: 6px; }
+.sel, .val {
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--rule-soft, #eceae4);
+  border-radius: 6px;
+  background: var(--paper, #fff);
+  color: var(--ink, #24241f);
+  font-size: 12px;
+  min-width: 0;
+}
+.sel { flex: 1; cursor: pointer; }
+.val { flex: 1.2; }
+.del {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-45, #8a8a80);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.del:hover { background: var(--wash, #f4f2ee); color: var(--error, #c0392b); }
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px dashed var(--rule, #e6e3dc);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--sage, #6b8f71) 5%, transparent);
+}
+.groupHead { display: flex; align-items: center; justify-content: space-between; }
+
+.actions { display: flex; gap: 8px; align-items: center; margin-top: 2px; }
+.add, .addSm, .clear {
+  padding: 5px 9px;
+  border: 1px solid var(--rule-soft, #eceae4);
+  border-radius: 7px;
+  background: var(--paper, #fff);
+  color: var(--ink-70, #4b4b46);
+  font-size: 12px;
+  cursor: pointer;
+}
+.add:hover, .addSm:hover, .clear:hover { background: var(--wash, #f4f2ee); color: var(--ink, #24241f); }
+.addSm { align-self: flex-start; font-size: 11px; padding: 3px 8px; }
+.clear { margin-left: auto; color: var(--ink-45, #8a8a80); }
