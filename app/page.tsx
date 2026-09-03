@@ -16,6 +16,7 @@ import CreateBase from './create-base';
 import BaseTree from './base-tree';
 import BaseAiActions from './base-ai-actions';
 import BaseSummary from './base-summary';
+import SourceCounters from './source-counters';
 import SavedViews from './saved-views';
 import GlobalSearch from './global-search';
 import Shortcuts from './shortcuts';
@@ -870,6 +871,9 @@ export default function Home() {
               </div>
               {shownRecords.length > 0 && (
                 <BaseSummary columns={displayColumns} records={shownRecords} total={total} />
+              )}
+              {isCustom && shownRecords.length > 0 && (
+                <SourceCounters records={shownRecords} columns={displayColumns} lang={lang} />
               )}
             </div>
           )}

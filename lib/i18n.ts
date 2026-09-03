@@ -125,6 +125,12 @@ const UI = {
   opLte: { uk: 'менше або =', ru: 'меньше или =', en: '≤' },
   opEmpty: { uk: 'порожнє', ru: 'пусто', en: 'is empty' },
   opNEmpty: { uk: 'не порожнє', ru: 'не пусто', en: 'is not empty' },
+  // счётчики источников по направлению (ТР-БИ-06)
+  scExperts: { uk: 'Експерти', ru: 'Эксперты', en: 'Experts' },
+  scRepos: { uk: 'Репозиторії', ru: 'Репозитории', en: 'Repos' },
+  scChannels: { uk: 'Канали', ru: 'Каналы', en: 'Channels' },
+  scPages: { uk: 'Сторінки', ru: 'Страницы', en: 'Pages' },
+  scNormMet: { uk: 'норматив виконано', ru: 'норматив выполнен', en: 'norm met' },
 } satisfies Record<string, Tri>;
 
 const UI_FN = {
