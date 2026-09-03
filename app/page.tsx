@@ -900,8 +900,8 @@ export default function Home() {
             recordCard
             cellSelection
             cellFormats={cellFormats}
-            onCellFormat={onCellFormat}
-            onBulkEdit={onBulkEdit}
+            onCellFormat={isCustom ? onCellFormat : undefined}
+            onBulkEdit={isCustom ? onBulkEdit : undefined}
             viewKey={base}
             strings={mindsheetStrings(lang)}
             accent={toneColor(tabs.find((t) => t.id === base)?.tone)}
