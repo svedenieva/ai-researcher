@@ -60,6 +60,8 @@ export default function Home() {
   const [sort, setSort] = useState<ListParams['sort']>(DEFAULT_SORT);
   // extra grouping levels (Shift + click), at most 2 beyond the first
   const [extraLevels, setExtraLevels] = useState<NonNullable<ListParams['sort']>[]>([]);
+  // columns to GROUP by — independent of sort order (Google-Sheets style)
+  const [groupBy, setGroupBy] = useState<string[]>([]);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
   // view mode: 'all' | MODE_RESEARCH | MODE_REFERENCE — filters rows by the
@@ -380,7 +382,7 @@ export default function Home() {
         if (pendingDefaultGroup.current) {
           pendingDefaultGroup.current = false;
           const dg = defaultGroupSort(body.columns ?? []);
-          if (dg) setSort(dg);
+          setGroupBy(dg ? [dg.key] : []);
         }
         // the catalog loaded but nested bases didn't — say so instead of
         // quietly showing a shorter table
@@ -469,6 +471,7 @@ export default function Home() {
     // still open sorted by popularity.
     setSort(BUILTIN_IDS.has(id) ? DEFAULT_SORT : undefined);
     setExtraLevels([]);
+    setGroupBy([]);
     pendingDefaultGroup.current = true; // re-apply the base's default grouping
   }, []);
 
@@ -770,6 +773,8 @@ export default function Home() {
             onSortsChange={onSortsChange}
             onSortReset={onSortReset}
             onSortsSet={(levels) => { setSort(levels[0]); setExtraLevels(levels.slice(1)); }}
+            groupBy={groupBy}
+            onGroupBySet={setGroupBy}
             favorites={favorites}
             onToggleFavorite={onToggleFavorite}
             favoritesOnly={favoritesOnly}
