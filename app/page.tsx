@@ -398,15 +398,16 @@ export default function Home() {
     if (!ok) return;
     setDeduping(true);
     try {
-      const r = await apiSend<{ groups: number; removed: number; filled: number }>(
+      const r = await apiSend<{ groups: number; removed: number; filled: number; tagsFixed?: number }>(
         '/api/records/dedupe',
         'POST',
         { base },
       );
       setRefreshTick((t) => t + 1);
+      const tagPart = r.tagsFixed ? `, теги впорядковано: ${r.tagsFixed}` : '';
       toast(
-        r.removed
-          ? `Злито груп: ${r.groups}, прибрано дублів: ${r.removed}${r.filled ? `, заповнено рядків: ${r.filled}` : ''}`
+        r.removed || r.tagsFixed
+          ? `Злито груп: ${r.groups}, прибрано дублів: ${r.removed}${r.filled ? `, заповнено рядків: ${r.filled}` : ''}${tagPart}`
           : 'Дублів не знайдено',
       );
     } catch (e) {

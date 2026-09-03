@@ -3,6 +3,7 @@ import { currentEmail } from '@/lib/current-user';
 import { researchDeeplinks } from '@/lib/research/deeplink';
 import { RUN_SEED_COLUMNS, researchFolder, runName } from '@/lib/research/runs';
 import { serverAgentStatus } from '@/lib/research/server-agent';
+import { findTopicBase } from '@/lib/research/topic-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,19 @@ export async function POST(request: Request): Promise<Response> {
   // the middleware, which is the only other thing standing here.
   if (!me) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   const store = getCustomStore();
+
+  // ТР-ПИ-03: перед запуском проверяем накопленное. Если по этой теме уже есть
+  // база и она ЗАКРЫТА — прогон не запускаем (никаких обращений наружу), а
+  // возвращаем накопленное. Совпадение — по формулировке искомого или названию.
+  try {
+    const existing = findTopicBase(await store.listBases(me), topic);
+    if (existing?.closed) {
+      return Response.json({ closed: true, baseId: existing.id, baseName: existing.name });
+    }
+  } catch {
+    // проверка накопленного не должна ронять запуск — если список баз недоступен,
+    // просто продолжаем как обычно
+  }
 
   // short date in the name so runs don't collide; the slug adds a numeric
   // suffix on any remaining clash

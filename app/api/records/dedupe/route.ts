@@ -2,6 +2,8 @@ import { currentEmail } from '@/lib/current-user';
 import { canAccessBase, getCustomStore } from '@/lib/datasource/customStore';
 import { BASES } from '@/lib/datasource/bases';
 import { planDedupe, countRemovals } from '@/lib/research/dedupe';
+import { planTagNormalization } from '@/lib/research/normalize-tags';
+import { TAGS_KEY } from '@/lib/tags';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +52,15 @@ export async function POST(request: Request): Promise<Response> {
       if (action.removeIds.length) await store.softDeleteRecords(baseId, action.removeIds);
     }
 
-    return Response.json({ groups: actions.length, removed: countRemovals(actions), filled });
+    // ТР-БД-06: привести теги к единому написанию по выжившим строкам
+    const removed = new Set<string>(actions.flatMap((a) => a.removeIds));
+    const survivors = rows.filter((r) => !removed.has(String(r.id)));
+    const tagFixes = planTagNormalization(survivors);
+    for (const fix of tagFixes) {
+      await store.updateRecord(baseId, fix.id, { [TAGS_KEY]: fix.tags });
+    }
+
+    return Response.json({ groups: actions.length, removed: countRemovals(actions), filled, tagsFixed: tagFixes.length });
   } catch (e) {
     console.error('dedupe failed:', e);
     return Response.json({ error: 'Could not merge duplicates' }, { status: 500 });

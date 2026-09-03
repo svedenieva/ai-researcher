@@ -65,6 +65,7 @@ const S: Record<Lang, {
   serverDone: (n: number) => string;
   serverStartFailed: string;
   startFailed: string;
+  topicClosed: (n: string) => string;
   backToCatalog: string;
   pageTitle: string;
   lead: string;
@@ -133,6 +134,7 @@ const S: Record<Lang, {
     serverDone: (n) => `Готово на сервері — додано рядків: ${n}`,
     serverStartFailed: 'Не вдалося запустити на сервері',
     startFailed: 'Не вдалося почати дослідження',
+    topicClosed: (n) => `Тема «${n}» закрита — показую накопичене, без нового прогону`,
     backToCatalog: 'До каталогу',
     pageTitle: 'Нове дослідження',
     lead: 'Опиши, що потрібно дослідити. Відкриється твій Claude з готовим запитом — він збере дані та збереже їх у базу, а результат з’явиться тут.',
@@ -201,6 +203,7 @@ const S: Record<Lang, {
     serverDone: (n) => `Готово на сервере — добавлено строк: ${n}`,
     serverStartFailed: 'Не удалось запустить на сервере',
     startFailed: 'Не удалось начать исследование',
+    topicClosed: (n) => `Тема «${n}» закрыта — показываю накопленное, без нового прогона`,
     backToCatalog: 'В каталог',
     pageTitle: 'Новое исследование',
     lead: 'Опиши, что нужно исследовать. Откроется твой Claude с готовым запросом — он соберёт данные и сохранит их в базу, а результат появится здесь.',
@@ -269,6 +272,7 @@ const S: Record<Lang, {
     serverDone: (n) => `Done on the server — rows added: ${n}`,
     serverStartFailed: 'Could not start on the server',
     startFailed: 'Could not start the research',
+    topicClosed: (n) => `Topic “${n}” is closed — showing what's accumulated, no new run`,
     backToCatalog: 'To catalog',
     pageTitle: 'New research',
     lead: 'Describe what you need to research. Your Claude will open with a ready-made prompt — it will gather the data and save it to a base, and the result will appear here.',
@@ -473,11 +477,17 @@ export default function Research() {
     if (!prompt.trim()) return;
     setStarting(true);
     try {
-      const body = await apiSend<{ baseId: string; baseName: string; web: string }>('/api/research/start', 'POST', { prompt });
-      setRun({ baseId: body.baseId, baseName: body.baseName, web: body.web });
+      const body = await apiSend<{ baseId: string; baseName: string; web?: string; closed?: boolean }>('/api/research/start', 'POST', { prompt });
+      // ТР-ПИ-03: тема уже закрыта — прогон не запускаем, показываем накопленное
+      if (body.closed) {
+        toast(S[lang].topicClosed(body.baseName));
+        window.open(`/?base=${encodeURIComponent(body.baseId)}`, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      setRun({ baseId: body.baseId, baseName: body.baseName, web: body.web ?? '' });
       loadRuns();
       // open the user's OWN Claude with the ready-made prompt
-      window.open(body.web, '_blank', 'noopener,noreferrer');
+      if (body.web) window.open(body.web, '_blank', 'noopener,noreferrer');
     } catch (e) {
       toast(e instanceof Error ? e.message : S[lang].startFailed);
     } finally {
