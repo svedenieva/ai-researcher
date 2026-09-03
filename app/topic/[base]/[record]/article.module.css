@@ -413,3 +413,15 @@
   .layoutWide { max-width: 100%; }
   .editForm { gap: 14px; }
 }
+
+/* ТР-ПА-02: кнопка перевода в эталон */
+.promoteBtn {
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--sage, #6b8f71) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sage, #6b8f71) 10%, transparent);
+  color: var(--ink, #24241f);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.promoteBtn:hover { background: color-mix(in srgb, var(--sage, #6b8f71) 20%, transparent); }

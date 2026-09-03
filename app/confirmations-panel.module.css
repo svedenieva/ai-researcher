@@ -1,0 +1,73 @@
+.wrap { position: relative; display: inline-flex; }
+.trigger {
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--rule, #e6e3dc);
+  border-radius: 8px;
+  background: var(--paper, #fff);
+  color: var(--ink-70, #4b4b46);
+  font-size: 12.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.trigger:hover { background: var(--wash, #f4f2ee); color: var(--ink, #24241f); }
+
+.panel {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  z-index: 40;
+  width: min(420px, 92vw);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: var(--paper, #fff);
+  border: 1px solid var(--rule, #e6e3dc);
+  border-radius: 11px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+.head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.title { font-size: 12.5px; font-weight: 600; color: var(--ink, #24241f); }
+.thr { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ink-45, #8a8a80); }
+.thr input {
+  width: 48px;
+  padding: 3px 6px;
+  border: 1px solid var(--rule-soft, #eceae4);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+}
+.sub { font-size: 11.5px; color: var(--ink-45, #8a8a80); }
+.empty { padding: 14px 4px; color: var(--ink-45, #8a8a80); font-size: 12.5px; text-align: center; }
+
+.list { list-style: none; margin: 0; padding: 0; overflow-y: auto; }
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  color: var(--ink-70, #4b4b46);
+}
+.item:hover { background: var(--wash, #f4f2ee); }
+.count {
+  flex: none;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--wash, #f0eee9);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink, #24241f);
+}
+.name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tick { flex: none; color: #16a34a; font-weight: 700; }
+.pass .count { background: color-mix(in srgb, #16a34a 16%, transparent); color: #15803d; }

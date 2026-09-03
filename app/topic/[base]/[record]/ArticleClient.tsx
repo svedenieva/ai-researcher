@@ -28,7 +28,7 @@ const S = {
     article: 'Стаття',
     edit: 'Редагувати',
     done: 'Готово',
-    draft: 'Чернетка',
+    draft: 'Чернетка', toReference: 'В еталон', promoted: 'Переведено в еталон', promoteBlocked: 'Потрібні перевірена цитата і робоче посилання',
     showInBase: 'показати в базі',
     untitled: 'Без назви',
     mode: 'Режим',
@@ -48,7 +48,7 @@ const S = {
     article: 'Статья',
     edit: 'Редактировать',
     done: 'Готово',
-    draft: 'Черновик',
+    draft: 'Черновик', toReference: 'В эталон', promoted: 'Переведено в эталон', promoteBlocked: 'Нужна проверенная цитата и рабочая ссылка',
     showInBase: 'показать в базе',
     untitled: 'Без названия',
     mode: 'Режим',
@@ -68,7 +68,7 @@ const S = {
     article: 'Article',
     edit: 'Edit',
     done: 'Done',
-    draft: 'Draft',
+    draft: 'Draft', toReference: 'To reference', promoted: 'Promoted to reference', promoteBlocked: 'Needs a verified quote and a working link',
     showInBase: 'show in base',
     untitled: 'Untitled',
     mode: 'Mode',
@@ -135,6 +135,26 @@ export default function ArticleClient({
     [columns],
   );
 
+  // ТР-ПА-02: перевод «Черновик → Эталон» (гейт по цитате/ссылке — на сервере)
+  async function promote() {
+    setSave('saving');
+    setError(null);
+    try {
+      const r = await apiSend<{ promoted: number }>('/api/records/promote', 'POST', { base: baseId, ids: [rec.id] });
+      if (r.promoted) {
+        setRec((x) => ({ ...x, [MODE_KEY]: MODE_REFERENCE }));
+        setSave('saved');
+        setTimeout(() => setSave('idle'), 1500);
+      } else {
+        setSave('error');
+        setError(S[lang].promoteBlocked);
+      }
+    } catch (e) {
+      setSave('error');
+      setError(e instanceof Error ? e.message : S[lang].saveFailed);
+    }
+  }
+
   async function commit(key: string, value: string) {
     if (str(rec[key]) === value) return;
     setSave('saving');
@@ -184,6 +204,11 @@ export default function ArticleClient({
             <span className={isReference ? styles.modeReference : styles.modeDraft}>
               {isReference ? MODE_REFERENCE : S[lang].draft}
             </span>
+            {!isReference && (
+              <button type="button" className={styles.promoteBtn} onClick={promote} title={S[lang].toReference}>
+                ⇧ {S[lang].toReference}
+              </button>
+            )}
             {view === 'read' &&
               article.badges.map((b, i) => (
                 <Link

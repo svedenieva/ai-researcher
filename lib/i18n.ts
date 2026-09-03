@@ -131,6 +131,13 @@ const UI = {
   scChannels: { uk: 'Канали', ru: 'Каналы', en: 'Channels' },
   scPages: { uk: 'Сторінки', ru: 'Страницы', en: 'Pages' },
   scNormMet: { uk: 'норматив виконано', ru: 'норматив выполнен', en: 'norm met' },
+  // анализ подтверждений (ТР-ПА-01)
+  caButton: { uk: 'Підтвердження', ru: 'Подтверждения', en: 'Confirmations' },
+  caTitle: { uk: 'Аналіз підтверджень тез', ru: 'Анализ подтверждений тезисов', en: 'Thesis confirmations' },
+  caThreshold: { uk: 'Поріг', ru: 'Порог', en: 'Threshold' },
+  caSources: { uk: 'джерел', ru: 'источников', en: 'sources' },
+  caPassed: { uk: 'пройшли поріг', ru: 'прошли порог', en: 'passed' },
+  caEmpty: { uk: 'Немає тез із джерелами', ru: 'Нет тезисов с источниками', en: 'No theses with sources' },
 } satisfies Record<string, Tri>;
 
 const UI_FN = {
