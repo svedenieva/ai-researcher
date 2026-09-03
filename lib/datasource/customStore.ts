@@ -23,7 +23,13 @@ export interface CustomBase {
   /** when the base was created (ISO). Optional: legacy rows written before the
       column was read back have none, and the showcase just omits the date. */
   createdAt?: string | null;
+  /** ТР-БИ-03: стадия исследования темы. null — не задана (= не исследована). */
+  state?: 'unexplored' | 'in_progress' | 'closed' | null;
+  /** ТР-БИ-03: формулировка искомого (что ищем по этой теме). */
+  query?: string | null;
 }
+
+export type BaseState = NonNullable<CustomBase['state']>;
 
 export interface NewBase {
   name: string;
@@ -66,6 +72,8 @@ export interface CustomStore {
   reorderRecords(baseId: string, orderedIds: string[]): Promise<number>;
   renameBase(id: string, name: string): Promise<CustomBase | null>;
   moveBase(id: string, parent: string | null): Promise<CustomBase | null>;
+  /** ТР-БИ-03: задать состояние/формулировку темы (толерантно к отсутствию колонок) */
+  setBaseMeta(id: string, patch: { state?: CustomBase['state']; query?: string | null }): Promise<CustomBase | null>;
   softDeleteBase(id: string): Promise<boolean>;
   restoreBase(id: string): Promise<boolean>;
   softDeleteRecords(baseId: string, ids: string[]): Promise<number>;
@@ -263,6 +271,13 @@ export class MemoryCustomStore implements CustomStore {
   }
   async renameBase(id: string, name: string) { const b = this.bases.find((x) => x.id === id); if (!b || this.deletedBases.has(id)) return null; b.name = name; return b; }
   async moveBase(id: string, parent: string | null) { const b = this.bases.find((x) => x.id === id); if (!b || this.deletedBases.has(id)) return null; b.parent = parent; return b; }
+  async setBaseMeta(id: string, patch: { state?: CustomBase['state']; query?: string | null }) {
+    const b = this.bases.find((x) => x.id === id);
+    if (!b || this.deletedBases.has(id)) return null;
+    if (patch.state !== undefined) b.state = patch.state;
+    if (patch.query !== undefined) b.query = patch.query;
+    return b;
+  }
   async addColumn(baseId: string, col: NewColumn) { return this.mutateColumns(baseId, (cols) => [...cols, normalizeNewColumn(col, cols)]); }
   async updateColumn(baseId: string, key: string, patch: ColumnPatch) {
     const b = this.bases.find((x) => x.id === baseId);
@@ -306,6 +321,9 @@ class SupabaseCustomStore implements CustomStore {
       // Isolation still works: owner===null (legacy/team) are visible to everyone.
       shared: Boolean(row.shared),
       createdAt: (row.created_at as string) ?? null,
+      // state/query — до миграции 0004 колонок нет → undefined
+      state: (row.state as CustomBase['state']) ?? null,
+      query: (row.query as string) ?? null,
     };
   }
   async listAllBases(): Promise<CustomBase[]> {
@@ -361,6 +379,22 @@ class SupabaseCustomStore implements CustomStore {
     let { data, error } = await this.client.from('bases').update({ parent }).eq('id', id).is('deleted_at', null).select('*').maybeSingle();
     if (error && /deleted_at/.test(error.message)) {
       ({ data, error } = await this.client.from('bases').update({ parent }).eq('id', id).select('*').maybeSingle());
+    }
+    if (error) throw new Error(`Supabase (bases): ${error.message}`);
+    return data ? this.norm(data as Record<string, unknown>) : null;
+  }
+  async setBaseMeta(id: string, patch: { state?: CustomBase['state']; query?: string | null }): Promise<CustomBase | null> {
+    const upd: Record<string, unknown> = {};
+    if (patch.state !== undefined) upd.state = patch.state;
+    if (patch.query !== undefined) upd.query = patch.query;
+    if (!Object.keys(upd).length) return this.getBase(id);
+    let { data, error } = await this.client.from('bases').update(upd).eq('id', id).is('deleted_at', null).select('*').maybeSingle();
+    if (error && /deleted_at/.test(error.message)) {
+      ({ data, error } = await this.client.from('bases').update(upd).eq('id', id).select('*').maybeSingle());
+    }
+    // до миграции 0004 колонок state/query нет — деградируем мягко, не падая
+    if (error && /column .*(state|query)|(state|query).* does not exist/i.test(error.message)) {
+      return this.getBase(id);
     }
     if (error) throw new Error(`Supabase (bases): ${error.message}`);
     return data ? this.norm(data as Record<string, unknown>) : null;

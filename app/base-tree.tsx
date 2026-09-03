@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { BaseTab } from './base-picker';
+
+type BaseState = 'unexplored' | 'in_progress' | 'closed';
+const STATE_ORDER: BaseState[] = ['unexplored', 'in_progress', 'closed'];
 import { toneColor } from '@/lib/tone';
 import { apiSend } from '@/lib/api';
 import { useToast, useConfirm } from './ui';
@@ -23,6 +26,8 @@ const S: Record<Lang, {
   groupResearch: string; groupKnowledge: string; groupEmpty: string;
   toKnowledge: string; toResearch: string;
   movedToGroup: (n: string, g: string) => string;
+  stateHead: string; stUnexplored: string; stInProgress: string; stClosed: string;
+  formulation: string; formulationPrompt: string; filterByState: string; allStates: string; errState: string;
 }> = {
   uk: {
     bases: 'Бази даних', close: 'Закрити', search: 'Пошук бази…', empty: 'Нічого не знайдено',
@@ -40,6 +45,8 @@ const S: Record<Lang, {
     groupResearch: 'Дослідник', groupKnowledge: 'База знань', groupEmpty: 'Порожньо — створіть базу',
     toKnowledge: 'До «Бази знань»', toResearch: 'До «Дослідника»',
     movedToGroup: (n, g) => `«${n}» → ${g}`,
+    stateHead: 'Стан теми', stUnexplored: 'Не досліджена', stInProgress: 'В роботі', stClosed: 'Закрита',
+    formulation: 'Формулювання…', formulationPrompt: 'Що шукаємо в цій темі?', filterByState: 'Стан', allStates: 'Усі', errState: 'Не вдалося оновити стан',
   },
   ru: {
     bases: 'Базы данных', close: 'Закрыть', search: 'Поиск базы…', empty: 'Ничего не найдено',
@@ -57,6 +64,8 @@ const S: Record<Lang, {
     groupResearch: 'Исследователь', groupKnowledge: 'База знаний', groupEmpty: 'Пусто — создайте базу',
     toKnowledge: 'В «Базу знаний»', toResearch: 'В «Исследователь»',
     movedToGroup: (n, g) => `«${n}» → ${g}`,
+    stateHead: 'Состояние темы', stUnexplored: 'Не исследована', stInProgress: 'В работе', stClosed: 'Закрыта',
+    formulation: 'Формулировка…', formulationPrompt: 'Что ищем по этой теме?', filterByState: 'Состояние', allStates: 'Все', errState: 'Не удалось обновить состояние',
   },
   en: {
     bases: 'Databases', close: 'Close', search: 'Search a base…', empty: 'Nothing found',
@@ -74,6 +83,8 @@ const S: Record<Lang, {
     groupResearch: 'Researcher', groupKnowledge: 'Knowledge base', groupEmpty: 'Empty — create a base',
     toKnowledge: 'To “Knowledge base”', toResearch: 'To “Researcher”',
     movedToGroup: (n, g) => `“${n}” → ${g}`,
+    stateHead: 'Topic state', stUnexplored: 'Not explored', stInProgress: 'In progress', stClosed: 'Closed',
+    formulation: 'Research question…', formulationPrompt: 'What are we looking for in this topic?', filterByState: 'State', allStates: 'All', errState: 'Could not update state',
   },
 };
 
@@ -159,6 +170,7 @@ export default function BaseTree({
   const s = S[lang] ?? S.uk;
   const { byId } = useMemo(() => buildTree(tabs), [tabs]);
   const [query, setQuery] = useState('');
+  const [stateFilter, setStateFilter] = useState<BaseState | null>(null); // ТР-БИ-03
 
   // per-viewer group assignment (research vs knowledge), kept in localStorage
   const [kinds, setKinds] = useState<Record<string, BaseKind>>({});
@@ -236,6 +248,26 @@ export default function BaseTree({
       toast(e instanceof Error ? e.message : s.errMove);
     }
   };
+
+  // ТР-БИ-03: состояние темы и формулировка искомого
+  const setBaseState = async (node: TreeNode, state: BaseState) => {
+    closeMenu();
+    try {
+      await apiSend('/api/bases', 'PATCH', { id: node.id, state });
+      onMutated?.();
+    } catch (e) { toast(e instanceof Error ? e.message : s.errState); }
+  };
+  const editFormulation = async (node: TreeNode) => {
+    closeMenu();
+    const q = window.prompt(s.formulationPrompt, node.query ?? '');
+    if (q === null) return;
+    try {
+      await apiSend('/api/bases', 'PATCH', { id: node.id, query: q.trim() });
+      onMutated?.();
+    } catch (e) { toast(e instanceof Error ? e.message : s.errState); }
+  };
+
+  const stateLabel = (st: BaseState): string => (st === 'in_progress' ? s.stInProgress : st === 'closed' ? s.stClosed : s.stUnexplored);
 
   const startRename = (node: TreeNode) => { setEditValue(node.name); setEditingId(node.id); };
   const cancelRename = () => setEditingId(null);
@@ -318,10 +350,12 @@ export default function BaseTree({
   const q = query.trim().toLowerCase();
   // when searching, show matches and all of their parents
   const matches = useMemo(() => {
-    if (!q) return null;
+    if (!q && !stateFilter) return null;
     const keep = new Set<string>();
     for (const node of byId.values()) {
-      if (node.name.toLowerCase().includes(q)) {
+      const nameHit = !q || node.name.toLowerCase().includes(q);
+      const stateHit = !stateFilter || !node.builtin && (node.state ?? 'unexplored') === stateFilter;
+      if (nameHit && stateHit) {
         keep.add(node.id);
         let p = node.parent ? byId.get(node.parent) : undefined;
         while (p) {
@@ -331,7 +365,7 @@ export default function BaseTree({
       }
     }
     return keep;
-  }, [q, byId]);
+  }, [q, stateFilter, byId]);
 
   const renderNode = (node: TreeNode, depth: number) => {
     if (matches && !matches.has(node.id)) return null;
@@ -397,7 +431,16 @@ export default function BaseTree({
             >
               <span className={styles.tone} aria-hidden="true" />
               <span className={styles.icon} aria-hidden="true">{hasKids ? <IconFolder size={14} /> : <IconFile size={14} />}</span>
+              {!node.builtin && (
+                <span
+                  className={styles.stateDot}
+                  data-state={node.state ?? 'unexplored'}
+                  title={`${s.stateHead}: ${stateLabel(node.state ?? 'unexplored')}`}
+                  aria-hidden="true"
+                />
+              )}
               <span className={styles.name}>{node.name}</span>
+              {node.query ? <span className={styles.qmark} title={node.query}>?</span> : null}
               {node.builtin && <span className={styles.tag}>{s.builtin}</span>}
             </button>
           )}
@@ -454,6 +497,24 @@ export default function BaseTree({
           autoFocus
         />
       )}
+
+      <div className={styles.stateFilter} role="group" aria-label={s.filterByState}>
+        <button type="button" className={`${styles.stateChip} ${stateFilter === null ? styles.stateChipOn : ''}`} onClick={() => setStateFilter(null)}>
+          {s.allStates}
+        </button>
+        {STATE_ORDER.map((st) => (
+          <button
+            key={st}
+            type="button"
+            className={`${styles.stateChip} ${stateFilter === st ? styles.stateChipOn : ''}`}
+            title={stateLabel(st)}
+            aria-pressed={stateFilter === st}
+            onClick={() => setStateFilter(stateFilter === st ? null : st)}
+          >
+            <span className={styles.stateDot} data-state={st} aria-hidden="true" />
+          </button>
+        ))}
+      </div>
 
       <div className={styles.tree} onScroll={closeMenu}>
         <div className={styles.group}>
@@ -523,6 +584,25 @@ export default function BaseTree({
                   <button type="button" role="menuitem" className={styles.menuItem} onClick={() => { closeMenu(); setMovingId(node.id); }}>
                     <IconMove size={15} /> {s.move}
                   </button>
+                  <div className={styles.menuSep} />
+                  <div className={styles.menuHead}>{s.stateHead}</div>
+                  {STATE_ORDER.map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={(node.state ?? 'unexplored') === st}
+                      className={styles.menuItem}
+                      onClick={() => setBaseState(node, st)}
+                    >
+                      <span className={styles.stateDot} data-state={st} aria-hidden="true" /> {stateLabel(st)}
+                      {(node.state ?? 'unexplored') === st ? ' ✓' : ''}
+                    </button>
+                  ))}
+                  <button type="button" role="menuitem" className={styles.menuItem} onClick={() => editFormulation(node)}>
+                    <IconPencil size={15} /> {s.formulation}
+                  </button>
+                  <div className={styles.menuSep} />
                   <button type="button" role="menuitem" className={`${styles.menuItem} ${styles.danger}`} onClick={() => { closeMenu(); deleteBase(node); }}>
                     <IconTrash size={15} /> {s.del}
                   </button>

@@ -22,6 +22,9 @@ interface BaseDTO {
   owner?: string | null;
   /** ISO creation date — shown in the showcase preview */
   createdAt?: string | null;
+  /** ТР-БИ-03: стадия темы и формулировка искомого */
+  state?: 'unexplored' | 'in_progress' | 'closed' | null;
+  query?: string | null;
 }
 
 // list of all bases for the switcher: built-in first (catalog slices),
@@ -49,6 +52,8 @@ export async function GET(): Promise<Response> {
         // expose it only when the base is the caller's own.
         owner: b.owner && b.owner === me ? b.owner : null,
         createdAt: b.createdAt ?? null,
+        state: b.state ?? null,
+        query: b.query ?? null,
       }));
   } catch (e) {
     // if custom bases are unavailable (no tables) — show at least the built-in ones
@@ -168,7 +173,7 @@ export async function POST(request: Request): Promise<Response> {
 
 // rename / move a custom base
 export async function PATCH(request: Request): Promise<Response> {
-  let body: { id?: unknown; name?: unknown; parent?: unknown };
+  let body: { id?: unknown; name?: unknown; parent?: unknown; state?: unknown; query?: unknown };
   try { body = await request.json(); } catch { return Response.json({ error: 'Malformed request' }, { status: 400 }); }
   const id = String(body?.id ?? '');
   if (!id || BUILTIN_IDS.has(id)) return Response.json({ error: 'This base cannot be changed' }, { status: 400 });
@@ -209,6 +214,16 @@ export async function PATCH(request: Request): Promise<Response> {
       }
     }
     base = await store.moveBase(id, newParent);
+  }
+  // ТР-БИ-03: состояние темы и формулировка искомого
+  if (body?.state !== undefined || body?.query !== undefined) {
+    const patch: { state?: CustomBase['state']; query?: string | null } = {};
+    if (body.state !== undefined) {
+      patch.state = body.state === null ? null
+        : (['unexplored', 'in_progress', 'closed'].includes(String(body.state)) ? (String(body.state) as CustomBase['state']) : undefined);
+    }
+    if (body.query !== undefined) patch.query = body.query === null ? null : String(body.query);
+    base = await store.setBaseMeta(id, patch);
   }
   if (!base) return Response.json({ error: 'Base not found' }, { status: 404 });
   return Response.json({ base });

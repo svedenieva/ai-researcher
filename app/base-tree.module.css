@@ -328,3 +328,56 @@
   background: color-mix(in srgb, var(--error) 12%, transparent);
   border-color: color-mix(in srgb, var(--error) 30%, transparent);
 }
+
+/* ── ТР-БИ-03: состояние темы ──────────────────────────────── */
+.stateDot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-25, #b7b4ac);
+}
+.stateDot[data-state='in_progress'] { background: #f59e0b; }
+.stateDot[data-state='closed'] { background: #16a34a; }
+.stateDot[data-state='unexplored'] { background: var(--ink-25, #b7b4ac); }
+
+.qmark {
+  flex: none;
+  margin-left: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--sage, #6b8f71);
+  cursor: help;
+}
+
+.stateFilter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px 2px;
+}
+.stateChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--rule-soft, #eceae4);
+  border-radius: 999px;
+  background: var(--paper, #fff);
+  color: var(--ink-70, #4b4b46);
+  font-size: 11px;
+  cursor: pointer;
+}
+.stateChip:hover { background: var(--wash, #f4f2ee); }
+.stateChipOn { border-color: var(--sage, #6b8f71); background: color-mix(in srgb, var(--sage, #6b8f71) 14%, transparent); }
+
+.menuSep { height: 1px; margin: 4px 8px; background: var(--rule-soft, #eceae4); }
+.menuHead {
+  padding: 5px 10px 2px;
+  font-size: 9px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-45, #8a8a80);
+}

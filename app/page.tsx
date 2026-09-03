@@ -45,6 +45,8 @@ interface BaseTab {
   tone: string;
   builtin: boolean;
   parent: string | null;
+  state?: 'unexplored' | 'in_progress' | 'closed' | null;
+  query?: string | null;
 }
 
 const BUILTIN_TABS: BaseTab[] = BASES.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: true, parent: null }));

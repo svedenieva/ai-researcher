@@ -18,6 +18,9 @@ export interface BaseTab {
   /** only for custom bases — shown in the showcase preview */
   owner?: string | null;
   createdAt?: string | null;
+  /** ТР-БИ-03: стадия темы и формулировка искомого */
+  state?: 'unexplored' | 'in_progress' | 'closed' | null;
+  query?: string | null;
 }
 
 export default function BasePicker({
