@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MindSheet } from '@aivocado/mindsheet';
+import type { CellFormat } from '@aivocado/mindsheet';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
 import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
 import { BASES, DEFAULT_BASE } from '@/lib/datasource/bases';
@@ -130,6 +131,44 @@ export default function Home() {
         .catch((e) => toast(e instanceof Error ? e.message : 'Не вдалося зберегти'));
     },
     [base, coerce, toast],
+  );
+
+  // Поклеточное форматирование (жирный/размер) живёт в самой записи под __fmt
+  // (jsonb, без миграции): ключ колонки → { bold?, fontScale? }.
+  const cellFormats = useMemo(() => {
+    const map: Record<string, Record<string, CellFormat>> = {};
+    for (const r of records) {
+      const f = (r as Record<string, unknown>).__fmt;
+      if (f && typeof f === 'object') map[String(r.id)] = f as Record<string, CellFormat>;
+    }
+    return map;
+  }, [records]);
+
+  const onCellFormat = useCallback(
+    (rowIds: string[], colKeys: string[], patch: CellFormat) => {
+      const ids = new Set(rowIds);
+      const nextFmt = (rec: CatalogRecord): Record<string, CellFormat> => {
+        const cur = ((rec as Record<string, unknown>).__fmt ?? {}) as Record<string, CellFormat>;
+        const next: Record<string, CellFormat> = { ...cur };
+        for (const k of colKeys) {
+          const merged: CellFormat = { ...(cur[k] ?? {}), ...patch };
+          if (merged.bold === false) delete merged.bold;
+          if (merged.fontScale === 1) delete merged.fontScale;
+          if (Object.keys(merged).length === 0) delete next[k];
+          else next[k] = merged;
+        }
+        return next;
+      };
+      // оптимистично — формат виден сразу; параллельно пишем в каждую запись
+      const targets = records.filter((r) => ids.has(String(r.id)));
+      setRecords((prev) => prev.map((r) => (ids.has(String(r.id)) ? ({ ...(r as Record<string, unknown>), __fmt: nextFmt(r) } as unknown as CatalogRecord) : r)));
+      for (const rec of targets) {
+        const targetBase = typeof rec.__baseId === 'string' ? rec.__baseId : base;
+        apiSend('/api/records', 'PATCH', { base: targetBase, id: rec.id, data: { __fmt: nextFmt(rec) } })
+          .catch((e) => toast(e instanceof Error ? e.message : 'Не вдалося зберегти формат'));
+      }
+    },
+    [records, base, toast],
   );
 
   const onAddRow = useCallback(
@@ -806,6 +845,8 @@ export default function Home() {
             autoGroup
             recordCard
             cellSelection
+            cellFormats={cellFormats}
+            onCellFormat={onCellFormat}
             viewKey={base}
             strings={mindsheetStrings(lang)}
             accent={toneColor(tabs.find((t) => t.id === base)?.tone)}
