@@ -45,7 +45,7 @@ export function canAccessBase(base: { owner: string | null; shared?: boolean }, 
 }
 
 export type NewColumn = { label: string; type?: ColumnDef['type']; filterable?: boolean };
-export type ColumnPatch = { label?: string; type?: ColumnDef['type']; filterable?: boolean };
+export type ColumnPatch = { label?: string; type?: ColumnDef['type']; filterable?: boolean; numberFormat?: ColumnDef['numberFormat'] };
 export interface BinRecord { baseId: string; baseName: string; record: CatalogRecord }
 export interface BinContents { bases: CustomBase[]; records: BinRecord[] }
 
@@ -134,7 +134,14 @@ export function applyColumnPatch(col: ColumnDef, patch: ColumnPatch): ColumnDef 
   const type = patch.type ?? col.type;
   const label = patch.label !== undefined ? String(patch.label).trim() || col.label : col.label;
   const filterable = (patch.filterable ?? col.filterable ?? false) && type !== 'long-text' && type !== 'url';
-  return { ...col, label, type, filterable };
+  // формат чисел живёт только у числовых колонок; при смене типа — сбрасываем.
+  // «Обычное» без знаков/валюты не храним — это состояние по умолчанию.
+  let numberFormat = patch.numberFormat !== undefined ? patch.numberFormat : col.numberFormat;
+  if (type !== 'number') numberFormat = undefined;
+  else if (numberFormat && (numberFormat.style ?? 'plain') === 'plain' && !numberFormat.decimals && !numberFormat.currency) {
+    numberFormat = undefined;
+  }
+  return { ...col, label, type, filterable, numberFormat };
 }
 
 const TONES: CustomBase['tone'][] = ['teal', 'blue', 'amber', 'sage'];

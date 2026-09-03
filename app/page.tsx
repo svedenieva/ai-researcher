@@ -801,6 +801,7 @@ export default function Home() {
             onColumnRename={(key, label) => columnAction({ action: 'update', key, patch: { label } })}
             onColumnRetype={(key, type) => columnAction({ action: 'update', key, patch: { type } })}
             onColumnDelete={(key) => columnAction({ action: 'delete', key })}
+            onColumnFormat={(key, format) => columnAction({ action: 'update', key, patch: { numberFormat: format } })}
             onColumnsReorder={(keys) => columnAction({ action: 'reorder', keys })}
             autoGroup
             recordCard

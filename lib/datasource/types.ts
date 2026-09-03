@@ -21,6 +21,15 @@ export interface ColumnDef {
   badgeVariant?: Record<string, string>;
   /** open the base grouped by this column (a process board by «Стадия», §5.9) */
   defaultGroup?: boolean;
+  /** формат отображения числовой колонки (разряды / валюта / проценты) */
+  numberFormat?: NumberFormat;
+}
+
+/** Формат числовой колонки — зеркалит @aivocado/mindsheet NumberFormat. */
+export interface NumberFormat {
+  style?: 'plain' | 'thousands' | 'currency' | 'percent';
+  decimals?: number;
+  currency?: string;
 }
 
 export interface ListParams {
