@@ -71,6 +71,7 @@ const S: Record<Lang, {
   lead: string;
   promptPlaceholder: string;
   startClaudeTitle: string;
+  paHasReference: (n: number) => string; paAppend: string; paReplace: string; paCreateNew: string; paShowReference: string;
   opening: string;
   researchInMyClaude: string;
   startServerTitle: string;
@@ -140,6 +141,7 @@ const S: Record<Lang, {
     lead: 'Опиши, що потрібно дослідити. Відкриється твій Claude з готовим запитом — він збере дані та збереже їх у базу, а результат з’явиться тут.',
     promptPlaceholder: 'Напр.: найкращі практики використання AI-агентів у продажах…',
     startClaudeTitle: 'Відкриється твій Claude з готовим запитом; він дослідить і збереже результат у базу',
+    paHasReference: (n) => `Тема закрита, вже є еталон (${n}). Що зробити?`, paAppend: 'Доповнити', paReplace: 'Замінити', paCreateNew: 'Нова база', paShowReference: 'Показати еталон',
     opening: 'Відкриваю Claude…',
     researchInMyClaude: 'Дослідити в моєму Claude',
     startServerTitle: 'Провести дослідження на сервері (на нашому ключі), без відкриття твого Claude',
@@ -209,6 +211,7 @@ const S: Record<Lang, {
     lead: 'Опиши, что нужно исследовать. Откроется твой Claude с готовым запросом — он соберёт данные и сохранит их в базу, а результат появится здесь.',
     promptPlaceholder: 'Напр.: лучшие практики использования AI-агентов в продажах…',
     startClaudeTitle: 'Откроется твой Claude с готовым запросом; он исследует и сохранит результат в базу',
+    paHasReference: (n) => `Тема закрыта, эталон уже есть (${n}). Что сделать?`, paAppend: 'Дополнить', paReplace: 'Заменить', paCreateNew: 'Новая база', paShowReference: 'Показать эталон',
     opening: 'Открываю Claude…',
     researchInMyClaude: 'Исследовать в моём Claude',
     startServerTitle: 'Провести исследование на сервере (на нашем ключе), без открытия твоего Claude',
@@ -278,6 +281,7 @@ const S: Record<Lang, {
     lead: 'Describe what you need to research. Your Claude will open with a ready-made prompt — it will gather the data and save it to a base, and the result will appear here.',
     promptPlaceholder: 'E.g.: best practices for using AI agents in sales…',
     startClaudeTitle: 'Your Claude will open with a ready-made prompt; it will research and save the result to a base',
+    paHasReference: (n) => `Topic is closed, a reference already exists (${n}). What next?`, paAppend: 'Append', paReplace: 'Replace', paCreateNew: 'New base', paShowReference: 'Show reference',
     opening: 'Opening Claude…',
     researchInMyClaude: 'Research in my Claude',
     startServerTitle: 'Run the research on the server (on our key), without opening your Claude',
@@ -335,6 +339,8 @@ export default function Research() {
 
   // ── Variant C: research on the user's own Claude via a deeplink ──
   const [starting, setStarting] = useState(false);
+  // ТР-ПА-03: выбор при закрытой теме с существующим эталоном
+  const [closedChoice, setClosedChoice] = useState<{ baseId: string; baseName: string; count: number } | null>(null);
   const [run, setRun] = useState<{ baseId: string; baseName: string; web: string } | null>(null);
   // Your past runs, so an abandoned one is findable and removable instead of
   // sitting in the tree forever
@@ -473,17 +479,28 @@ export default function Research() {
     }
   };
 
-  const startClaude = async () => {
+  const startClaude = async (intent?: 'new' | 'append' | 'replace', baseId?: string) => {
     if (!prompt.trim()) return;
     setStarting(true);
     try {
-      const body = await apiSend<{ baseId: string; baseName: string; web?: string; closed?: boolean }>('/api/research/start', 'POST', { prompt });
-      // ТР-ПИ-03: тема уже закрыта — прогон не запускаем, показываем накопленное
+      const body = await apiSend<{ baseId: string; baseName: string; web?: string; closed?: boolean; referenceCount?: number }>(
+        '/api/research/start',
+        'POST',
+        { prompt, intent, baseId },
+      );
+      // ТР-ПИ-03 / ТР-ПА-03: тема закрыта — прогон не запускаем. Если у неё уже
+      // есть эталон, предлагаем выбор (дополнить/заменить/создать); иначе просто
+      // показываем накопленное.
       if (body.closed) {
-        toast(S[lang].topicClosed(body.baseName));
-        window.open(`/?base=${encodeURIComponent(body.baseId)}`, '_blank', 'noopener,noreferrer');
+        if (body.referenceCount && body.referenceCount > 0) {
+          setClosedChoice({ baseId: body.baseId, baseName: body.baseName, count: body.referenceCount });
+        } else {
+          toast(S[lang].topicClosed(body.baseName));
+          window.open(`/?base=${encodeURIComponent(body.baseId)}`, '_blank', 'noopener,noreferrer');
+        }
         return;
       }
+      setClosedChoice(null);
       setRun({ baseId: body.baseId, baseName: body.baseName, web: body.web ?? '' });
       loadRuns();
       // open the user's OWN Claude with the ready-made prompt
@@ -521,7 +538,7 @@ export default function Research() {
           <button
             type="button"
             className={styles.primary}
-            onClick={startClaude}
+            onClick={() => startClaude()}
             disabled={starting || !prompt.trim()}
             title={S[lang].startClaudeTitle}
           >
@@ -539,6 +556,26 @@ export default function Research() {
             </button>
           )}
         </div>
+
+        {closedChoice && (
+          <div className={styles.closedChoice} role="group">
+            <span className={styles.closedChoiceMsg}>{S[lang].paHasReference(closedChoice.count)}</span>
+            <div className={styles.closedChoiceBtns}>
+              <button type="button" className={styles.ghost} onClick={() => window.open(`/?base=${encodeURIComponent(closedChoice.baseId)}&mode=Эталон`, '_blank', 'noopener,noreferrer')}>
+                {S[lang].paShowReference}
+              </button>
+              <button type="button" className={styles.ghost} onClick={() => startClaude('append', closedChoice.baseId)} disabled={starting}>
+                {S[lang].paAppend}
+              </button>
+              <button type="button" className={styles.ghost} onClick={() => startClaude('replace', closedChoice.baseId)} disabled={starting}>
+                {S[lang].paReplace}
+              </button>
+              <button type="button" className={styles.primary} onClick={() => startClaude('new')} disabled={starting}>
+                {S[lang].paCreateNew}
+              </button>
+            </div>
+          </div>
+        )}
 
         {run && (
           <section className={styles.claudeRun}>
