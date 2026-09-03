@@ -171,6 +171,53 @@ export default function Home() {
     [records, base, toast],
   );
 
+  // ТР-МШ-14: массовое присвоение значения выделенным клеткам одной операцией,
+  // с отменой. Пишем по одному PATCH на запись (все её изменённые ключи разом),
+  // оптимистично применяем и показываем «Отменить» в тосте.
+  const applyBulk = useCallback(
+    (edits: Array<{ id: string; key: string; value: string }>, announce: boolean) => {
+      if (!edits.length) return;
+      const byId = new Map(records.map((r) => [String(r.id), r]));
+      // снимок прежних значений — для отмены (обратные правки)
+      const inverse: Array<{ id: string; key: string; value: string }> = [];
+      const perRecord = new Map<string, Record<string, string>>();
+      for (const e of edits) {
+        const rec = byId.get(e.id);
+        if (!rec) continue;
+        const prev = rec[e.key];
+        inverse.push({ id: e.id, key: e.key, value: prev == null ? '' : String(prev) });
+        (perRecord.get(e.id) ?? perRecord.set(e.id, {}).get(e.id)!)[e.key] = e.value;
+      }
+      // оптимистично применяем к локальным записям
+      setRecords((prev) =>
+        prev.map((r) => {
+          const patch = perRecord.get(String(r.id));
+          if (!patch) return r;
+          const next: Record<string, unknown> = { ...(r as Record<string, unknown>) };
+          for (const [k, v] of Object.entries(patch)) next[k] = coerce(k, v);
+          return next as unknown as CatalogRecord;
+        }),
+      );
+      // пишем в БД по одной записи
+      for (const [id, patch] of perRecord) {
+        const rec = byId.get(id);
+        const targetBase = rec && typeof rec.__baseId === 'string' ? rec.__baseId : base;
+        const data: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(patch)) data[k] = coerce(k, v);
+        apiSend('/api/records', 'PATCH', { base: targetBase, id, data })
+          .catch((e) => toast(e instanceof Error ? e.message : 'Не вдалося зберегти'));
+      }
+      if (announce) {
+        toast(`Заполнено: ${perRecord.size} строк`, { action: { label: 'Отменить', onClick: () => applyBulk(inverse, false) } });
+      }
+    },
+    [records, base, coerce, toast],
+  );
+  const onBulkEdit = useCallback(
+    (edits: Array<{ id: string; key: string; value: string }>) => applyBulk(edits, true),
+    [applyBulk],
+  );
+
   const onAddRow = useCallback(
     (data: Record<string, string>) => {
       const payload: Record<string, string | number> = {};
@@ -847,6 +894,7 @@ export default function Home() {
             cellSelection
             cellFormats={cellFormats}
             onCellFormat={onCellFormat}
+            onBulkEdit={onBulkEdit}
             viewKey={base}
             strings={mindsheetStrings(lang)}
             accent={toneColor(tabs.find((t) => t.id === base)?.tone)}
