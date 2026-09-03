@@ -805,6 +805,7 @@ export default function Home() {
             onColumnsReorder={(keys) => columnAction({ action: 'reorder', keys })}
             autoGroup
             recordCard
+            cellSelection
             viewKey={base}
             strings={mindsheetStrings(lang)}
             accent={toneColor(tabs.find((t) => t.id === base)?.tone)}
