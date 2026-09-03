@@ -153,6 +153,9 @@ export default function Home() {
         for (const k of colKeys) {
           const merged: CellFormat = { ...(cur[k] ?? {}), ...patch };
           if (merged.bold === false) delete merged.bold;
+          if (merged.italic === false) delete merged.italic;
+          if (merged.underline === false) delete merged.underline;
+          if (!merged.fontPx) delete merged.fontPx;
           if (merged.fontScale === 1) delete merged.fontScale;
           if (Object.keys(merged).length === 0) delete next[k];
           else next[k] = merged;
