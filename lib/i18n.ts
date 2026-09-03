@@ -151,6 +151,16 @@ const UI = {
   viewCards: { uk: 'Картки', ru: 'Карточки', en: 'Cards' },
   viewTable: { uk: 'Таблиця', ru: 'Таблица', en: 'Table' },
   cardsEmpty: { uk: 'Немає елементів', ru: 'Нет элементов', en: 'No items' },
+  // доступ к базе (ТР-БД-03)
+  accButton: { uk: 'Доступ', ru: 'Доступ', en: 'Access' },
+  accTitle: { uk: 'Доступ до бази', ru: 'Доступ к базе', en: 'Base access' },
+  accAdd: { uk: 'Дати доступ', ru: 'Дать доступ', en: 'Grant' },
+  accEmail: { uk: 'email людини…', ru: 'email человека…', en: 'person’s email…' },
+  accEmpty: { uk: 'Доступ лише у вас', ru: 'Доступ только у вас', en: 'Only you have access' },
+  accRevoke: { uk: 'Відкликати', ru: 'Отозвать', en: 'Revoke' },
+  accNote: { uk: 'Особиста база: бачите ви та запрошені.', ru: 'Личная база: видите вы и приглашённые.', en: 'Private base: you and invitees.' },
+  cbShared: { uk: 'Спільна база (бачать усі)', ru: 'Общая база (видят все)', en: 'Shared base (everyone sees it)' },
+  cbSharedHint: { uk: 'Інакше — особиста: бачите тільки ви та ті, кому дасте доступ.', ru: 'Иначе — личная: видите только вы и те, кому дадите доступ.', en: 'Otherwise private: only you and people you grant access.' },
 } satisfies Record<string, Tri>;
 
 const UI_FN = {

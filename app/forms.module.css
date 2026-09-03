@@ -253,3 +253,15 @@
   font-size: 10px;
   color: var(--ink-45);
 }
+
+/* ТР-БД-03: чекбокс видимости при создании базы */
+.checkboxRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink, #24241f);
+  cursor: pointer;
+}
+.checkboxRow input { accent-color: var(--sage, #6b8f71); cursor: pointer; }
+.fieldHint { margin-top: 3px; font-size: 11.5px; color: var(--ink-45, #8a8a80); }

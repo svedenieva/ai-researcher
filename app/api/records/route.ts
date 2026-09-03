@@ -1,7 +1,7 @@
 import { getDataSource } from '@/lib/datasource';
 import { JsonDataSource } from '@/lib/datasource/json';
 import { BASES, baseById } from '@/lib/datasource/bases';
-import { getCustomStore, canAccessBase } from '@/lib/datasource/customStore';
+import { getCustomStore, userCanAccess } from '@/lib/datasource/customStore';
 import { currentEmail } from '@/lib/current-user';
 import { MODE_KEY, MODE_RESEARCH, MODE_REFERENCE, recordMode } from '@/lib/mode';
 import { descendantsOf } from '@/lib/datasource/tree';
@@ -90,7 +90,7 @@ export async function GET(request: Request): Promise<Response> {
 
     // Missing and forbidden answer identically on purpose: confirming that a
     // guessed id names a real private base is itself a leak.
-    if (!custom || !canAccessBase(custom, me)) {
+    if (!custom || !(await userCanAccess(store, custom, me))) {
       return Response.json({ error: 'Base not found, or no access' }, { status: 404 });
     }
 
@@ -237,7 +237,7 @@ export async function POST(request: Request): Promise<Response> {
     const base = await store.getBase(baseId);
     const me = await currentEmail();
     // writing is allowed to own/shared/ownerless bases, not someone else's private one
-    if (!base || !canAccessBase(base, me)) return Response.json({ error: 'Base not found' }, { status: 404 });
+    if (!base || !(await userCanAccess(store, base, me))) return Response.json({ error: 'Base not found' }, { status: 404 });
     if (badUrlCell(base.columns, data)) {
       return Response.json({ error: 'A url column accepts only http, https, mailto or tel' }, { status: 400 });
     }
@@ -272,7 +272,7 @@ export async function PATCH(request: Request): Promise<Response> {
     const store = getCustomStore();
     const base = await store.getBase(baseId);
     const me = await currentEmail();
-    if (!base || !canAccessBase(base, me)) return Response.json({ error: 'Base not found' }, { status: 404 });
+    if (!base || !(await userCanAccess(store, base, me))) return Response.json({ error: 'Base not found' }, { status: 404 });
     if (badUrlCell(base.columns, patch)) {
       return Response.json({ error: 'A url column accepts only http, https, mailto or tel' }, { status: 400 });
     }
@@ -296,7 +296,7 @@ export async function DELETE(request: Request): Promise<Response> {
   const store = getCustomStore();
   const base = await store.getBase(baseId);
   const me = await currentEmail();
-  if (!base || !canAccessBase(base, me)) return Response.json({ error: 'Base not found' }, { status: 404 });
+  if (!base || !(await userCanAccess(store, base, me))) return Response.json({ error: 'Base not found' }, { status: 404 });
   if (body?.restore === true) {
     const restored = await store.restoreRecords(baseId, ids);
     return Response.json({ restored });

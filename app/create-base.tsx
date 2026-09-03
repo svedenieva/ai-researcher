@@ -52,6 +52,7 @@ export default function CreateBase({
   const [parent, setParent] = useState(initialParent ?? '');
   const [cols, setCols] = useState<ColDraft[]>(() => [{ label: t(lang, 'defaultColName'), type: 'text', filterable: false }]);
   const [raw, setRaw] = useState('');
+  const [shared, setShared] = useState(false); // ТР-БД-03: видимость общая/личная
   const [busy, setBusy] = useState(false);
   // rows a template ships pre-filled (positional to its columns). Dropped the
   // moment the user edits the columns, so seeded rows never end up misaligned.
@@ -137,6 +138,7 @@ export default function CreateBase({
         name: name.trim(),
         columns,
         parent: parent || undefined,
+        shared,
         rows: mode === 'import' ? parsed.rows : (presetRows ?? undefined),
       });
       onCreated(body.base.id);
@@ -211,6 +213,14 @@ export default function CreateBase({
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
+      </label>
+
+      <label className={styles.field}>
+        <span className={styles.checkboxRow}>
+          <input type="checkbox" checked={shared} onChange={(e) => setShared(e.target.checked)} />
+          {t(lang, 'cbShared')}
+        </span>
+        <span className={styles.fieldHint}>{t(lang, 'cbSharedHint')}</span>
       </label>
 
       {mode === 'manual' ? (

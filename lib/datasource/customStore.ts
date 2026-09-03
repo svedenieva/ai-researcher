@@ -46,8 +46,28 @@ export interface NewBase {
 // knowledge base, common to everyone. New bases always get an owner, so
 // owner===null = exactly the former team bases. This way isolation works WITHOUT
 // a migration and with no risk of the team losing its knowledge base.
-export function canAccessBase(base: { owner: string | null; shared?: boolean }, me: string | null): boolean {
-  return base.owner === null || base.shared === true || (me !== null && base.owner === me);
+export function canAccessBase(
+  base: { id?: string; owner: string | null; shared?: boolean },
+  me: string | null,
+  granted?: Set<string>,
+): boolean {
+  if (base.owner === null || base.shared === true) return true;
+  if (me !== null && base.owner === me) return true;
+  // ТР-БД-03: пользователь, которому владелец выдал доступ к этой базе
+  if (me !== null && base.id && granted?.has(base.id)) return true;
+  return false;
+}
+
+// ТР-БД-03: доступ с учётом пер-юзер выдачи (делает запрос к base_access при
+// необходимости). Для маршрутов, где важно пустить приглашённого пользователя.
+export async function userCanAccess(
+  store: CustomStore,
+  base: { id?: string; owner: string | null; shared?: boolean },
+  me: string | null,
+): Promise<boolean> {
+  if (canAccessBase(base, me)) return true;
+  if (me && base.id) return (await store.basesGrantedTo(me)).has(base.id);
+  return false;
 }
 
 export type NewColumn = { label: string; type?: ColumnDef['type']; filterable?: boolean };
@@ -74,6 +94,12 @@ export interface CustomStore {
   moveBase(id: string, parent: string | null): Promise<CustomBase | null>;
   /** ТР-БИ-03: задать состояние/формулировку темы (толерантно к отсутствию колонок) */
   setBaseMeta(id: string, patch: { state?: CustomBase['state']; query?: string | null }): Promise<CustomBase | null>;
+  /** ТР-БД-03: пер-юзер доступ к базе. Толерантны к отсутствию таблицы base_access. */
+  listAccess(baseId: string): Promise<string[]>;
+  grantAccess(baseId: string, email: string): Promise<void>;
+  revokeAccess(baseId: string, email: string): Promise<void>;
+  /** baseId, к которым у me есть явная выдача доступа */
+  basesGrantedTo(me: string): Promise<Set<string>>;
   softDeleteBase(id: string): Promise<boolean>;
   restoreBase(id: string): Promise<boolean>;
   softDeleteRecords(baseId: string, ids: string[]): Promise<number>;
@@ -175,12 +201,22 @@ export class MemoryCustomStore implements CustomStore {
   private seq = 0;
   private deletedBases = new Set<string>();
   private deletedRows: Record<string, Set<string>> = {};
+  private access: Record<string, Set<string>> = {}; // baseId → emails (ТР-БД-03)
 
   async listAllBases() {
     return this.bases.filter((b) => !this.deletedBases.has(b.id));
   }
   async listBases(me: string | null) {
-    return (await this.listAllBases()).filter((b) => canAccessBase(b, me));
+    const granted = me ? await this.basesGrantedTo(me) : undefined;
+    return (await this.listAllBases()).filter((b) => canAccessBase(b, me, granted));
+  }
+  async listAccess(baseId: string) { return [...(this.access[baseId] ?? [])]; }
+  async grantAccess(baseId: string, email: string) { (this.access[baseId] ??= new Set()).add(email); }
+  async revokeAccess(baseId: string, email: string) { this.access[baseId]?.delete(email); }
+  async basesGrantedTo(me: string) {
+    const out = new Set<string>();
+    for (const [baseId, emails] of Object.entries(this.access)) if (emails.has(me)) out.add(baseId);
+    return out;
   }
   async getBase(id: string) {
     if (this.deletedBases.has(id)) return null;
@@ -336,7 +372,27 @@ class SupabaseCustomStore implements CustomStore {
     return (data ?? []).map((r) => this.norm(r as Record<string, unknown>));
   }
   async listBases(me: string | null): Promise<CustomBase[]> {
-    return (await this.listAllBases()).filter((b) => canAccessBase(b, me));
+    const granted = me ? await this.basesGrantedTo(me) : undefined;
+    return (await this.listAllBases()).filter((b) => canAccessBase(b, me, granted));
+  }
+  // ТР-БД-03: доступы. Толерантны к отсутствию таблицы base_access (до миграции 0005).
+  async listAccess(baseId: string): Promise<string[]> {
+    const { data, error } = await this.client.from('base_access').select('email').eq('base_id', baseId);
+    if (error) return [];
+    return (data ?? []).map((r) => String((r as { email: string }).email));
+  }
+  async grantAccess(baseId: string, email: string): Promise<void> {
+    const { error } = await this.client.from('base_access').upsert({ base_id: baseId, email }, { onConflict: 'base_id,email' });
+    if (error && !/base_access/.test(error.message)) throw new Error(`Supabase (base_access): ${error.message}`);
+  }
+  async revokeAccess(baseId: string, email: string): Promise<void> {
+    const { error } = await this.client.from('base_access').delete().eq('base_id', baseId).eq('email', email);
+    if (error && !/base_access/.test(error.message)) throw new Error(`Supabase (base_access): ${error.message}`);
+  }
+  async basesGrantedTo(me: string): Promise<Set<string>> {
+    const { data, error } = await this.client.from('base_access').select('base_id').eq('email', me);
+    if (error) return new Set();
+    return new Set((data ?? []).map((r) => String((r as { base_id: string }).base_id)));
   }
   async getBase(id: string): Promise<CustomBase | null> {
     let { data, error } = await this.client

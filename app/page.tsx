@@ -9,6 +9,7 @@ import FilterConditions from './filter-conditions';
 import ConfirmationsPanel from './confirmations-panel';
 import StagesPanel from './stages-panel';
 import KnowledgeCards from './knowledge-cards';
+import BaseAccess from './base-access';
 import { emptyFilterModel, countConditions, matchesModel, encodeConditions, decodeConditions, type FilterModel } from '@/lib/filter-conditions';
 import type { CatalogRecord, ColumnDef, ListParams } from '@/lib/datasource/types';
 import { CATALOG_COLUMNS } from '@/lib/datasource/columns';
@@ -52,6 +53,7 @@ interface BaseTab {
   parent: string | null;
   state?: 'unexplored' | 'in_progress' | 'closed' | null;
   query?: string | null;
+  owner?: string | null;
 }
 
 const BUILTIN_TABS: BaseTab[] = BASES.map((b) => ({ id: b.id, name: b.name, tone: b.tone, builtin: true, parent: null }));
@@ -963,6 +965,7 @@ export default function Home() {
                 <FilterConditions columns={displayColumns} model={condModel} onChange={setCondModel} lang={lang} />
                 {isCustom && <ConfirmationsPanel records={shownRecords} columns={displayColumns} lang={lang} />}
                 {isCustom && <StagesPanel records={shownRecords} columns={displayColumns} lang={lang} />}
+                {isCustom && Boolean(tabs.find((t) => t.id === base)?.owner) && <BaseAccess baseId={base} lang={lang} />}
               </>
             }
             forceDisplay={{ wrap: 'shrink' }}

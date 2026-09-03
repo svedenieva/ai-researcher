@@ -131,7 +131,7 @@ function mapRows(columns: ReturnType<typeof normalizeColumns>, rows: unknown): R
 }
 
 export async function POST(request: Request): Promise<Response> {
-  let body: { name?: unknown; columns?: unknown; tone?: unknown; rows?: unknown; parent?: unknown };
+  let body: { name?: unknown; columns?: unknown; tone?: unknown; rows?: unknown; parent?: unknown; shared?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -159,11 +159,13 @@ export async function POST(request: Request): Promise<Response> {
     ? (body.tone as CustomBase['tone'])
     : undefined;
   const parent = typeof body?.parent === 'string' && body.parent ? body.parent : null;
+  // ТР-БД-03: видимость при создании — «общая» (shared, видят все) или «личная»
+  const shared = body?.shared === true;
 
   try {
     const store = getCustomStore();
     const owner = await currentEmail();
-    const base = await store.createBase({ name, columns, tone, parent, owner });
+    const base = await store.createBase({ name, columns, tone, parent, owner, shared });
     const imported = rows.length ? await store.addRecords(base.id, rows) : 0;
     return Response.json({ base, imported });
   } catch (e) {
