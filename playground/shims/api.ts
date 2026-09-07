@@ -2,6 +2,7 @@
 // мок-данных, чтобы настоящие компоненты работали (правки, добавление, удаление,
 // колонки, фильтры) без сервера. Ничего наружу не уходит.
 import type { CatalogRecord, ColumnDef } from '@/lib/datasource/types';
+import { recordMode } from '@/lib/mode';
 import { MOCK_BASES, DEFAULT_MOCK_BASE, type MockBase } from '../mock/data';
 
 export class ApiError extends Error {
@@ -55,7 +56,10 @@ export async function apiJson<T = unknown>(input: RequestInfo | URL, init?: Requ
   if (path === '/api/records') {
     const s = slot(baseId);
     if (method === 'GET') {
-      return { columns: s.columns, records: s.records, total: s.records.length, facets: {}, sharing: false } as T;
+      // фильтр по режиму (Все / Исследование / Эталон) — как на сервере (ТР-БД-13)
+      const mode = params.get('mode');
+      const recs = mode ? s.records.filter((r) => recordMode(r) === mode) : s.records;
+      return { columns: s.columns, records: recs, total: recs.length, facets: {}, sharing: false } as T;
     }
     if (method === 'POST') {
       const rec = { id: `r-${++seq}`, ...(body.data as object) } as CatalogRecord;
