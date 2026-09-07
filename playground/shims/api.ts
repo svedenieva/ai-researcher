@@ -103,6 +103,25 @@ export async function apiJson<T = unknown>(input: RequestInfo | URL, init?: Requ
     return { base: { id: baseId } } as T;
   }
 
+  // ── /api/search (глобальный поиск по всем базам) ──────────────────
+  if (path === '/api/search') {
+    const q = (params.get('q') ?? '').trim().toLowerCase();
+    const hits: Array<{ baseId: string; baseName: string; rowId?: string; label: string; kind: 'base' | 'row' }> = [];
+    if (q) {
+      for (const b of MOCK_BASES) {
+        if (b.name.toLowerCase().includes(q)) hits.push({ baseId: b.id, baseName: b.name, label: b.name, kind: 'base' });
+        const nameKey = b.columns.find((c) => !c.key.startsWith('__'))?.key ?? 'name';
+        for (const r of b.records) {
+          const label = String(r[nameKey] ?? '');
+          if (label.toLowerCase().includes(q)) hits.push({ baseId: b.id, baseName: b.name, rowId: String(r.id), label, kind: 'row' });
+          if (hits.length >= 20) break;
+        }
+        if (hits.length >= 20) break;
+      }
+    }
+    return { results: hits.slice(0, 20) } as T;
+  }
+
   // ── /api/favorites ────────────────────────────────────────────────
   if (path === '/api/favorites') return (method === 'GET' ? { favorites: [] } : { ok: true }) as T;
   if (path.startsWith('/api/bases/access')) return { emails: [] } as T;
