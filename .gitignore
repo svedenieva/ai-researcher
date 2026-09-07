@@ -9,3 +9,4 @@ node_modules/
 
 # Subagent-driven-development scratch workspace
 .superpowers/
+playground/dist
