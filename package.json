@@ -9,7 +9,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:rls": "node --env-file=.env.local scripts/check-rls.mjs",
-    "eval": "node --env-file=.env.local scripts/eval.mjs"
+    "eval": "node --env-file=.env.local scripts/eval.mjs",
+    "play": "vite --config playground/vite.config.ts",
+    "play:build": "vite build --config playground/vite.config.ts"
   },
   "dependencies": {
     "@aivocado/mindsheet": "github:svedenieva/mindsheet#4a81ea4ca6c83b2389a562320e68b09e1cf5f974",
@@ -33,6 +35,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.0",
     "jsdom": "^25.0.1",
     "typescript": "^5.7.0",
     "vitest": "^2.1.8"
