@@ -1,0 +1,81 @@
+{
+  "projectId": "fc6d3584-8574-4f11-ab0e-f2620069d87a",
+  "pkg": "ai-researcher",
+  "globalName": "AiResearcherDS",
+  "shape": "package",
+  "srcDir": "app",
+  "tsconfig": "./tsconfig.json",
+  "cssEntry": "app/globals.css",
+  "extraFonts": [
+    ".design-sync/fonts/fonts.css"
+  ],
+  "docsDir": ".design-sync/docs",
+  "provider": {
+    "component": "DsProvider"
+  },
+  "componentSrcMap": {
+    "UiProvider": "app/ui.tsx",
+    "ThemeToggle": "app/theme-toggle.tsx",
+    "LangSwitch": "app/lang-switch.tsx",
+    "BasePicker": "app/base-picker.tsx",
+    "BaseTree": "app/base-tree.tsx",
+    "GlobalSearch": "app/global-search.tsx",
+    "SavedViews": "app/saved-views.tsx",
+    "Shortcuts": "app/shortcuts.tsx",
+    "KnowledgeCards": "app/knowledge-cards.tsx",
+    "BaseSummary": "app/base-summary.tsx",
+    "SourceCounters": "app/source-counters.tsx",
+    "StagesPanel": "app/stages-panel.tsx",
+    "ConfirmationsPanel": "app/confirmations-panel.tsx",
+    "CreateBase": "app/create-base.tsx",
+    "FilterConditions": "app/filter-conditions.tsx",
+    "BaseAccess": "app/base-access.tsx",
+    "BaseAiActions": "app/base-ai-actions.tsx",
+    "IconGallery": ".design-sync/icons/icon-gallery.tsx"
+  },
+  "guidelinesGlob": [],
+  "overrides": {
+    "FilterConditions": {
+      "cardMode": "single",
+      "primaryStory": "WithConditions",
+      "viewport": "720x520"
+    },
+    "BasePicker": {
+      "cardMode": "column"
+    },
+    "UiProvider": {
+      "cardMode": "single",
+      "primaryStory": "Toast"
+    },
+    "Shortcuts": {
+      "cardMode": "single",
+      "primaryStory": "Opened"
+    },
+    "StagesPanel": {
+      "cardMode": "single",
+      "primaryStory": "Opened",
+      "viewport": "460x300"
+    },
+    "SavedViews": {
+      "cardMode": "single",
+      "primaryStory": "Opened",
+      "viewport": "400x260"
+    },
+    "BaseAccess": {
+      "cardMode": "single",
+      "primaryStory": "Opened",
+      "viewport": "460x280"
+    },
+    "ConfirmationsPanel": {
+      "cardMode": "single",
+      "primaryStory": "Opened",
+      "viewport": "520x380"
+    },
+    "BaseAiActions": {
+      "cardMode": "single",
+      "primaryStory": "Opened",
+      "viewport": "420x320"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}

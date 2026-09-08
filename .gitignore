@@ -16,3 +16,9 @@ playground/dist
 
 # Claude Code — local/personal settings (may hold MCP tokens); never commit
 .claude/settings.local.json
+
+# Claude Design bridge — staged converter scripts and regenerated build output
+.ds-sync/
+ds-bundle/
+.design-sync/learnings/
+.design-sync/node_modules
