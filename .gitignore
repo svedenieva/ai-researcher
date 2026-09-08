@@ -13,3 +13,6 @@ playground/dist
 
 # Claude Design bridge — local-only state (watermark of last executed pull)
 .design-sync/.cache/
+
+# Claude Code — local/personal settings (may hold MCP tokens); never commit
+.claude/settings.local.json
