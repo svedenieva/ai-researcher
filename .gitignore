@@ -10,3 +10,6 @@ node_modules/
 # Subagent-driven-development scratch workspace
 .superpowers/
 playground/dist
+
+# Claude Design bridge — local-only state (watermark of last executed pull)
+.design-sync/.cache/
