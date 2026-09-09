@@ -6,6 +6,14 @@
 //
 // Everything re-exported here lands on window.AiResearcherDS.*.
 
+// -- full site ---------------------------------------------------------------
+// The whole dashboard as ONE editable card. app/page.tsx (Home) composes the
+// tree + MindSheet table + panels. It renders here because the design-sync
+// tsconfig (tsconfig.dssync.json) redirects next/navigation, next/link and
+// @/lib/api to the shims in .design-sync/shims/ — so the page paints with real
+// catalog data instead of white-screening on useRouter().
+export { default as FullSite } from '../app/page';
+
 // -- providers ---------------------------------------------------------------
 export { DsProvider } from './ds-provider';
 export { LangProvider, useLang } from '../app/lang-provider';

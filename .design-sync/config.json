@@ -4,7 +4,7 @@
   "globalName": "AiResearcherDS",
   "shape": "package",
   "srcDir": "app",
-  "tsconfig": "./tsconfig.json",
+  "tsconfig": "./tsconfig.dssync.json",
   "cssEntry": "app/globals.css",
   "extraFonts": [
     ".design-sync/fonts/fonts.css"
@@ -14,6 +14,7 @@
     "component": "DsProvider"
   },
   "componentSrcMap": {
+    "FullSite": "app/page.tsx",
     "UiProvider": "app/ui.tsx",
     "ThemeToggle": "app/theme-toggle.tsx",
     "LangSwitch": "app/lang-switch.tsx",
@@ -35,6 +36,11 @@
   },
   "guidelinesGlob": [],
   "overrides": {
+    "FullSite": {
+      "cardMode": "single",
+      "primaryStory": "Default",
+      "viewport": "1440x900"
+    },
     "FilterConditions": {
       "cardMode": "single",
       "primaryStory": "WithConditions",
