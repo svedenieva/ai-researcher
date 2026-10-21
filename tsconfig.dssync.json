@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "ES2022"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "strict": false,
+    "noEmit": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "@/lib/api": [".design-sync/shims/api"],
+      "next/navigation": [".design-sync/shims/next-navigation"],
+      "next/link": [".design-sync/shims/next-link"],
+      "@/lib*": ["lib*"],
+      "@/app*": ["app*"]
+    }
+  }
+}
